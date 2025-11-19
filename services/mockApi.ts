@@ -1,5 +1,11 @@
 
 import { Equipo, EstadoEquipo, RolUsuario, Usuario, ReporteGarantia, Notificacion, TipoEquipo, HistorialMovimiento, Departamento, Puesto, HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia } from '../types';
+import { liveApi } from './liveApi';
+
+// --- CONFIGURACIÓN DEL BACKEND ---
+// Cambia esto a TRUE cuando tengas tu backend Laravel corriendo en localhost:8000
+const USE_LIVE_API = false; 
+// ---------------------------------
 
 // --- Mock Data Initialization ---
 
@@ -85,7 +91,7 @@ const MOCK_NOTIFICATIONS: Notificacion[] = [
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const api = {
+const mockApiImplementation = {
   login: async (email: string, password?: string): Promise<Usuario> => {
     await delay(800);
     // Simple check: find user with email and matching password
@@ -698,3 +704,5 @@ export const api = {
     return notifs;
   }
 };
+
+export const api = USE_LIVE_API ? liveApi : mockApiImplementation;
