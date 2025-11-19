@@ -82,10 +82,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/equipos" icon={Laptop} label="Equipos" />
           <NavItem to="/mantenimiento" icon={Wrench} label="Mantenimiento" />
-          <NavItem to="/licencias" icon={Key} label="Licencias" />
           <NavItem to="/tipos" icon={Settings} label="Tipos de Equipo" />
           <NavItem to="/usuarios" icon={Users} label="Usuarios" />
           <NavItem to="/organizacion" icon={Building2} label="Organización" />
+          <NavItem to="/licencias" icon={Key} label="Licencias" />
           <NavItem to="/reportes" icon={FileText} label="Reportes" />
         </nav>
       </aside>
@@ -110,10 +110,10 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/equipos" icon={Laptop} label="Equipos" />
           <NavItem to="/mantenimiento" icon={Wrench} label="Mantenimiento" />
-          <NavItem to="/licencias" icon={Key} label="Licencias" />
           <NavItem to="/tipos" icon={Settings} label="Tipos de Equipo" />
           <NavItem to="/usuarios" icon={Users} label="Usuarios" />
           <NavItem to="/organizacion" icon={Building2} label="Organización" />
+          <NavItem to="/licencias" icon={Key} label="Licencias" />
           <NavItem to="/reportes" icon={FileText} label="Reportes" />
         </nav>
         <div className="p-4 border-t border-slate-100">
