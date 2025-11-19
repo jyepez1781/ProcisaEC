@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
               <Laptop className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-slate-800">SysInventario</span>
+            <span className="text-xl font-bold text-slate-800">cicsaInvenTory</span>
           </div>
         </div>
         
