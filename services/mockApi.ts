@@ -55,7 +55,7 @@ let MOCK_HISTORIAL: HistorialMovimiento[] = [
 ];
 
 let MOCK_ASIGNACIONES: HistorialAsignacion[] = [
-  { id: 1, equipo_codigo: 'EQ-2023-001', equipo_modelo: 'Latitude 5420', usuario_nombre: 'Maria Ventas', usuario_departamento: 'Ventas', fecha_inicio: '2023-01-20', fecha_fin: null, ubicacion: 'Piso 2' }
+  { id: 1, equipo_codigo: 'EQ-2023-001', equipo_modelo: 'Latitude 5420', usuario_nombre: 'Maria Ventas', usuario_departamento: 'Ventas', fecha_inicio: '2023-01-20', fecha_fin: null, ubicacion: 'Piso 2', archivo_pdf: undefined }
 ];
 
 let MOCK_MANTENIMIENTOS: RegistroMantenimiento[] = [
@@ -276,7 +276,8 @@ export const api = {
         usuario_departamento: user.departamento_nombre || '',
         fecha_inicio: new Date().toISOString().split('T')[0],
         fecha_fin: null,
-        ubicacion: ubicacion
+        ubicacion: ubicacion,
+        archivo_pdf: undefined
     });
     
     return eq;
@@ -434,6 +435,17 @@ export const api = {
     });
     
     return eq;
+  },
+
+  // Upload file for assignment
+  subirArchivoAsignacion: async (id: number, file: File) => {
+    await simulateDelay();
+    const assignment = MOCK_ASIGNACIONES.find(a => a.id === id);
+    if (!assignment) throw new Error("Asignación no encontrada");
+    
+    // Simulate storing file name/path
+    assignment.archivo_pdf = file.name;
+    return assignment;
   },
 
   // Licenses

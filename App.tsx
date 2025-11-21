@@ -14,15 +14,35 @@ import Layout from './components/Layout';
 import { Usuario } from './types';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<Usuario | null>(null);
+  // Initialize user state from localStorage to persist session
+  const [user, setUser] = useState<Usuario | null>(() => {
+    const savedUser = localStorage.getItem('app_user');
+    try {
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      console.error("Error parsing user from storage", e);
+      return null;
+    }
+  });
+
+  const handleLogin = (u: Usuario) => {
+    localStorage.setItem('app_user', JSON.stringify(u));
+    setUser(u);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('app_user');
+    localStorage.removeItem('auth_token'); // Clear API token if exists
+    setUser(null);
+  };
 
   if (!user) {
-    return <Login onLogin={(u) => setUser(u)} />;
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
     <HashRouter>
-      <Layout user={user} onLogout={() => setUser(null)}>
+      <Layout user={user} onLogout={handleLogout}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/equipos" element={<EquipmentList />} />

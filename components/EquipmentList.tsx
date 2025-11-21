@@ -144,48 +144,7 @@ const EquipmentList: React.FC = () => {
         </head>
         <body>
           
-          <!-- ================= PAGE 1: ANEXO 1 ================= -->
-          <div class="anexo-container">
-            <div class="anexo-header">
-              <img src="/logoAnexoCarso.png" class="logo-img" alt="Logo" onerror="this.style.display='none'; document.body.insertAdjacentHTML('afterbegin', '<p style=\'color:red\'>Error: logoAnexoCarso.png no encontrado</p>');" />
-              <div class="anexo-label">Anexo 1</div>
-            </div>
-
-            <div class="anexo-title">
-              CARTA DE NO INCLUSION DE SOFTWARE<br>
-              DECLARACION DEL EMPLEADO
-            </div>
-
-            <div class="mb-4">
-              Guayaquil., ${fechaAsignacion}
-            </div>
-
-            <div class="mb-4 text-bold">
-              Sr./ Sra./ Srita.: ${usuario.nombre_completo}
-            </div>
-
-            <div class="text-justify">
-              <p>PRESENTE.</p>
-              <p>Con motivo de los conocimientos de que usted dispone en materia de uso de equipo y programas de cómputo y en virtud de que esta empresa posee su propio equipo y frecuentemente adquiere ó desarrolla programas y material diverso de cómputo, a los cuales usted tiene ó puede llegar a tener acceso en el desempeño de sus funciones dentro de la empresa, hacemos de su conocimiento lo siguiente:</p>
-              <p>1. Las leyes de la materia y los tratados internacionales prohíben el uso de los programas de cómputo y de cualquier información al respecto, sin el consentimiento de su legítimo propietario ó licenciatario.</p>
-              <p>2. Lo anterior implica que usted deberá utilizar única y exclusivamente los equipos y programas de cómputo que la empresa proporcione para el desempeño de sus funciones dentro de la misma empresa.</p>
-              <p>3. En consecuencia, deberá usted abstenerse de utilizar y/o ingresar a las instalaciones y/o equipo de cómputo de la empresa programas de cómputo propiedad de terceros que no hayan sido adquiridos por la empresa, así como copiar al equipo de cómputo de la Empresa, archivos no utilizables en el desempeño de sus funciones, por ejemplo: protectores de pantalla, mp3, videojuegos, fotografías, etc.</p>
-              <p>4. Asimismo, deberá usted abstenerse de copiar y sustraer cualquier programa adquirido ó desarrollado por la empresa, ya que estos son propiedad exclusiva de la misma.</p>
-              <p>5.- Deberá mantener estricta confidencialidad de la información de la Empresa que en el desempeño de sus funciones conozca y en ningún caso y bajo ningún concepto podrá usted divulgarla.</p>
-              <p>6. Igualmente, le está prohibido permitir que terceras personas realicen las conductas anteriores ó tengan acceso, de cualquier manera, al equipo de programas de propiedad de la empresa.</p>
-              <p>7. La contravención de estas disposiciones será causa de rescisión al contrato de trabajo celebrado entre la empresa y usted, sin que tal medida le exonere de la responsabilidad personal en que llegará a incurrir de acuerdo con las leyes y tratados internacionales aplicables.</p>
-            </div>
-
-            <div class="anexo-footer">
-              <div class="signature-line">Nombre y Firma de Conformidad</div>
-              <div>${usuario.nombre_completo}</div>
-              <div>${usuario.departamento_nombre || 'Departamento no asignado'}</div>
-            </div>
-          </div>
-
-          <div class="page-break"></div>
-
-          <!-- ================= PAGE 2: CARTA RESPONSIVA ================= -->
+          <!-- ================= PAGE 1: CARTA RESPONSIVA ================= -->
           <div class="responsiva-container">
             
             <!-- Header Table -->
@@ -268,6 +227,47 @@ const EquipmentList: React.FC = () => {
               COPIA NO CONTROLADA UNA VEZ IMPRESA
             </div>
 
+          </div>
+
+          <div class="page-break"></div>
+
+          <!-- ================= PAGE 2: ANEXO 1 ================= -->
+          <div class="anexo-container">
+            <div class="anexo-header">
+              <img src="/logoAnexoCarso.png" class="logo-img" alt="Logo" onerror="this.style.display='none'; document.body.insertAdjacentHTML('afterbegin', '<p style=\'color:red\'>Error: logoAnexoCarso.png no encontrado</p>');" />
+              <div class="anexo-label">Anexo 1</div>
+            </div>
+
+            <div class="anexo-title">
+              CARTA DE NO INCLUSION DE SOFTWARE<br>
+              DECLARACION DEL EMPLEADO
+            </div>
+
+            <div class="mb-4">
+              Guayaquil., ${fechaAsignacion}
+            </div>
+
+            <div class="mb-4 text-bold">
+              Sr./ Sra./ Srita.: ${usuario.nombre_completo}
+            </div>
+
+            <div class="text-justify">
+              <p>PRESENTE.</p>
+              <p>Con motivo de los conocimientos de que usted dispone en materia de uso de equipo y programas de cómputo y en virtud de que esta empresa posee su propio equipo y frecuentemente adquiere ó desarrolla programas y material diverso de cómputo, a los cuales usted tiene ó puede llegar a tener acceso en el desempeño de sus funciones dentro de la empresa, hacemos de su conocimiento lo siguiente:</p>
+              <p>1. Las leyes de la materia y los tratados internacionales prohíben el uso de los programas de cómputo y de cualquier información al respecto, sin el consentimiento de su legítimo propietario ó licenciatario.</p>
+              <p>2. Lo anterior implica que usted deberá utilizar única y exclusivamente los equipos y programas de cómputo que la empresa proporcione para el desempeño de sus funciones dentro de la misma empresa.</p>
+              <p>3. En consecuencia, deberá usted abstenerse de utilizar y/o ingresar a las instalaciones y/o equipo de cómputo de la empresa programas de cómputo propiedad de terceros que no hayan sido adquiridos por la empresa, así como copiar al equipo de cómputo de la Empresa, archivos no utilizables en el desempeño de sus funciones, por ejemplo: protectores de pantalla, mp3, videojuegos, fotografías, etc.</p>
+              <p>4. Asimismo, deberá usted abstenerse de copiar y sustraer cualquier programa adquirido ó desarrollado por la empresa, ya que estos son propiedad exclusiva de la misma.</p>
+              <p>5.- Deberá mantener estricta confidencialidad de la información de la Empresa que en el desempeño de sus funciones conozca y en ningún caso y bajo ningún concepto podrá usted divulgarla.</p>
+              <p>6. Igualmente, le está prohibido permitir que terceras personas realicen las conductas anteriores ó tengan acceso, de cualquier manera, al equipo de programas de propiedad de la empresa.</p>
+              <p>7. La contravención de estas disposiciones será causa de rescisión al contrato de trabajo celebrado entre la empresa y usted, sin que tal medida le exonere de la responsabilidad personal en que llegará a incurrir de acuerdo con las leyes y tratados internacionales aplicables.</p>
+            </div>
+
+            <div class="anexo-footer">
+              <div class="signature-line">Nombre y Firma de Conformidad</div>
+              <div>${usuario.nombre_completo}</div>
+              <div>${usuario.departamento_nombre || 'Departamento no asignado'}</div>
+            </div>
           </div>
 
           <script>

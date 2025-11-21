@@ -187,6 +187,17 @@ export const liveApi = {
     });
     return handleResponse(response);
   },
+  subirArchivoAsignacion: async (id: number, file: File): Promise<HistorialAsignacion> => {
+    const formData = new FormData();
+    formData.append('archivo', file);
+    const response = await fetch(`${API_URL}/asignaciones/${id}/archivo`, {
+        method: 'POST',
+        // Do NOT set Content-Type header for FormData, let browser set it with boundary
+        headers: { ...(localStorage.getItem('auth_token') ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
+        body: formData
+    });
+    return handleResponse(response);
+  },
 
   // --- Licenses ---
   getTipoLicencias: async (): Promise<TipoLicencia[]> => {

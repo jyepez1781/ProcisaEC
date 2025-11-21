@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/mockApi';
 import { Equipo, HistorialMovimiento, TipoEquipo, HistorialAsignacion, Usuario, RegistroMantenimiento, Licencia, TipoLicencia } from '../types';
-import { Download, RefreshCw, History, FileText, CalendarRange, Wrench, Filter, Layers, User, Laptop, Key, Shield, ChevronLeft, ChevronRight, Tag, FileSpreadsheet, ChevronDown } from 'lucide-react';
+import { Download, RefreshCw, History, FileText, CalendarRange, Wrench, Filter, Layers, User, Laptop, Key, ChevronLeft, ChevronRight, FileSpreadsheet, ChevronDown, Upload, X, Save, Eye } from 'lucide-react';
 
 type ReportTab = 'REPLACEMENT' | 'HISTORY' | 'ASSIGNMENTS' | 'MAINTENANCE' | 'LICENSES';
 type GroupingMode = 'NONE' | 'USER' | 'EQUIPMENT';
@@ -33,6 +33,14 @@ const Reports: React.FC = () => {
   const [assignGrouping, setAssignGrouping] = useState<GroupingMode>('NONE');
   const [currentAssignPage, setCurrentAssignPage] = useState(1);
   const ASSIGN_ITEMS_PER_PAGE = 10;
+
+  // Assignment File Upload Modal
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedAssignmentForUpload, setSelectedAssignmentForUpload] = useState<HistorialAsignacion | null>(null);
+  const [fileToUpload, setFileToUpload] = useState<File | null>(null);
+
+  // Assignment File Viewer Modal
+  const [fileToView, setFileToView] = useState<string | null>(null);
 
   // License Report Specific States
   const [licenseFilterUser, setLicenseFilterUser] = useState<string>('');
@@ -162,6 +170,37 @@ const Reports: React.FC = () => {
   };
 
   const groupedData = getGroupedAssignments(paginatedAssignments);
+
+  // File Upload Handlers
+  const handleOpenUpload = (item: HistorialAsignacion) => {
+      setSelectedAssignmentForUpload(item);
+      setFileToUpload(null);
+      setIsUploadModalOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          setFileToUpload(e.target.files[0]);
+      }
+  };
+
+  const handleSubmitFile = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedAssignmentForUpload || !fileToUpload) return;
+
+      try {
+          await api.subirArchivoAsignacion(selectedAssignmentForUpload.id, fileToUpload);
+          alert('Archivo subido correctamente');
+          setIsUploadModalOpen(false);
+          fetchAsignaciones(); // Refresh list
+      } catch (error: any) {
+          alert('Error al subir archivo: ' + error.message);
+      }
+  };
+
+  const handleViewFile = (fileName: string) => {
+    setFileToView(fileName);
+  };
 
   // --- Logic for Licenses Filtering & Grouping ---
 
@@ -680,6 +719,7 @@ const Reports: React.FC = () => {
                               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Equipo</th>
                               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Periodo</th>
                               <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Duración</th>
+                              <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase">Documento</th>
                             </tr>
                           </thead>
                         )}
@@ -703,266 +743,400 @@ const Reports: React.FC = () => {
                                 </td>
                               )}
 
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                <div className="flex flex-col">
-                                  <span>Desde: {item.fecha_inicio}</span>
-                                  <span className="text-xs text-slate-400">Hasta: {item.fecha_fin || 'Presente'}</span>
-                                </div>
-                              </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                {!item.fecha_fin ? (
-                                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">
-                                    Vigente ({calculateDays(item.fecha_inicio, null)} días)
-                                  </span>
+                                 <div className="text-sm text-slate-600">
+                                    <span className="text-green-600 font-medium">{item.fecha_inicio}</span>
+                                    <span className="mx-2 text-slate-300">→</span>
+                                    <span className={item.fecha_fin ? 'text-slate-600' : 'text-blue-600 font-medium'}>
+                                        {item.fecha_fin || 'Actual'}
+                                    </span>
+                                 </div>
+                              </td>
+                              
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                 {calculateDays(item.fecha_inicio, item.fecha_fin)} días
+                              </td>
+
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                {item.archivo_pdf ? (
+                                   <div 
+                                      onClick={() => handleViewFile(item.archivo_pdf!)}
+                                      className="flex flex-col items-center justify-center text-red-600 group cursor-pointer hover:bg-red-50 p-1 rounded transition-colors relative"
+                                      title="Ver Documento"
+                                   >
+                                     <div className="relative">
+                                        <FileText className="w-5 h-5" />
+                                        <div className="absolute -top-1 -right-1 bg-blue-600 rounded-full p-[1px] opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Eye className="w-2 h-2 text-white" />
+                                        </div>
+                                     </div>
+                                     <span className="text-[10px] text-slate-500 max-w-[80px] truncate group-hover:text-slate-800">{item.archivo_pdf}</span>
+                                   </div>
                                 ) : (
-                                  <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-medium">
-                                    Finalizado ({calculateDays(item.fecha_inicio, item.fecha_fin)} días)
-                                  </span>
+                                   <button 
+                                     onClick={() => handleOpenUpload(item)}
+                                     className="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors flex flex-col items-center"
+                                     title="Subir Acta de Entrega/Recepción"
+                                   >
+                                     <Upload className="w-4 h-4" />
+                                     <span className="text-[10px] mt-0.5">Subir</span>
+                                   </button>
                                 )}
                               </td>
+
                             </tr>
                           ))}
                         </tbody>
                       </table>
                    </div>
                  ))}
-
-                 {/* Pagination Controls for Assignments */}
-                 {filteredAssignmentsList.length > 0 && (
-                    <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="text-sm text-slate-500">
-                            Mostrando <span className="font-medium">{((currentAssignPage - 1) * ASSIGN_ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium">{Math.min(currentAssignPage * ASSIGN_ITEMS_PER_PAGE, filteredAssignmentsList.length)}</span> de <span className="font-medium">{filteredAssignmentsList.length}</span> asignaciones
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setCurrentAssignPage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentAssignPage === 1}
-                                className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            
-                            <span className="text-sm font-medium text-slate-600 px-2">
-                                Página {currentAssignPage} de {totalAssignPages}
-                            </span>
-
-                            <button
-                                onClick={() => setCurrentAssignPage(prev => Math.min(prev + 1, totalAssignPages))}
-                                disabled={currentAssignPage === totalAssignPages}
-                                className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                )}
                </div>
+            )}
+
+            {/* Pagination Controls */}
+            {filteredAssignmentsList.length > 0 && (
+                <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-slate-500">
+                    Mostrando <span className="font-medium">{((currentAssignPage - 1) * ASSIGN_ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium">{Math.min(currentAssignPage * ASSIGN_ITEMS_PER_PAGE, filteredAssignmentsList.length)}</span> de <span className="font-medium">{filteredAssignmentsList.length}</span> asignaciones
+                </div>
+                
+                <div className="flex items-center gap-2">
+                    <button
+                    onClick={() => setCurrentAssignPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentAssignPage === 1}
+                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                    <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="hidden sm:flex gap-1">
+                    {Array.from({ length: totalAssignPages }).map((_, idx) => (
+                        <button
+                        key={idx}
+                        onClick={() => setCurrentAssignPage(idx + 1)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                            currentAssignPage === idx + 1 
+                            ? 'bg-blue-600 text-white' 
+                            : 'text-slate-600 hover:bg-slate-100'
+                        }`}
+                        >
+                        {idx + 1}
+                        </button>
+                    ))}
+                    </div>
+
+                    <button
+                    onClick={() => setCurrentAssignPage(prev => Math.min(prev + 1, totalAssignPages))}
+                    disabled={currentAssignPage === totalAssignPages}
+                    className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                    <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+                </div>
             )}
           </div>
         )}
 
         {/* -- Tab: Maintenance History -- */}
         {activeTab === 'MAINTENANCE' && (
-          <div>
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-slate-700">Filtrar por Tipo:</span>
+             <div>
+               <div className="p-4 border-b border-slate-200 flex items-center gap-4 bg-slate-50">
+                <span className="text-sm font-medium text-slate-700">Filtrar por Tipo de Equipo:</span>
                 <select 
-                  className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"
-                  value={selectedTipoId}
-                  onChange={(e) => setSelectedTipoId(e.target.value)}
+                    className="px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-sm"
+                    value={selectedTipoId}
+                    onChange={(e) => setSelectedTipoId(e.target.value)}
                 >
-                  <option value="">Todos los Tipos</option>
-                  {tipos.map(t => (
+                    <option value="">Todos los Tipos</option>
+                    {tipos.map(t => (
                     <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
+                    ))}
                 </select>
-              </div>
-              <div className="text-xs text-slate-500">
-                Muestra registros de mantenimientos preventivos y correctivos.
-              </div>
-            </div>
-
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-white">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Equipo</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo Mantenimiento</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Proveedor</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Costo</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Descripción</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {loading ? (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center">Cargando mantenimientos...</td></tr>
-                  ) : mantenimientos.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{item.fecha}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium text-blue-600">{item.equipo_codigo}</span>
-                        <span className="text-xs text-slate-500">{item.equipo_modelo}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-bold 
-                        ${item.tipo_mantenimiento === 'Preventivo' ? 'bg-indigo-100 text-indigo-800' : 'bg-orange-100 text-orange-800'}
-                      `}>
-                        {item.tipo_mantenimiento}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{item.proveedor}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{formatCurrency(item.costo)}</td>
-                    <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title={item.descripcion}>{item.descripcion}</td>
-                  </tr>
-                ))}
-                {!loading && mantenimientos.length === 0 && (
-                    <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">No hay registros de mantenimiento para este filtro.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                </div>
+                <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-white">
+                    <tr>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Equipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Tipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Proveedor / Costo</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Descripción</th>
+                    </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                    {loading ? (
+                    <tr><td colSpan={5} className="px-6 py-12 text-center">Cargando mantenimientos...</td></tr>
+                    ) : mantenimientos.map((item) => (
+                    <tr key={item.id} className="hover:bg-slate-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{item.fecha}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                           <div className="flex flex-col">
+                             <span className="text-sm font-medium text-blue-600">{item.equipo_codigo}</span>
+                             <span className="text-xs text-slate-500">{item.equipo_modelo}</span>
+                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 rounded text-xs font-bold 
+                            ${item.tipo_mantenimiento === 'Preventivo' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}
+                        `}>
+                            {item.tipo_mantenimiento}
+                        </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-slate-900">{item.proveedor}</div>
+                            <div className="text-xs font-medium text-slate-500">{formatCurrency(item.costo)}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title={item.descripcion}>{item.descripcion}</td>
+                    </tr>
+                    ))}
+                     {!loading && mantenimientos.length === 0 && (
+                        <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-500">No hay registros de mantenimiento.</td></tr>
+                    )}
+                </tbody>
+                </table>
+             </div>
         )}
 
         {/* -- Tab: Licenses Report -- */}
         {activeTab === 'LICENSES' && (
-            <div className="flex flex-col">
-                {/* Filters and Grouping Controls for Licenses */}
-                <div className="p-4 bg-slate-50 border-b border-slate-200 space-y-4 md:space-y-0 md:flex md:items-end md:gap-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
+             <div>
+                 {/* Filter Controls */}
+                 <div className="p-4 bg-slate-50 border-b border-slate-200 space-y-4 md:space-y-0 md:flex md:items-end md:gap-4">
+                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Filtrar Usuario</label>
-                            <div className="relative">
-                                <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                                <select 
-                                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                    value={licenseFilterUser}
-                                    onChange={(e) => setLicenseFilterUser(e.target.value)}
-                                >
-                                    <option value="">Todos los Usuarios</option>
-                                    {allUsuarios.map(u => (
-                                        <option key={u.id} value={u.nombre_completo}>{u.nombre_completo}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Filtrar Tipo Licencia</label>
-                            <div className="relative">
-                                <Tag className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                                <select 
-                                    className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                                    value={licenseFilterType}
-                                    onChange={(e) => setLicenseFilterType(e.target.value)}
-                                >
-                                    <option value="">Todos los Tipos</option>
-                                    {licenseTypes.map(t => (
-                                        <option key={t.id} value={t.id}>{t.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center border rounded-lg overflow-hidden bg-white">
-                        <button 
-                            onClick={() => setLicenseGrouping('NONE')}
-                            className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${licenseGrouping === 'NONE' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-                        >
-                            <Layers className="w-4 h-4" /> Plano
-                        </button>
-                        <div className="w-px h-8 bg-slate-200"></div>
-                        <button 
-                            onClick={() => setLicenseGrouping('TYPE')}
-                            className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${licenseGrouping === 'TYPE' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
-                        >
-                            <Shield className="w-4 h-4" /> Agrupar por Tipo
-                        </button>
-                    </div>
-                </div>
-
-                {/* Report Content */}
-                {Object.entries(groupedLicenses).length === 0 ? (
-                    <div className="p-12 text-center text-slate-500">No hay licencias asignadas con los filtros actuales.</div>
-                ) : (
-                    <div>
-                        {Object.entries(groupedLicenses).map(([groupKey, items]) => (
-                             <div key={groupKey} className="border-b border-slate-200 last:border-0">
-                                {licenseGrouping === 'TYPE' && (
-                                    <div className="px-6 py-3 bg-slate-50 font-semibold text-slate-700 border-b border-slate-100 flex items-center gap-2">
-                                        <Shield className="w-4 h-4 text-purple-500" />
-                                        {groupKey} <span className="text-slate-400 font-normal text-sm">({items.length} asignaciones)</span>
-                                    </div>
-                                )}
-
-                                <table className="min-w-full divide-y divide-slate-200">
-                                    {licenseGrouping === 'NONE' && (
-                                        <thead className="bg-white">
-                                            <tr>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Usuario</th>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Departamento</th>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Licencia</th>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Clave / ID</th>
-                                                <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Vencimiento</th>
-                                            </tr>
-                                        </thead>
-                                    )}
-                                    <tbody className="bg-white divide-y divide-slate-100">
-                                        {items.map(lic => (
-                                            <tr key={lic.id} className="hover:bg-slate-50">
-                                                <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{lic.usuario_nombre}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{lic.usuario_departamento}</td>
-                                                {licenseGrouping !== 'TYPE' && (
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{lic.tipo_nombre}</td>
-                                                )}
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-500">{lic.clave}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{lic.fecha_vencimiento}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Filtrar Usuario</label>
+                             <div className="relative">
+                                 <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                                 <select 
+                                     className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                     value={licenseFilterUser}
+                                     onChange={e => setLicenseFilterUser(e.target.value)}
+                                 >
+                                     <option value="">Todos los Usuarios</option>
+                                     {allUsuarios.map(u => <option key={u.id} value={u.nombre_completo}>{u.nombre_completo}</option>)}
+                                 </select>
                              </div>
-                        ))}
-                    </div>
-                )}
+                        </div>
+                         <div>
+                             <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Tipo de Licencia</label>
+                             <div className="relative">
+                                 <Key className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                                 <select 
+                                     className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                                     value={licenseFilterType}
+                                     onChange={e => setLicenseFilterType(e.target.value)}
+                                 >
+                                     <option value="">Todos los Tipos</option>
+                                     {licenseTypes.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                                 </select>
+                             </div>
+                        </div>
+                     </div>
+                     <div className="flex items-center border rounded-lg overflow-hidden bg-white">
+                        <button 
+                           onClick={() => setLicenseGrouping('NONE')}
+                           className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${licenseGrouping === 'NONE' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                           <Layers className="w-4 h-4" /> Plano
+                        </button>
+                         <div className="w-px h-8 bg-slate-200"></div>
+                        <button 
+                           onClick={() => setLicenseGrouping('TYPE')}
+                           className={`px-4 py-2 text-sm font-medium flex items-center gap-2 ${licenseGrouping === 'TYPE' ? 'bg-purple-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                           <Key className="w-4 h-4" /> Agrupar Tipo
+                        </button>
+                     </div>
+                 </div>
 
-                 {/* Pagination Controls for Licenses */}
-                 {filteredLicensesList.length > 0 && (
-                    <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                 {/* Render Licenses */}
+                 {loading ? (
+                     <div className="p-12 text-center text-slate-500">Cargando licencias...</div>
+                 ) : (
+                     <div>
+                         {Object.entries(groupedLicenses).length === 0 && (
+                             <div className="p-12 text-center text-slate-500">No se encontraron licencias asignadas con los filtros actuales.</div>
+                         )}
+
+                         {Object.entries(groupedLicenses).map(([groupKey, items]) => (
+                             <div key={groupKey} className="border-b border-slate-200 last:border-0">
+                                 {licenseGrouping !== 'NONE' && (
+                                     <div className="px-6 py-3 bg-slate-50 font-semibold text-slate-700 border-b border-slate-100 flex items-center gap-2">
+                                         <Key className="w-4 h-4 text-purple-500" />
+                                         {groupKey} <span className="text-slate-400 font-normal text-sm">({items.length})</span>
+                                     </div>
+                                 )}
+                                 <table className="min-w-full divide-y divide-slate-200">
+                                     <thead className={licenseGrouping === 'NONE' ? 'bg-white' : 'bg-slate-50/50'}>
+                                         <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Licencia</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Clave / ID</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Usuario Asignado</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Departamento</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Vencimiento</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody className="bg-white divide-y divide-slate-100">
+                                         {items.map(lic => (
+                                             <tr key={lic.id} className="hover:bg-slate-50">
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-700">{lic.tipo_nombre}</td>
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">{lic.clave}</td>
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{lic.usuario_nombre}</td>
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{lic.usuario_departamento}</td>
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{lic.fecha_vencimiento}</td>
+                                             </tr>
+                                         ))}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         ))}
+                     </div>
+                 )}
+                 
+                  {/* Pagination Controls for Licenses */}
+                    {filteredLicensesList.length > 0 && (
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="text-sm text-slate-500">
-                            Mostrando <span className="font-medium">{((currentLicensePage - 1) * LICENSE_ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium">{Math.min(currentLicensePage * LICENSE_ITEMS_PER_PAGE, filteredLicensesList.length)}</span> de <span className="font-medium">{filteredLicensesList.length}</span> licencias
+                        Mostrando <span className="font-medium">{((currentLicensePage - 1) * LICENSE_ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium">{Math.min(currentLicensePage * LICENSE_ITEMS_PER_PAGE, filteredLicensesList.length)}</span> de <span className="font-medium">{filteredLicensesList.length}</span> licencias
                         </div>
                         
                         <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setCurrentLicensePage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentLicensePage === 1}
+                            className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        
+                        <div className="hidden sm:flex gap-1">
+                            {Array.from({ length: totalLicensePages }).map((_, idx) => (
                             <button
-                                onClick={() => setCurrentLicensePage(prev => Math.max(prev - 1, 1))}
-                                disabled={currentLicensePage === 1}
-                                className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                key={idx}
+                                onClick={() => setCurrentLicensePage(idx + 1)}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
+                                currentLicensePage === idx + 1 
+                                    ? 'bg-purple-600 text-white' 
+                                    : 'text-slate-600 hover:bg-slate-100'
+                                }`}
                             >
-                                <ChevronLeft className="w-4 h-4" />
+                                {idx + 1}
                             </button>
-                            
-                            <span className="text-sm font-medium text-slate-600 px-2">
-                                Página {currentLicensePage} de {totalLicensePages}
-                            </span>
+                            ))}
+                        </div>
 
-                            <button
-                                onClick={() => setCurrentLicensePage(prev => Math.min(prev + 1, totalLicensePages))}
-                                disabled={currentLicensePage === totalLicensePages}
-                                className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
+                        <button
+                            onClick={() => setCurrentLicensePage(prev => Math.min(prev + 1, totalLicensePages))}
+                            disabled={currentLicensePage === totalLicensePages}
+                            className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
                         </div>
                     </div>
-                )}
-            </div>
+                    )}
+             </div>
         )}
 
       </div>
+
+      {/* Upload Assignment File Modal */}
+      {isUploadModalOpen && selectedAssignmentForUpload && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsUploadModalOpen(false)}>
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+              <h3 className="text-xl font-bold text-slate-800">Subir Acta de Asignación</h3>
+              <button onClick={() => setIsUploadModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-6 bg-blue-50 p-4 rounded-lg">
+              <p className="text-sm text-blue-900 font-semibold">Asignación: {selectedAssignmentForUpload.equipo_codigo}</p>
+              <p className="text-sm text-blue-800">Usuario: {selectedAssignmentForUpload.usuario_nombre}</p>
+              <p className="text-xs text-blue-600 mt-1">Fecha: {selectedAssignmentForUpload.fecha_inicio}</p>
+            </div>
+
+            <form onSubmit={handleSubmitFile} className="space-y-4">
+              <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center hover:border-blue-400 hover:bg-blue-50 transition-colors">
+                <input 
+                  type="file" 
+                  accept=".pdf"
+                  required
+                  onChange={handleFileChange}
+                  className="hidden" 
+                  id="file-upload"
+                />
+                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                  <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                  <span className="text-sm font-medium text-slate-700">
+                    {fileToUpload ? fileToUpload.name : 'Seleccionar archivo PDF'}
+                  </span>
+                  <span className="text-xs text-slate-500 mt-1">Solo formato .pdf</span>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                <button type="button" onClick={() => setIsUploadModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={!fileToUpload}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4" />
+                  Subir Archivo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View File Modal */}
+      {fileToView && (
+         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setFileToView(null)}>
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+               <div className="flex justify-between items-center p-4 border-b">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                     <FileText className="w-5 h-5 text-red-600" /> 
+                     Vista Previa: {fileToView}
+                  </h3>
+                  <button onClick={() => setFileToView(null)} className="text-slate-400 hover:text-slate-600">
+                     <X className="w-6 h-6" />
+                  </button>
+               </div>
+               <div className="flex-1 bg-slate-100 p-4 overflow-hidden flex items-center justify-center relative">
+                  {/* 
+                    Note: In a real application, `fileToView` would be a URL (Blob URL or Server URL).
+                    If it is a URL, we use an iframe. If it is a mock name (string without http), we show a placeholder.
+                  */}
+                  {fileToView.startsWith('http') || fileToView.startsWith('blob') ? (
+                      <iframe 
+                         src={fileToView} 
+                         className="w-full h-full rounded bg-white shadow-sm" 
+                         title="Document Viewer"
+                      />
+                  ) : (
+                      <div className="text-center p-8 bg-white rounded-lg shadow-sm max-w-md">
+                         <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                         <h4 className="text-lg font-semibold text-slate-700 mb-2">Simulación de Visualización</h4>
+                         <p className="text-slate-500 text-sm mb-4">
+                            En un entorno de producción, aquí se mostraría el contenido del archivo PDF: 
+                            <br/><span className="font-mono bg-slate-50 px-2 py-1 rounded mt-1 inline-block text-slate-800">{fileToView}</span>
+                         </p>
+                         <div className="p-3 bg-amber-50 border border-amber-100 rounded text-xs text-amber-800">
+                            Nota: Al estar en modo Demo/Mock, los archivos no se guardan físicamente en un servidor, por lo que no se pueden previsualizar realmente.
+                         </div>
+                      </div>
+                  )}
+               </div>
+            </div>
+         </div>
+      )}
+
     </div>
   );
 };

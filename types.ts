@@ -91,6 +91,7 @@ export interface HistorialAsignacion {
   fecha_inicio: string;
   fecha_fin: string | null; // null indica asignación actual (vigente)
   ubicacion: string;
+  archivo_pdf?: string; // URL o nombre del archivo cargado
 }
 
 export interface ReporteGarantia {
