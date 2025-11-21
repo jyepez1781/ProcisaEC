@@ -2,15 +2,23 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/mockApi';
 import { Equipo, EstadoEquipo, TipoEquipo, Usuario, Departamento } from '../types';
-import { Search, Filter, Plus, MoreVertical, Edit, UserCheck, RotateCcw, Trash2, X, Save, Wrench, Archive } from 'lucide-react';
+import { Search, Filter, Plus, MoreVertical, Edit, UserCheck, RotateCcw, Trash2, X, Save, Wrench, Archive, Layers, Box, User, Laptop } from 'lucide-react';
 
 type ModalAction = 'CREATE' | 'EDIT' | 'ASSIGN' | 'RETURN' | 'BAJA' | 'TO_MAINTENANCE' | 'MARK_DISPOSAL' | null;
+type GroupingMode = 'NONE' | 'TYPE' | 'USER';
 
 const EquipmentList: React.FC = () => {
   const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [filteredEquipos, setFilteredEquipos] = useState<Equipo[]>([]);
+  
+  // Filter States
   const [filterText, setFilterText] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [typeFilter, setTypeFilter] = useState<string>('ALL');
+  const [userFilter, setUserFilter] = useState<string>('ALL');
+  
+  // Grouping State
+  const [grouping, setGrouping] = useState<GroupingMode>('NONE');
   
   // Catalogs for forms
   const [tipos, setTipos] = useState<TipoEquipo[]>([]);
@@ -47,6 +55,7 @@ const EquipmentList: React.FC = () => {
   useEffect(() => {
     let res = equipos;
     
+    // Text Filter
     if (filterText) {
       res = res.filter(e => 
         e.codigo_activo.toLowerCase().includes(filterText.toLowerCase()) ||
@@ -55,12 +64,46 @@ const EquipmentList: React.FC = () => {
       );
     }
 
+    // Status Filter
     if (statusFilter !== 'ALL') {
       res = res.filter(e => e.estado === statusFilter);
     }
 
+    // Type Filter
+    if (typeFilter !== 'ALL') {
+      res = res.filter(e => e.tipo_equipo_id === Number(typeFilter));
+    }
+
+    // User Filter
+    if (userFilter !== 'ALL') {
+      res = res.filter(e => e.responsable_id === Number(userFilter));
+    }
+
     setFilteredEquipos(res);
-  }, [filterText, statusFilter, equipos]);
+  }, [filterText, statusFilter, typeFilter, userFilter, equipos]);
+
+  const getGroupedData = () => {
+    if (grouping === 'NONE') {
+      return { 'Todos los Equipos': filteredEquipos };
+    }
+
+    return filteredEquipos.reduce((acc, item) => {
+      let key = '';
+      if (grouping === 'TYPE') {
+        key = item.tipo_nombre || 'Sin Tipo';
+      } else if (grouping === 'USER') {
+        key = item.responsable_nombre || 'Sin Asignar / En Bodega';
+      }
+
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(item);
+      return acc;
+    }, {} as Record<string, Equipo[]>);
+  };
+
+  const groupedEquipos = getGroupedData();
 
   const getStatusColor = (estado: EstadoEquipo) => {
     switch (estado) {
@@ -77,7 +120,7 @@ const EquipmentList: React.FC = () => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
   };
 
-  // Document Generation Logic
+  // Document Generation Logic (Keeping existing logic)
   const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => {
     const printWindow = window.open('', '_blank', 'width=900,height=800');
     if (!printWindow) {
@@ -89,7 +132,6 @@ const EquipmentList: React.FC = () => {
     const fechaAsignacion = `${today.getDate()} de ${today.toLocaleString('es-ES', { month: 'long' })} del ${today.getFullYear()}`;
     const fechaCorta = today.toLocaleDateString('es-ES'); // DD/MM/YYYY
 
-    // Variables for logic
     const serieCargador = equipo.serie_cargador || 'N/A';
     const observacionesEquipo = equipo.observaciones || 'Sin observaciones';
 
@@ -102,14 +144,12 @@ const EquipmentList: React.FC = () => {
             @page { size: A4 portrait; margin: 1.5cm; }
             body { font-family: Arial, sans-serif; font-size: 10pt; line-height: 1.3; color: #000; margin: 0; }
             
-            /* General Helper Classes */
             .page-break { page-break-after: always; }
             .text-center { text-align: center; }
             .text-justify { text-align: justify; }
             .text-bold { font-weight: bold; }
             .mb-2 { margin-bottom: 10px; }
             .mb-4 { margin-bottom: 20px; }
-            .mt-4 { margin-top: 20px; }
             
             /* --- ANEXO 1 STYLES --- */
             .anexo-container { padding: 10px; }
@@ -123,14 +163,12 @@ const EquipmentList: React.FC = () => {
             /* --- CARTA RESPONSIVA STYLES --- */
             .responsiva-container { padding: 10px; }
             
-            /* Header Table */
             table.header-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
             table.header-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: middle; }
             .header-logo-cell { width: 20%; }
             .header-title-cell { width: 50%; font-weight: bold; font-size: 11pt; }
             .header-info-cell { width: 30%; font-size: 9pt; text-align: left; }
 
-            /* Equipment Table */
             table.eq-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 9pt; }
             table.eq-table th { border: 1px solid #000; background-color: #f0f0f0; padding: 5px; font-weight: bold; text-align: center; }
             table.eq-table td { border: 1px solid #000; padding: 5px; text-align: center; vertical-align: top; }
@@ -146,8 +184,6 @@ const EquipmentList: React.FC = () => {
           
           <!-- ================= PAGE 1: CARTA RESPONSIVA ================= -->
           <div class="responsiva-container">
-            
-            <!-- Header Table -->
             <table class="header-table">
               <tr>
                 <td class="header-logo-cell">
@@ -170,7 +206,6 @@ const EquipmentList: React.FC = () => {
               Recibí el siguiente equipo de cómputo propiedad de PROCISA ECUADOR S.A. para su uso durante la jornada laboral y actividades competentes a mi trabajo, dentro y fuera de las instalaciones de la empresa.
             </p>
 
-            <!-- Equipment Details Table -->
             <table class="eq-table">
               <thead>
                 <tr>
@@ -222,11 +257,7 @@ const EquipmentList: React.FC = () => {
                <div class="text-bold">${usuario.nombre_completo}</div>
                <div>${usuario.departamento_nombre || ''}</div>
             </div>
-
-            <div class="footer-note">
-              COPIA NO CONTROLADA UNA VEZ IMPRESA
-            </div>
-
+            <div class="footer-note">COPIA NO CONTROLADA UNA VEZ IMPRESA</div>
           </div>
 
           <div class="page-break"></div>
@@ -234,7 +265,7 @@ const EquipmentList: React.FC = () => {
           <!-- ================= PAGE 2: ANEXO 1 ================= -->
           <div class="anexo-container">
             <div class="anexo-header">
-              <img src="/logoAnexoCarso.png" class="logo-img" alt="Logo" onerror="this.style.display='none'; document.body.insertAdjacentHTML('afterbegin', '<p style=\'color:red\'>Error: logoAnexoCarso.png no encontrado</p>');" />
+              <img src="/logoAnexoCarso.png" class="logo-img" alt="Logo" onerror="this.style.display='none';" />
               <div class="anexo-label">Anexo 1</div>
             </div>
 
@@ -243,14 +274,8 @@ const EquipmentList: React.FC = () => {
               DECLARACION DEL EMPLEADO
             </div>
 
-            <div class="mb-4">
-              Guayaquil., ${fechaAsignacion}
-            </div>
-
-            <div class="mb-4 text-bold">
-              Sr./ Sra./ Srita.: ${usuario.nombre_completo}
-            </div>
-
+            <div class="mb-4">Guayaquil., ${fechaAsignacion}</div>
+            <div class="mb-4 text-bold">Sr./ Sra./ Srita.: ${usuario.nombre_completo}</div>
             <div class="text-justify">
               <p>PRESENTE.</p>
               <p>Con motivo de los conocimientos de que usted dispone en materia de uso de equipo y programas de cómputo y en virtud de que esta empresa posee su propio equipo y frecuentemente adquiere ó desarrolla programas y material diverso de cómputo, a los cuales usted tiene ó puede llegar a tener acceso en el desempeño de sus funciones dentro de la empresa, hacemos de su conocimiento lo siguiente:</p>
@@ -262,7 +287,6 @@ const EquipmentList: React.FC = () => {
               <p>6. Igualmente, le está prohibido permitir que terceras personas realicen las conductas anteriores ó tengan acceso, de cualquier manera, al equipo de programas de propiedad de la empresa.</p>
               <p>7. La contravención de estas disposiciones será causa de rescisión al contrato de trabajo celebrado entre la empresa y usted, sin que tal medida le exonere de la responsabilidad personal en que llegará a incurrir de acuerdo con las leyes y tratados internacionales aplicables.</p>
             </div>
-
             <div class="anexo-footer">
               <div class="signature-line">Nombre y Firma de Conformidad</div>
               <div>${usuario.nombre_completo}</div>
@@ -270,9 +294,7 @@ const EquipmentList: React.FC = () => {
             </div>
           </div>
 
-          <script>
-             window.onload = function() { setTimeout(function(){ window.print(); }, 800); }
-          </script>
+          <script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>
         </body>
       </html>
     `;
@@ -282,9 +304,7 @@ const EquipmentList: React.FC = () => {
 
   // Action Handlers
   const openModal = (action: ModalAction, equipo: Equipo | null = null) => {
-    // Validation: Strict check for Assignment
     if (action === 'ASSIGN' && equipo) {
-      // Allow assignment if Available OR Pre-Disposal (Para Baja)
       if (equipo.estado !== EstadoEquipo.DISPONIBLE && equipo.estado !== EstadoEquipo.PARA_BAJA) {
         alert("Solo se pueden asignar equipos que se encuentren en estado 'Disponible' o 'Para Baja'.");
         return;
@@ -293,9 +313,8 @@ const EquipmentList: React.FC = () => {
 
     setModalAction(action);
     setSelectedEquipo(equipo);
-    setOpenMenuId(null); // Close menu if open
+    setOpenMenuId(null);
 
-    // Init form data
     if (action === 'CREATE') {
       setFormData({
         codigo_activo: '', numero_serie: '', marca: '', modelo: '', 
@@ -309,7 +328,6 @@ const EquipmentList: React.FC = () => {
     } else if (action === 'ASSIGN') {
       setFormData({ usuario_id: usuarios[0]?.id || '', ubicacion: '', observaciones: '' });
     } else if (action === 'RETURN' || action === 'MARK_DISPOSAL') {
-      // Initialize with first warehouse if available
       setFormData({ observaciones: '', ubicacion_id: bodegas.length > 0 ? bodegas[0].id : '' });
     } else if (action === 'BAJA' || action === 'TO_MAINTENANCE') {
       setFormData({ observaciones: '' });
@@ -321,36 +339,25 @@ const EquipmentList: React.FC = () => {
     setIsLoadingAction(true);
     try {
       if (modalAction === 'CREATE') {
-        // Ensure we send the location name if an ID is selected
         let locationName = '';
         if (formData.ubicacion_id) {
            const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
            if (bodega) locationName = bodega.nombre;
         }
-        
-        await api.createEquipo({
-            ...formData,
-            ubicacion_nombre: locationName // Pass explicit location name
-        });
+        await api.createEquipo({ ...formData, ubicacion_nombre: locationName });
       } else if (modalAction === 'EDIT' && selectedEquipo) {
         await api.updateEquipo(selectedEquipo.id, formData);
       } else if (modalAction === 'ASSIGN' && selectedEquipo) {
-        // Backend double-check simulated
         await api.asignarEquipo(selectedEquipo.id, formData.usuario_id, formData.ubicacion, formData.observaciones);
-        
-        // Generate Assignment Reports (Anexo 1 & Responsiva)
         const assignedUser = usuarios.find(u => u.id === Number(formData.usuario_id));
         if (assignedUser) {
            generateAssignmentDocument(assignedUser, selectedEquipo);
         }
-
       } else if (modalAction === 'RETURN' && selectedEquipo) {
-        // Resolve location name from ID
         const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
         const nombreBodega = bodega ? bodega.nombre : 'Bodega General';
         await api.recepcionarEquipo(selectedEquipo.id, formData.observaciones, Number(formData.ubicacion_id), nombreBodega);
       } else if (modalAction === 'MARK_DISPOSAL' && selectedEquipo) {
-         // Resolve location name from ID
          const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
          const nombreBodega = bodega ? bodega.nombre : 'Bodega IT';
          await api.marcarParaBaja(selectedEquipo.id, formData.observaciones, Number(formData.ubicacion_id), nombreBodega);
@@ -359,7 +366,7 @@ const EquipmentList: React.FC = () => {
       } else if (modalAction === 'TO_MAINTENANCE' && selectedEquipo) {
         await api.enviarAMantenimiento(selectedEquipo.id, formData.observaciones);
       }
-      await loadData(); // Refresh list
+      await loadData();
       setModalAction(null);
     } catch (error: any) {
       console.error("Error processing action", error);
@@ -382,32 +389,91 @@ const EquipmentList: React.FC = () => {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input 
-            type="text"
-            placeholder="Buscar por código, serie o modelo..."
-            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-          />
+      {/* Filters & Grouping */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
+        {/* Filter Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+           <div className="relative">
+             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+             <input 
+               type="text"
+               placeholder="Buscar código, serie..."
+               className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+               value={filterText}
+               onChange={(e) => setFilterText(e.target.value)}
+             />
+           </div>
+           
+           <div className="relative">
+             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+             <select 
+               className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white text-sm"
+               value={statusFilter}
+               onChange={(e) => setStatusFilter(e.target.value)}
+             >
+               <option value="ALL">Estado: Todos</option>
+               <option value={EstadoEquipo.ACTIVO}>{EstadoEquipo.ACTIVO}</option>
+               <option value={EstadoEquipo.DISPONIBLE}>{EstadoEquipo.DISPONIBLE}</option>
+               <option value={EstadoEquipo.EN_MANTENIMIENTO}>{EstadoEquipo.EN_MANTENIMIENTO}</option>
+               <option value={EstadoEquipo.PARA_BAJA}>{EstadoEquipo.PARA_BAJA}</option>
+               <option value={EstadoEquipo.BAJA}>{EstadoEquipo.BAJA}</option>
+             </select>
+           </div>
+
+           <div className="relative">
+             <Laptop className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+             <select 
+               className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white text-sm"
+               value={typeFilter}
+               onChange={(e) => setTypeFilter(e.target.value)}
+             >
+               <option value="ALL">Tipo: Todos</option>
+               {tipos.map(t => (
+                 <option key={t.id} value={t.id}>{t.nombre}</option>
+               ))}
+             </select>
+           </div>
+
+           <div className="relative">
+             <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+             <select 
+               className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white text-sm"
+               value={userFilter}
+               onChange={(e) => setUserFilter(e.target.value)}
+             >
+               <option value="ALL">Usuario: Todos</option>
+               {usuarios.map(u => (
+                 <option key={u.id} value={u.id}>{u.nombre_completo}</option>
+               ))}
+             </select>
+           </div>
         </div>
-        <div className="relative min-w-[200px]">
-          <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <select 
-            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none appearance-none bg-white"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="ALL">Todos los Estados</option>
-            <option value={EstadoEquipo.ACTIVO}>{EstadoEquipo.ACTIVO}</option>
-            <option value={EstadoEquipo.DISPONIBLE}>{EstadoEquipo.DISPONIBLE}</option>
-            <option value={EstadoEquipo.EN_MANTENIMIENTO}>{EstadoEquipo.EN_MANTENIMIENTO}</option>
-            <option value={EstadoEquipo.PARA_BAJA}>{EstadoEquipo.PARA_BAJA}</option>
-            <option value={EstadoEquipo.BAJA}>{EstadoEquipo.BAJA}</option>
-          </select>
+
+        {/* Grouping Row */}
+        <div className="flex items-center justify-end pt-2 border-t border-slate-100">
+            <span className="text-xs font-medium text-slate-500 mr-3 uppercase tracking-wide">Agrupar por:</span>
+            <div className="flex items-center border rounded-lg overflow-hidden bg-white">
+                <button 
+                  onClick={() => setGrouping('NONE')}
+                  className={`px-3 py-1.5 text-xs font-medium flex items-center gap-2 ${grouping === 'NONE' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  <Layers className="w-3 h-3" /> Plano
+                </button>
+                <div className="w-px h-6 bg-slate-200"></div>
+                <button 
+                   onClick={() => setGrouping('TYPE')}
+                   className={`px-3 py-1.5 text-xs font-medium flex items-center gap-2 ${grouping === 'TYPE' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  <Box className="w-3 h-3" /> Tipo
+                </button>
+                <div className="w-px h-6 bg-slate-200"></div>
+                <button 
+                   onClick={() => setGrouping('USER')}
+                   className={`px-3 py-1.5 text-xs font-medium flex items-center gap-2 ${grouping === 'USER' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  <User className="w-3 h-3" /> Usuario
+                </button>
+              </div>
         </div>
       </div>
 
@@ -426,88 +492,99 @@ const EquipmentList: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {filteredEquipos.map((equipo) => (
-                <tr key={equipo.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-slate-900">{equipo.codigo_activo}</span>
-                      <span className="text-xs text-slate-500">{equipo.numero_serie}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex flex-col">
-                      <span className="text-slate-900">{equipo.marca} {equipo.modelo}</span>
-                      <span className="text-xs text-slate-500">{equipo.tipo_nombre}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-slate-900 font-medium">{formatCurrency(equipo.valor_compra)}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                    <div className="flex flex-col">
-                      <span>{equipo.ubicacion_nombre || '-'}</span>
-                      {equipo.responsable_nombre && <span className="text-xs text-blue-600 font-medium">{equipo.responsable_nombre}</span>}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(equipo.estado)}`}>
-                      {equipo.estado}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === equipo.id ? null : equipo.id); }}
-                      className="text-slate-400 hover:text-blue-600 p-1 rounded-full hover:bg-slate-100"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
-                    
-                    {/* Action Menu */}
-                    {openMenuId === equipo.id && (
-                      <div className="absolute right-8 top-0 w-48 bg-white rounded-lg shadow-lg border border-slate-100 z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
-                        <button onClick={() => openModal('EDIT', equipo)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
-                          <Edit className="w-4 h-4" /> Editar
-                        </button>
-                        {(equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.PARA_BAJA) && (
-                           <button onClick={() => openModal('ASSIGN', equipo)} className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2">
-                             <UserCheck className="w-4 h-4" /> Asignar
-                           </button>
-                        )}
-                        {equipo.estado === EstadoEquipo.ACTIVO && (
-                           <button onClick={() => openModal('RETURN', equipo)} className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2">
-                             <RotateCcw className="w-4 h-4" /> Recepcionar
-                           </button>
-                        )}
-                        {/* Allow sending to Maintenance if available or active (will be unassigned) */}
-                        {(equipo.estado === EstadoEquipo.ACTIVO || equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.PARA_BAJA) && (
-                          <button onClick={() => openModal('TO_MAINTENANCE', equipo)} className="w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2">
-                            <Wrench className="w-4 h-4" /> Mantenimiento
-                          </button>
-                        )}
-                        
-                        {/* Mark for Disposal - Available if not already Baja or Para Baja */}
-                        {(equipo.estado !== EstadoEquipo.BAJA && equipo.estado !== EstadoEquipo.PARA_BAJA) && (
-                          <button onClick={() => openModal('MARK_DISPOSAL', equipo)} className="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2">
-                            <Archive className="w-4 h-4" /> Enviar a Pre-Baja
-                          </button>
-                        )}
-
-                        {equipo.estado !== EstadoEquipo.BAJA && (
-                          <button onClick={() => openModal('BAJA', equipo)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
-                            <Trash2 className="w-4 h-4" /> Dar de Baja
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {filteredEquipos.length === 0 && (
-                <tr>
+              {Object.entries(groupedEquipos).length === 0 ? (
+                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                    No se encontraron equipos
+                    No se encontraron equipos con los filtros aplicados.
                   </td>
                 </tr>
+              ) : (
+                Object.entries(groupedEquipos).map(([groupKey, items]) => {
+                  const equipmentList = items as Equipo[];
+                  return (
+                  <React.Fragment key={groupKey}>
+                    {grouping !== 'NONE' && (
+                      <tr className="bg-slate-100">
+                        <td colSpan={6} className="px-6 py-2 text-sm font-bold text-slate-700 flex items-center gap-2 border-b border-slate-200">
+                           {grouping === 'TYPE' ? <Box className="w-4 h-4 text-blue-600" /> : <User className="w-4 h-4 text-blue-600" />}
+                           {groupKey} <span className="text-xs font-normal text-slate-500 ml-2">({equipmentList.length} items)</span>
+                        </td>
+                      </tr>
+                    )}
+                    {equipmentList.map((equipo) => (
+                      <tr key={equipo.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-slate-900">{equipo.codigo_activo}</span>
+                            <span className="text-xs text-slate-500">{equipo.numero_serie}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-slate-900">{equipo.marca} {equipo.modelo}</span>
+                            <span className="text-xs text-slate-500">{equipo.tipo_nombre}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-slate-900 font-medium">{formatCurrency(equipo.valor_compra)}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                          <div className="flex flex-col">
+                            <span>{equipo.ubicacion_nombre || '-'}</span>
+                            {equipo.responsable_nombre && <span className="text-xs text-blue-600 font-medium">{equipo.responsable_nombre}</span>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(equipo.estado)}`}>
+                            {equipo.estado}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(openMenuId === equipo.id ? null : equipo.id); }}
+                            className="text-slate-400 hover:text-blue-600 p-1 rounded-full hover:bg-slate-100"
+                          >
+                            <MoreVertical className="w-5 h-5" />
+                          </button>
+                          
+                          {openMenuId === equipo.id && (
+                            <div className="absolute right-8 top-0 w-48 bg-white rounded-lg shadow-lg border border-slate-100 z-50 py-1 animate-in fade-in zoom-in-95 duration-100">
+                              <button onClick={() => openModal('EDIT', equipo)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                                <Edit className="w-4 h-4" /> Editar
+                              </button>
+                              {(equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.PARA_BAJA) && (
+                                <button onClick={() => openModal('ASSIGN', equipo)} className="w-full text-left px-4 py-2 text-sm text-green-600 hover:bg-green-50 flex items-center gap-2">
+                                  <UserCheck className="w-4 h-4" /> Asignar
+                                </button>
+                              )}
+                              {equipo.estado === EstadoEquipo.ACTIVO && (
+                                <button onClick={() => openModal('RETURN', equipo)} className="w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2">
+                                  <RotateCcw className="w-4 h-4" /> Recepcionar
+                                </button>
+                              )}
+                              {(equipo.estado === EstadoEquipo.ACTIVO || equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.PARA_BAJA) && (
+                                <button onClick={() => openModal('TO_MAINTENANCE', equipo)} className="w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-amber-50 flex items-center gap-2">
+                                  <Wrench className="w-4 h-4" /> Mantenimiento
+                                </button>
+                              )}
+                              {(equipo.estado !== EstadoEquipo.BAJA && equipo.estado !== EstadoEquipo.PARA_BAJA) && (
+                                <button onClick={() => openModal('MARK_DISPOSAL', equipo)} className="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2">
+                                  <Archive className="w-4 h-4" /> Enviar a Pre-Baja
+                                </button>
+                              )}
+                              {equipo.estado !== EstadoEquipo.BAJA && (
+                                <button onClick={() => openModal('BAJA', equipo)} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                  <Trash2 className="w-4 h-4" /> Dar de Baja
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -520,7 +597,7 @@ const EquipmentList: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal (Forms) */}
       {modalAction && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setModalAction(null)}>
           <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6" onClick={(e) => e.stopPropagation()}>
@@ -575,9 +652,7 @@ const EquipmentList: React.FC = () => {
                         {tipos.map(t => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                         </select>
                     </div>
-                    
-                     {/* New Location Select for Create Action */}
-                     {modalAction === 'CREATE' && (
+                    {modalAction === 'CREATE' && (
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Ubicación Inicial (Bodega)</label>
                             <select 
@@ -595,7 +670,6 @@ const EquipmentList: React.FC = () => {
                      )}
                   </div>
 
-                  {/* Charger Serial for Laptops */}
                   {(() => {
                     const selectedType = tipos.find(t => t.id === Number(formData.tipo_equipo_id));
                     if (selectedType?.nombre.toLowerCase().includes('laptop')) {
@@ -694,7 +768,7 @@ const EquipmentList: React.FC = () => {
                 </>
               )}
 
-              {/* MARK FOR DISPOSAL Fields (PRE_BAJA) */}
+              {/* MARK FOR DISPOSAL Fields */}
               {modalAction === 'MARK_DISPOSAL' && (
                 <>
                   <div className="p-3 bg-orange-50 border border-orange-100 rounded-lg mb-4">
@@ -703,7 +777,6 @@ const EquipmentList: React.FC = () => {
                         Debe seleccionar la bodega donde permanecerá hasta su disposición final.
                      </p>
                   </div>
-
                   <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Ubicación (Bodega IT)</label>
                       <select 

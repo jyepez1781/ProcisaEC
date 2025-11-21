@@ -194,6 +194,13 @@ export const api = {
   },
   deleteTipoEquipo: async (id: number) => {
     await simulateDelay();
+    
+    // VALIDACIÓN: No permitir eliminar si hay equipos asociados
+    const hasLinkedEquipments = MOCK_EQUIPOS.some(e => e.tipo_equipo_id === id);
+    if (hasLinkedEquipments) {
+      throw new Error("No se puede eliminar este tipo de equipo porque existen activos asociados a él.");
+    }
+
     MOCK_TIPOS = MOCK_TIPOS.filter(t => t.id !== id);
   },
 

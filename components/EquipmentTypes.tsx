@@ -36,8 +36,12 @@ const EquipmentTypes: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     if (window.confirm('¿Estás seguro de eliminar este tipo de equipo?')) {
-      await api.deleteTipoEquipo(id);
-      loadData();
+      try {
+        await api.deleteTipoEquipo(id);
+        loadData();
+      } catch (error: any) {
+        alert(error.message);
+      }
     }
   };
 
