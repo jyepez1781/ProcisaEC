@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Equipo } from '../../types';
 import { reportService } from '../../services/reportService';
 import { formatCurrency, calculateAge } from '../../utils/formatters';
-import { AlertOctagon, Download, TrendingUp, Search, MapPin, User, Box } from 'lucide-react';
+import { AlertOctagon, Download, TrendingUp, Search, MapPin, User, Box, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
+import { openPrintPreview } from '../../utils/documentGenerator';
 
 const RENOVATION_TYPES = ['desktop', 'laptop', 'workstation', 'portatil', 'notebook'];
 
@@ -36,24 +37,18 @@ export const ReplacementTab: React.FC = () => {
                 reportService.getEquipos()
             ]);
             
-            // 1. Definir el universo: Solo equipos de cómputo (Desktop, Laptop, Workstation)
-            // El 20% se calcula sobre esta flota específica, no sobre monitores o impresoras.
             const relevantFleet = allEquipos.filter(isRenovationType);
             const totalCount = relevantFleet.length;
             setTotalEquiposCount(totalCount);
             
-            // Regla: Solo el 20% del total de equipos de cómputo
             const maxAllowed = Math.ceil(totalCount * 0.20);
             
-            // 2. Filtrar candidatos: Deben ser viejos (rawCandidates) Y ser del tipo permitido
             const eligibleCandidates = rawCandidates.filter(isRenovationType);
 
-            // 3. Ordenar por fecha de compra (Más antiguos primero)
             const sortedCandidates = eligibleCandidates.sort((a, b) => 
                 new Date(a.fecha_compra).getTime() - new Date(b.fecha_compra).getTime()
             );
 
-            // 4. Tomar solo hasta cumplir el 20% de la flota relevante
             const finalCandidates = sortedCandidates.slice(0, maxAllowed);
             
             setCandidates(finalCandidates);
@@ -72,11 +67,9 @@ export const ReplacementTab: React.FC = () => {
     loadData();
   }, []);
 
-  // Efecto para Filtrar y Agrupar cuando cambia el texto o los datos base
   useEffect(() => {
     let result = candidates;
 
-    // 1. Filtro de Texto
     if (filterText) {
         const lower = filterText.toLowerCase();
         result = result.filter(e => 
@@ -87,7 +80,6 @@ export const ReplacementTab: React.FC = () => {
         );
     }
 
-    // 2. Agrupación por Tipo
     const grouped = result.reduce((acc, item) => {
         const key = item.tipo_nombre || 'Otros';
         if (!acc[key]) acc[key] = [];
@@ -98,6 +90,18 @@ export const ReplacementTab: React.FC = () => {
     setProcessedList(grouped);
   }, [candidates, filterText]);
 
+  const prepareExportData = () => {
+    return candidates.map(e => ({
+      Codigo: e.codigo_activo,
+      Equipo: `${e.marca} ${e.modelo}`,
+      Tipo: e.tipo_nombre,
+      Fecha_Compra: e.fecha_compra,
+      Antiguedad: `${calculateAge(e.fecha_compra)} años`,
+      Ubicacion: e.ubicacion_nombre || 'Sin ubicación',
+      Usuario: e.responsable_nombre || 'No asignado',
+      Valor_Libros: formatCurrency(e.valor_compra)
+    }));
+  };
 
   return (
     <div className="space-y-6">
@@ -147,12 +151,20 @@ export const ReplacementTab: React.FC = () => {
                     onChange={(e) => setFilterText(e.target.value)}
                 />
             </div>
-            <button 
-                onClick={() => downloadCSV(candidates, 'Plan_Renovacion_Prioritario')}
-                className="flex items-center gap-2 text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
-            >
-                <Download className="w-4 h-4" /> Exportar Plan
-            </button>
+            <div className="flex gap-2">
+                <button 
+                    onClick={() => downloadCSV(prepareExportData(), 'Plan_Renovacion_Prioritario')}
+                    className="flex items-center gap-2 text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
+                >
+                    <Download className="w-4 h-4" /> Excel
+                </button>
+                <button 
+                    onClick={() => openPrintPreview(prepareExportData(), 'Plan de Renovacion Prioritario')}
+                    className="flex items-center gap-2 text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
+                >
+                    <Printer className="w-4 h-4" /> PDF
+                </button>
+            </div>
        </div>
 
        {/* Grouped List */}
@@ -168,7 +180,7 @@ export const ReplacementTab: React.FC = () => {
                  <p className="text-slate-500 text-sm">La flota de cómputo actual cumple con los estándares o no coincide con los filtros.</p>
              </div>
           ) : (
-             Object.entries(processedList).map(([type, items]) => (
+             Object.entries(processedList).map(([type, items]: [string, Equipo[]]) => (
                 <div key={type}>
                     <div className="bg-slate-100 px-4 py-2 border-b border-slate-200 flex items-center gap-2 font-semibold text-slate-700 text-sm">
                         <Box className="w-4 h-4 text-blue-600" />

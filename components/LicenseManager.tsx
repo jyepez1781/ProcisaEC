@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/mockApi';
 import { TipoLicencia, Licencia, Usuario } from '../types';
@@ -15,7 +14,8 @@ const LicenseManager: React.FC = () => {
   // Filters & Grouping State
   const [filterTypeId, setFilterTypeId] = useState<string>('');
   const [filterUserId, setFilterUserId] = useState<string>('');
-  const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('NONE');
+  // Set default grouping to TYPE
+  const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('TYPE');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);

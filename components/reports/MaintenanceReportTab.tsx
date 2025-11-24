@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { RegistroMantenimiento } from '../../types';
 import { reportService } from '../../services/reportService';
 import { formatCurrency } from '../../utils/formatters';
-import { Wrench, Download } from 'lucide-react';
+import { Wrench, Download, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
+import { openPrintPreview } from '../../utils/documentGenerator';
 
 export const MaintenanceReportTab: React.FC = () => {
   const [registros, setRegistros] = useState<RegistroMantenimiento[]>([]);
@@ -18,6 +20,17 @@ export const MaintenanceReportTab: React.FC = () => {
 
   const totalCost = registros.reduce((acc, curr) => acc + curr.costo, 0);
 
+  const prepareExportData = () => {
+    return registros.map(reg => ({
+      Fecha: reg.fecha,
+      Equipo: `${reg.equipo_codigo} - ${reg.equipo_modelo}`,
+      Tipo: reg.tipo_mantenimiento,
+      Proveedor: reg.proveedor,
+      Costo: formatCurrency(reg.costo),
+      Detalle: reg.descripcion
+    }));
+  };
+
   return (
     <div className="space-y-6">
         {/* Summary Cards */}
@@ -30,12 +43,18 @@ export const MaintenanceReportTab: React.FC = () => {
                 <p className="text-sm text-amber-600 font-medium">Costo Total Acumulado</p>
                 <p className="text-2xl font-bold text-amber-800">{formatCurrency(totalCost)}</p>
             </div>
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center justify-center">
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex items-center justify-center gap-2">
                 <button 
-                    onClick={() => downloadCSV(registros, 'Reporte_Mantenimiento')}
-                    className="flex items-center gap-2 bg-white border border-slate-300 shadow-sm px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-50 font-medium"
+                    onClick={() => downloadCSV(prepareExportData(), 'Reporte_Mantenimiento')}
+                    className="flex items-center gap-2 bg-white border border-slate-300 shadow-sm px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm"
                 >
-                    <Download className="w-4 h-4" /> Descargar Excel
+                    <Download className="w-4 h-4" /> Excel
+                </button>
+                <button 
+                    onClick={() => openPrintPreview(prepareExportData(), 'Historial de Mantenimientos')}
+                    className="flex items-center gap-2 bg-white border border-slate-300 shadow-sm px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm"
+                >
+                    <Printer className="w-4 h-4" /> PDF
                 </button>
             </div>
         </div>

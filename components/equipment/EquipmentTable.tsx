@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Equipo, EstadoEquipo } from '../../types';
 import { MoreVertical, Edit, UserCheck, RotateCcw, Wrench, Archive, Trash2, Box, User } from 'lucide-react';
@@ -37,7 +36,7 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
           <tbody className="bg-white divide-y divide-slate-200">
             {Object.keys(groupedEquipos).length === 0 ? (
               <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">No hay registros.</td></tr>
-            ) : Object.entries(groupedEquipos).map(([groupKey, items]) => (
+            ) : Object.entries(groupedEquipos).map(([groupKey, items]: [string, Equipo[]]) => (
               <React.Fragment key={groupKey}>
                 {grouping !== 'NONE' && (
                   <tr className="bg-slate-100">

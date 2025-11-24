@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Licencia, TipoLicencia, Usuario } from '../../types';
 import { reportService } from '../../services/reportService';
-import { Filter, User, Box, Layers, Download, Key } from 'lucide-react';
+import { Filter, User, Box, Layers, Download, Key, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
+import { openPrintPreview } from '../../utils/documentGenerator';
 
 export const LicenseReportTab: React.FC = () => {
   const [licencias, setLicencias] = useState<Licencia[]>([]);
@@ -15,8 +16,8 @@ export const LicenseReportTab: React.FC = () => {
   const [filterType, setFilterType] = useState('');
   const [filterUser, setFilterUser] = useState('');
   
-  // Grouping
-  const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('NONE');
+  // Grouping - Default to TYPE
+  const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('TYPE');
 
   useEffect(() => {
     const loadData = async () => {
@@ -54,6 +55,17 @@ export const LicenseReportTab: React.FC = () => {
     acc[key].push(item);
     return acc;
   }, {} as Record<string, Licencia[]>);
+
+  const prepareExportData = () => {
+    return filteredData.map(l => ({
+      Tipo_Licencia: l.tipo_nombre,
+      Clave_ID: l.clave,
+      Vencimiento: l.fecha_vencimiento,
+      Estado: l.usuario_id ? 'Asignada' : 'Disponible',
+      Usuario: l.usuario_nombre || '-',
+      Departamento: l.usuario_departamento || '-'
+    }));
+  };
 
   return (
     <div className="space-y-4">
@@ -106,12 +118,20 @@ export const LicenseReportTab: React.FC = () => {
              
              <div className="flex flex-col">
                 <label className="text-[10px] font-bold text-transparent uppercase mb-1">.</label>
-                <button 
-                    onClick={() => downloadCSV(filteredData, 'Reporte_Licencias_Asignadas')}
-                    className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded text-sm font-medium h-[34px]"
-                >
-                    <Download className="w-4 h-4" /> Exportar
-                </button>
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => downloadCSV(prepareExportData(), 'Reporte_Licencias_Asignadas')}
+                        className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded text-sm font-medium h-[34px]"
+                    >
+                        <Download className="w-4 h-4" /> Exportar
+                    </button>
+                    <button 
+                        onClick={() => openPrintPreview(prepareExportData(), 'Reporte de Licencias Asignadas')}
+                        className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded text-sm font-medium h-[34px]"
+                    >
+                        <Printer className="w-4 h-4" /> PDF
+                    </button>
+                </div>
              </div>
          </div>
        </div>
@@ -123,7 +143,7 @@ export const LicenseReportTab: React.FC = () => {
           ) : Object.keys(groupedData).length === 0 ? (
              <div className="p-8 text-center text-slate-500">No se encontraron licencias asignadas con los filtros seleccionados.</div>
           ) : (
-             Object.entries(groupedData).map(([groupKey, items]) => (
+             Object.entries(groupedData).map(([groupKey, items]: [string, Licencia[]]) => (
                 <div key={groupKey}>
                     {grouping !== 'NONE' && (
                         <div className="bg-purple-50 px-4 py-2 border-b border-purple-100 flex items-center gap-2">

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Equipo, TipoEquipo, Usuario, Departamento, EstadoEquipo } from '../types';
 import { equipmentService, catalogService } from '../services/equipmentService';
@@ -22,8 +21,8 @@ export const useEquipment = () => {
     user: 'ALL'
   });
 
-  // Grouping
-  const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('NONE');
+  // Grouping - Default set to TYPE
+  const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('TYPE');
 
   useEffect(() => {
     loadData();

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ReporteGarantia } from '../../types';
 import { reportService } from '../../services/reportService';
-import { AlertTriangle, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, ShieldCheck, Download, Printer } from 'lucide-react';
+import { downloadCSV } from '../../utils/csvExporter';
+import { openPrintPreview } from '../../utils/documentGenerator';
 
 export const WarrantiesTab: React.FC = () => {
   const [garantias, setGarantias] = useState<ReporteGarantia[]>([]);
@@ -14,13 +16,41 @@ export const WarrantiesTab: React.FC = () => {
     });
   }, []);
 
+  const prepareData = () => {
+      return garantias.map(g => ({
+          Codigo: g.equipo.codigo_activo,
+          Marca: g.equipo.marca,
+          Modelo: g.equipo.modelo,
+          Responsable: g.equipo.responsable_nombre || 'N/A',
+          Vencimiento: g.fecha_vencimiento,
+          Dias_Restantes: g.dias_restantes
+      }));
+  }
+
   return (
     <div className="space-y-4">
-        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
-            <div>
-                <h4 className="font-bold text-orange-800">Equipos próximos a vencer garantía</h4>
-                <p className="text-sm text-orange-700">Este reporte muestra los equipos activos cuya garantía expira en los próximos 90 días.</p>
+        <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-3 w-full sm:w-auto flex-1">
+                <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                <div>
+                    <h4 className="font-bold text-orange-800">Equipos próximos a vencer garantía</h4>
+                    <p className="text-sm text-orange-700">Este reporte muestra los equipos activos cuya garantía expira en los próximos 90 días.</p>
+                </div>
+            </div>
+            
+            <div className="flex gap-2">
+                <button 
+                    onClick={() => downloadCSV(prepareData(), 'Reporte_Garantias')}
+                    className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                    <Download className="w-4 h-4" /> Excel
+                </button>
+                <button 
+                    onClick={() => openPrintPreview(prepareData(), 'Reporte de Garantias Proximas')}
+                    className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                    <Printer className="w-4 h-4" /> PDF
+                </button>
             </div>
         </div>
 

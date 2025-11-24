@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/mockApi';
 import { Usuario, Departamento, Puesto, RolUsuario } from '../types';
-import { UserPlus, Edit, X, Save, ChevronLeft, ChevronRight, UserX, AlertTriangle } from 'lucide-react';
+import { UserPlus, Edit, X, Save, ChevronLeft, ChevronRight, UserX, AlertTriangle, Search } from 'lucide-react';
 
 interface UserManagerProps {
   currentUser: Usuario | null;
@@ -13,6 +13,9 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser }) => {
   const [depts, setDepts] = useState<Departamento[]>([]);
   const [puestos, setPuestos] = useState<Puesto[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter State
+  const [filterText, setFilterText] = useState('');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,6 +33,11 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser }) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterText]);
 
   const loadData = async () => {
     setLoading(true);
@@ -49,9 +57,21 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser }) => {
     }
   };
 
-  // Pagination Logic
-  const totalPages = Math.ceil(users.length / ITEMS_PER_PAGE);
-  const paginatedUsers = users.slice(
+  // Filter Logic
+  const filteredUsers = users.filter(user => {
+    if (!filterText) return true;
+    const searchText = filterText.toLowerCase();
+    return (
+      user.nombre_completo.toLowerCase().includes(searchText) ||
+      user.nombre_usuario.toLowerCase().includes(searchText) ||
+      user.correo.toLowerCase().includes(searchText) ||
+      (user.numero_empleado && user.numero_empleado.toLowerCase().includes(searchText))
+    );
+  });
+
+  // Pagination Logic (Applied on filtered list)
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -130,12 +150,25 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser }) => {
 
   return (
     <div className="space-y-6">
-        {/* Header and Add Button */}
-        <div className="flex justify-between items-center">
+        {/* Header and Toolbar */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <h2 className="text-2xl font-bold text-slate-800">Administración de Usuarios</h2>
-            <button onClick={() => handleOpenModal()} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-                <UserPlus className="w-4 h-4" /> Nuevo Usuario
-            </button>
+            
+            <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                    <input 
+                        type="text"
+                        placeholder="Buscar usuario..."
+                        className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                    />
+                </div>
+                <button onClick={() => handleOpenModal()} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap">
+                    <UserPlus className="w-4 h-4" /> Nuevo Usuario
+                </button>
+            </div>
         </div>
 
         {/* Table */}
@@ -215,15 +248,22 @@ const UserManager: React.FC<UserManagerProps> = ({ currentUser }) => {
                                     <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No se encontraron usuarios.</td>
                                 </tr>
                             )}
+                            {users.length > 0 && filteredUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                                        No se encontraron resultados para "{filterText}".
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
                 
                 {/* Pagination Controls */}
-                {users.length > 0 && (
+                {filteredUsers.length > 0 && (
                   <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-sm text-slate-500">
-                      Mostrando <span className="font-medium">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, users.length)}</span> de <span className="font-medium">{users.length}</span> usuarios
+                      Mostrando <span className="font-medium">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)}</span> de <span className="font-medium">{filteredUsers.length}</span> usuarios
                     </div>
                     
                     <div className="flex items-center gap-2">

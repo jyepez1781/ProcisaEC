@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { HistorialMovimiento, TipoEquipo } from '../../types';
 import { reportService } from '../../services/reportService';
-import { Filter, Calendar, Download } from 'lucide-react';
+import { Filter, Calendar, Download, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
+import { openPrintPreview } from '../../utils/documentGenerator';
 
 export const HistoryTab: React.FC = () => {
   const [historial, setHistorial] = useState<HistorialMovimiento[]>([]);
@@ -30,7 +32,6 @@ export const HistoryTab: React.FC = () => {
     }
   };
 
-  // Handle filter change with API reload
   const handleTypeChange = async (typeId: string) => {
     setFilterType(typeId);
     setLoading(true);
@@ -49,6 +50,16 @@ export const HistoryTab: React.FC = () => {
     }
   };
 
+  const prepareExportData = () => {
+    return historial.map(h => ({
+      Fecha: h.fecha,
+      Accion: h.tipo_accion,
+      Equipo_Codigo: h.equipo_codigo,
+      Responsable: h.usuario_responsable,
+      Detalle: h.detalle
+    }));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -65,12 +76,20 @@ export const HistoryTab: React.FC = () => {
                 </select>
             </div>
          </div>
-         <button 
-            onClick={() => downloadCSV(historial, 'Historial_Movimientos')}
-            className="flex items-center gap-2 text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
-         >
-            <Download className="w-4 h-4" /> Exportar CSV
-         </button>
+         <div className="flex gap-2">
+            <button 
+                onClick={() => downloadCSV(prepareExportData(), 'Historial_Movimientos')}
+                className="flex items-center gap-2 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
+            >
+                <Download className="w-4 h-4" /> Excel
+            </button>
+            <button 
+                onClick={() => openPrintPreview(prepareExportData(), 'Bitacora de Movimientos')}
+                className="flex items-center gap-2 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
+            >
+                <Printer className="w-4 h-4" /> PDF
+            </button>
+         </div>
       </div>
 
       <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
