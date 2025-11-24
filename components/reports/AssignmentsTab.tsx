@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { HistorialAsignacion, Usuario, Equipo, Licencia } from '../../types';
 import { reportService } from '../../services/reportService';
 import { Eye, User, Laptop, Key, Download, Search, FileText, Printer } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { downloadCSV } from '../../utils/csvExporter';
-import { openPrintPreview } from '../../utils/documentGenerator';
+import { printCustomHTML } from '../../utils/documentGenerator';
 
 interface AssignmentsTabProps {
   usuarios: Usuario[];
@@ -74,27 +75,136 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
   const prepareExportData = () => {
     return userAssetsList.flatMap(item => {
       const eqRows = item.equipment.map(e => ({
-        Usuario: item.user.nombre_completo,
-        Departamento: item.user.departamento_nombre,
-        Tipo_Activo: 'EQUIPO',
-        Descripcion: `${e.equipo_modelo}`,
-        Identificador: e.equipo_codigo,
-        Fecha_Asignacion: e.fecha_inicio,
-        Vencimiento: 'N/A'
+        'Usuario': item.user.nombre_completo,
+        'Departamento': item.user.departamento_nombre || 'Sin Departamento',
+        'Tipo Activo': 'EQUIPO',
+        'Descripción': e.equipo_modelo,
+        'Código': e.equipo_codigo,
+        'Fecha Asignación': e.fecha_inicio,
+        'Vencimiento': 'N/A'
       }));
       
       const licRows = item.licenses.map(l => ({
-        Usuario: item.user.nombre_completo,
-        Departamento: item.user.departamento_nombre,
-        Tipo_Activo: 'LICENCIA',
-        Descripcion: l.tipo_nombre,
-        Identificador: l.clave,
-        Fecha_Asignacion: 'N/A', 
-        Vencimiento: l.fecha_vencimiento
+        'Usuario': item.user.nombre_completo,
+        'Departamento': item.user.departamento_nombre || 'Sin Departamento',
+        'Tipo Activo': 'LICENCIA',
+        'Descripción': l.tipo_nombre,
+        'Código': l.clave,
+        'Fecha Asignación': 'N/A', 
+        'Vencimiento': l.fecha_vencimiento
       }));
 
       return [...eqRows, ...licRows];
     });
+  };
+
+  const handlePrintPDF = () => {
+    let htmlContent = `
+      <style>
+        .user-card { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 25px; overflow: hidden; page-break-inside: avoid; }
+        .user-header { background-color: #f8fafc; padding: 12px 16px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .avatar { width: 32px; height: 32px; background-color: #2563eb; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; }
+        .user-info { flex: 1; }
+        .user-name { font-size: 15px; font-weight: 700; color: #1e293b; }
+        .user-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .counts { display: flex; gap: 8px; }
+        .count-badge { padding: 4px 10px; border-radius: 99px; font-size: 10px; font-weight: 600; border: 1px solid transparent; }
+        .count-eq { background-color: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
+        .count-lic { background-color: #faf5ff; color: #7e22ce; border-color: #f3e8ff; }
+        
+        .grid-container { display: flex; border-top: 1px solid #e2e8f0; }
+        .col-section { flex: 1; border-right: 1px solid #e2e8f0; }
+        .col-section:last-child { border-right: none; }
+        .section-header { padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; }
+        .header-eq { background-color: #eff6ff; color: #1e40af; border-bottom: 1px solid #dbeafe; }
+        .header-lic { background-color: #faf5ff; color: #6b21a8; border-bottom: 1px solid #f3e8ff; }
+        
+        .empty-state { padding: 15px; text-align: center; color: #cbd5e1; font-style: italic; font-size: 11px; }
+        
+        table.inner-table { width: 100%; border-collapse: collapse; }
+        table.inner-table th { background: transparent; border-bottom: 1px solid #f1f5f9; padding: 6px 12px; font-size: 10px; text-align: left; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        table.inner-table td { padding: 6px 12px; font-size: 11px; border-bottom: 1px solid #f8fafc; color: #334155; }
+        table.inner-table tr:last-child td { border-bottom: none; }
+      </style>
+    `;
+
+    if (userAssetsList.length === 0) {
+       htmlContent += `<div style="text-align:center; padding: 40px; color: #64748b;">No hay datos para mostrar con los filtros actuales.</div>`;
+    } else {
+       userAssetsList.forEach(({ user, equipment, licenses }) => {
+          htmlContent += `
+            <div class="user-card">
+               <div class="user-header">
+                  <div style="display:flex; align-items:center;">
+                     <div class="avatar">${user.nombres.charAt(0)}${user.apellidos.charAt(0)}</div>
+                     <div class="user-info">
+                        <div class="user-name">${user.nombre_completo}</div>
+                        <div class="user-meta">${user.departamento_nombre || 'Sin Depto'} | ${user.puesto_nombre || 'Sin Cargo'}</div>
+                     </div>
+                  </div>
+                  <div class="counts">
+                     <span class="count-badge count-eq">Equipos: ${equipment.length}</span>
+                     <span class="count-badge count-lic">Licencias: ${licenses.length}</span>
+                  </div>
+               </div>
+               
+               <div class="grid-container">
+                  <!-- Equipment Column -->
+                  <div class="col-section">
+                     <div class="section-header header-eq">Equipos Asignados</div>
+                     ${equipment.length > 0 ? `
+                        <table class="inner-table">
+                           <thead>
+                              <tr>
+                                 <th>Código</th>
+                                 <th>Modelo</th>
+                                 <th>Fecha</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              ${equipment.map(e => `
+                                 <tr>
+                                    <td style="font-weight:500;">${e.equipo_codigo}</td>
+                                    <td>${e.equipo_modelo}</td>
+                                    <td>${e.fecha_inicio}</td>
+                                 </tr>
+                              `).join('')}
+                           </tbody>
+                        </table>
+                     ` : `<div class="empty-state">Sin equipos</div>`}
+                  </div>
+                  
+                  <!-- Licenses Column -->
+                  <div class="col-section">
+                     <div class="section-header header-lic">Licencias Asignadas</div>
+                     ${licenses.length > 0 ? `
+                        <table class="inner-table">
+                           <thead>
+                              <tr>
+                                 <th>Software</th>
+                                 <th>Clave / ID</th>
+                                 <th>Vencimiento</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              ${licenses.map(l => `
+                                 <tr>
+                                    <td style="font-weight:500;">${l.tipo_nombre}</td>
+                                    <td style="font-family:monospace; color:#64748b;">${l.clave}</td>
+                                    <td>${l.fecha_vencimiento}</td>
+                                 </tr>
+                              `).join('')}
+                           </tbody>
+                        </table>
+                     ` : `<div class="empty-state">Sin licencias</div>`}
+                  </div>
+               </div>
+            </div>
+          `;
+       });
+    }
+
+    printCustomHTML(htmlContent, 'Reporte de Activos por Usuario');
   };
 
   return (
@@ -123,7 +233,7 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
                 <Download className="w-4 h-4" /> Excel
             </button>
             <button 
-                onClick={() => openPrintPreview(prepareExportData(), 'Reporte Activos por Usuario')}
+                onClick={handlePrintPDF}
                 className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
                 <Printer className="w-4 h-4" /> PDF

@@ -55,8 +55,12 @@ const EntityManager: React.FC<EntityManagerProps> = ({ title, items, onCreate, o
 
   const handleDelete = async (id: number) => {
     if (window.confirm(`¿Estás seguro de eliminar este ${title.toLowerCase()}?`)) {
-      await onDelete(id);
-      onRefresh();
+      try {
+        await onDelete(id);
+        onRefresh();
+      } catch (error: any) {
+        alert(error.message || "Error al eliminar el registro.");
+      }
     }
   };
 
@@ -103,7 +107,11 @@ const EntityManager: React.FC<EntityManagerProps> = ({ title, items, onCreate, o
                   <button onClick={() => handleOpenEdit(item)} className="text-blue-600 hover:text-blue-800 mr-3 p-1">
                     <Edit className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(item.id)} className="text-red-600 hover:text-red-800 p-1">
+                  <button 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(item.id); }} 
+                    className="text-red-600 hover:text-red-800 p-1"
+                    title="Eliminar"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </td>

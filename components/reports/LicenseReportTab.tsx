@@ -4,7 +4,7 @@ import { Licencia, TipoLicencia, Usuario } from '../../types';
 import { reportService } from '../../services/reportService';
 import { Filter, User, Box, Layers, Download, Key, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
-import { openPrintPreview } from '../../utils/documentGenerator';
+import { openPrintPreview, printCustomHTML } from '../../utils/documentGenerator';
 
 export const LicenseReportTab: React.FC = () => {
   const [licencias, setLicencias] = useState<Licencia[]>([]);
@@ -58,13 +58,94 @@ export const LicenseReportTab: React.FC = () => {
 
   const prepareExportData = () => {
     return filteredData.map(l => ({
-      Tipo_Licencia: l.tipo_nombre,
-      Clave_ID: l.clave,
-      Vencimiento: l.fecha_vencimiento,
-      Estado: l.usuario_id ? 'Asignada' : 'Disponible',
-      Usuario: l.usuario_nombre || '-',
-      Departamento: l.usuario_departamento || '-'
+      'Tipo Licencia': l.tipo_nombre,
+      'Clave / ID': l.clave,
+      'Vencimiento': l.fecha_vencimiento,
+      'Estado': l.usuario_id ? 'Asignada' : 'Disponible',
+      'Usuario': l.usuario_nombre || '-',
+      'Departamento': l.usuario_departamento || '-'
     }));
+  };
+
+  const handlePrintPDF = () => {
+    let htmlContent = `
+      <style>
+        .group-wrapper { border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 20px; overflow: hidden; page-break-inside: avoid; }
+        .group-header { background-color: #faf5ff; padding: 10px 16px; border-bottom: 1px solid #f3e8ff; display: flex; align-items: center; gap: 8px; color: #581c87; font-weight: 700; font-size: 13px; }
+        .group-badge { background-color: #fff; border: 1px solid #f3e8ff; color: #9333ea; font-size: 10px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+        
+        table { width: 100%; border-collapse: collapse; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; text-align: left; padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #334155; vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        
+        .avatar { width: 20px; height: 20px; background-color: #dbeafe; color: #2563eb; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; margin-right: 8px; }
+        .user-container { display: flex; align-items: center; }
+        .mono { font-family: monospace; color: #64748b; }
+        
+        .text-red { color: #dc2626; font-weight: 700; }
+        .text-slate { color: #475569; }
+      </style>
+    `;
+
+    if (Object.keys(groupedData).length === 0) {
+       htmlContent += `<div style="text-align:center; padding: 20px; color: #94a3b8; font-style: italic;">No hay datos para mostrar.</div>`;
+    } else {
+       Object.entries(groupedData).forEach(([groupKey, items]: [string, Licencia[]]) => {
+          htmlContent += `<div class="group-wrapper">`;
+          
+          // Header
+          if (grouping !== 'NONE') {
+              htmlContent += `
+                <div class="group-header">
+                   <span>${groupKey}</span>
+                   <span class="group-badge">${items.length}</span>
+                </div>
+              `;
+          }
+          
+          // Table
+          htmlContent += `
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%">Tipo Licencia</th>
+                        <th style="width: 20%">Clave / ID</th>
+                        <th style="width: 25%">Usuario Asignado</th>
+                        <th style="width: 20%">Departamento</th>
+                        <th style="width: 15%">Vencimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map(lic => {
+                        const isExpired = new Date(lic.fecha_vencimiento) < new Date();
+                        return `
+                        <tr>
+                            <td style="font-weight: 500;">${lic.tipo_nombre}</td>
+                            <td class="mono">${lic.clave}</td>
+                            <td>
+                                <div class="user-container">
+                                    <div class="avatar">${lic.usuario_nombre?.charAt(0) || '-'}</div>
+                                    <span>${lic.usuario_nombre || '-'}</span>
+                                </div>
+                            </td>
+                            <td>${lic.usuario_departamento || '-'}</td>
+                            <td>
+                                <span class="${isExpired ? 'text-red' : 'text-slate'}">
+                                    ${lic.fecha_vencimiento}
+                                </span>
+                            </td>
+                        </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+          `;
+          htmlContent += `</div>`;
+       });
+    }
+
+    printCustomHTML(htmlContent, 'Reporte de Licencias Asignadas');
   };
 
   return (
@@ -126,7 +207,7 @@ export const LicenseReportTab: React.FC = () => {
                         <Download className="w-4 h-4" /> Exportar
                     </button>
                     <button 
-                        onClick={() => openPrintPreview(prepareExportData(), 'Reporte de Licencias Asignadas')}
+                        onClick={handlePrintPDF}
                         className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded text-sm font-medium h-[34px]"
                     >
                         <Printer className="w-4 h-4" /> PDF

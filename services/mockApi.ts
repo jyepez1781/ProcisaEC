@@ -114,7 +114,15 @@ export const api = {
   },
   deleteDepartamento: async (id: number) => {
     await simulateDelay();
-    MOCK_DEPARTAMENTOS = MOCK_DEPARTAMENTOS.filter(d => d.id !== id);
+    // VALIDACIÓN: Verificar si hay usuarios asignados a este departamento
+    const hasUsers = MOCK_USERS.some(u => u.departamento_id === id);
+    if (hasUsers) {
+      throw new Error("No se puede eliminar este departamento porque tiene usuarios asignados.");
+    }
+    const idx = MOCK_DEPARTAMENTOS.findIndex(d => d.id === id);
+    if (idx >= 0) {
+      MOCK_DEPARTAMENTOS.splice(idx, 1);
+    }
   },
   
   getPuestos: async () => { await simulateDelay(); return [...MOCK_PUESTOS]; },
@@ -133,7 +141,15 @@ export const api = {
   },
   deletePuesto: async (id: number) => {
     await simulateDelay();
-    MOCK_PUESTOS = MOCK_PUESTOS.filter(d => d.id !== id);
+    // VALIDACIÓN: Verificar si hay usuarios asignados a este puesto
+    const hasUsers = MOCK_USERS.some(u => u.puesto_id === id);
+    if (hasUsers) {
+      throw new Error("No se puede eliminar este puesto porque tiene usuarios asignados.");
+    }
+    const idx = MOCK_PUESTOS.findIndex(d => d.id === id);
+    if (idx >= 0) {
+      MOCK_PUESTOS.splice(idx, 1);
+    }
   },
 
   // Users

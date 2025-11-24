@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { ReporteGarantia } from '../../types';
 import { reportService } from '../../services/reportService';
 import { AlertTriangle, ShieldCheck, Download, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
-import { openPrintPreview } from '../../utils/documentGenerator';
+import { printCustomHTML } from '../../utils/documentGenerator';
 
 export const WarrantiesTab: React.FC = () => {
   const [garantias, setGarantias] = useState<ReporteGarantia[]>([]);
@@ -18,14 +19,73 @@ export const WarrantiesTab: React.FC = () => {
 
   const prepareData = () => {
       return garantias.map(g => ({
-          Codigo: g.equipo.codigo_activo,
-          Marca: g.equipo.marca,
-          Modelo: g.equipo.modelo,
-          Responsable: g.equipo.responsable_nombre || 'N/A',
-          Vencimiento: g.fecha_vencimiento,
-          Dias_Restantes: g.dias_restantes
+          'Código': g.equipo.codigo_activo,
+          'Equipo': `${g.equipo.marca} ${g.equipo.modelo}`,
+          'Responsable': g.equipo.responsable_nombre || 'N/A',
+          'Vencimiento': g.fecha_vencimiento,
+          'Días Restantes': `${g.dias_restantes} días`
       }));
   }
+
+  const handlePrintPDF = () => {
+    let htmlContent = `
+      <style>
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .card { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; position: relative; page-break-inside: avoid; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .color-bar { position: absolute; top: 0; bottom: 0; left: 0; width: 4px; }
+        .bar-red { background-color: #ef4444; }
+        .bar-amber { background-color: #f59e0b; }
+        .content { padding: 16px 16px 16px 20px; }
+        .header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px; }
+        .code { font-weight: 700; color: #1e293b; font-size: 14px; }
+        .model { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 6px; }
+        .label { color: #64748b; }
+        .value { font-weight: 500; color: #334155; }
+        .days-red { color: #dc2626; font-weight: 700; }
+        .days-amber { color: #d97706; font-weight: 700; }
+        .icon { font-size: 16px; }
+      </style>
+      <div class="grid">
+    `;
+    
+    if (garantias.length === 0) {
+        htmlContent += `<div style="grid-column: 1/-1; text-align: center; color: #64748b; padding: 20px;">No hay garantías próximas a vencer.</div>`;
+    }
+
+    garantias.forEach(g => {
+        const isUrgent = g.dias_restantes < 30;
+        htmlContent += `
+          <div class="card">
+            <div class="color-bar ${isUrgent ? 'bar-red' : 'bar-amber'}"></div>
+            <div class="content">
+               <div class="header">
+                  <div>
+                    <div class="code">${g.equipo.codigo_activo}</div>
+                    <div class="model">${g.equipo.marca} ${g.equipo.modelo}</div>
+                  </div>
+                  <div class="icon">${isUrgent ? '⚠️' : '🛡️'}</div>
+               </div>
+               <div class="row">
+                  <span class="label">Vencimiento:</span>
+                  <span class="value">${g.fecha_vencimiento}</span>
+               </div>
+               <div class="row">
+                  <span class="label">Días Restantes:</span>
+                  <span class="${isUrgent ? 'days-red' : 'days-amber'}">${g.dias_restantes} días</span>
+               </div>
+               <div class="row">
+                  <span class="label">Responsable:</span>
+                  <span class="value">${g.equipo.responsable_nombre || 'N/A'}</span>
+               </div>
+            </div>
+          </div>
+        `;
+    });
+
+    htmlContent += `</div>`;
+    printCustomHTML(htmlContent, 'Reporte de Garantías Próximas');
+  };
 
   return (
     <div className="space-y-4">
@@ -46,7 +106,7 @@ export const WarrantiesTab: React.FC = () => {
                     <Download className="w-4 h-4" /> Excel
                 </button>
                 <button 
-                    onClick={() => openPrintPreview(prepareData(), 'Reporte de Garantias Proximas')}
+                    onClick={handlePrintPDF}
                     className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 >
                     <Printer className="w-4 h-4" /> PDF

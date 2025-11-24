@@ -4,7 +4,7 @@ import { HistorialMovimiento, TipoEquipo } from '../../types';
 import { reportService } from '../../services/reportService';
 import { Filter, Calendar, Download, Printer } from 'lucide-react';
 import { downloadCSV } from '../../utils/csvExporter';
-import { openPrintPreview } from '../../utils/documentGenerator';
+import { printCustomHTML } from '../../utils/documentGenerator';
 
 export const HistoryTab: React.FC = () => {
   const [historial, setHistorial] = useState<HistorialMovimiento[]>([]);
@@ -52,12 +52,82 @@ export const HistoryTab: React.FC = () => {
 
   const prepareExportData = () => {
     return historial.map(h => ({
-      Fecha: h.fecha,
-      Accion: h.tipo_accion,
-      Equipo_Codigo: h.equipo_codigo,
-      Responsable: h.usuario_responsable,
-      Detalle: h.detalle
+      'Fecha': h.fecha,
+      'Acción': h.tipo_accion,
+      'Código Equipo': h.equipo_codigo,
+      'Responsable': h.usuario_responsable,
+      'Detalle': h.detalle
     }));
+  };
+
+  const handlePrintPDF = () => {
+    let htmlContent = `
+      <style>
+        table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #334155; vertical-align: top; }
+        tr:last-child td { border-bottom: none; }
+        
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 99px; font-size: 9px; font-weight: 700; border: 1px solid transparent; text-transform: uppercase; }
+        .badge-asignacion { color: #16a34a; background-color: #f0fdf4; border-color: #bbf7d0; }
+        .badge-recepcion { color: #2563eb; background-color: #eff6ff; border-color: #bfdbfe; }
+        .badge-baja { color: #dc2626; background-color: #fef2f2; border-color: #fecaca; }
+        .badge-mantenimiento { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
+        .badge-pre-baja { color: #ea580c; background-color: #fff7ed; border-color: #fed7aa; }
+        .badge-default { color: #475569; background-color: #f8fafc; border-color: #e2e8f0; }
+
+        .font-medium { font-weight: 600; }
+        .text-slate-800 { color: #1e293b; }
+        .text-slate-600 { color: #475569; }
+      </style>
+    `;
+
+    if (historial.length === 0) {
+       htmlContent += `<div style="text-align:center; padding: 20px; color: #94a3b8; font-style: italic;">No hay movimientos registrados.</div>`;
+    } else {
+       htmlContent += `
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 15%">Fecha</th>
+                    <th style="width: 15%">Acción</th>
+                    <th style="width: 15%">Equipo</th>
+                    <th style="width: 20%">Responsable</th>
+                    <th style="width: 35%">Detalle</th>
+                </tr>
+            </thead>
+            <tbody>
+       `;
+
+       historial.forEach(h => {
+           let badgeClass = 'badge-default';
+           switch (h.tipo_accion) {
+               case 'ASIGNACION': badgeClass = 'badge-asignacion'; break;
+               case 'RECEPCION': badgeClass = 'badge-recepcion'; break;
+               case 'BAJA': badgeClass = 'badge-baja'; break;
+               case 'MANTENIMIENTO': badgeClass = 'badge-mantenimiento'; break;
+               case 'PRE_BAJA': badgeClass = 'badge-pre-baja'; break;
+               default: badgeClass = 'badge-default'; break;
+           }
+
+           htmlContent += `
+            <tr>
+                <td>${h.fecha}</td>
+                <td><span class="badge ${badgeClass}">${h.tipo_accion.replace('_', ' ')}</span></td>
+                <td class="font-medium text-slate-800">${h.equipo_codigo}</td>
+                <td>${h.usuario_responsable}</td>
+                <td class="text-slate-600">${h.detalle}</td>
+            </tr>
+           `;
+       });
+
+       htmlContent += `
+            </tbody>
+        </table>
+       `;
+    }
+
+    printCustomHTML(htmlContent, 'Bitácora de Movimientos');
   };
 
   return (
@@ -84,7 +154,7 @@ export const HistoryTab: React.FC = () => {
                 <Download className="w-4 h-4" /> Excel
             </button>
             <button 
-                onClick={() => openPrintPreview(prepareExportData(), 'Bitacora de Movimientos')}
+                onClick={handlePrintPDF}
                 className="flex items-center gap-2 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
             >
                 <Printer className="w-4 h-4" /> PDF
@@ -114,7 +184,7 @@ export const HistoryTab: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 py-1 rounded-full text-xs font-bold border ${getActionColor(h.tipo_accion)}`}>
-                                {h.tipo_accion}
+                                {h.tipo_accion.replace('_', ' ')}
                             </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">

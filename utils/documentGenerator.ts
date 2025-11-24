@@ -186,6 +186,68 @@ export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => 
 };
 
 /**
+ * Imprime un reporte con diseño HTML personalizado
+ */
+export const printCustomHTML = (htmlContent: string, title: string) => {
+  const printWindow = window.open('', '_blank', 'width=1100,height=800');
+  if (!printWindow) {
+    alert("Por favor habilita las ventanas emergentes.");
+    return;
+  }
+  
+  const fullHtml = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${title}</title>
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+          body { font-family: 'Inter', sans-serif; color: #334155; padding: 40px; background-color: #fff; }
+          .report-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+          .report-header h1 { margin: 0; color: #0f172a; font-size: 24px; font-weight: 700; }
+          .report-header p { margin: 0; color: #64748b; font-size: 13px; margin-top: 5px; }
+          
+          /* Table Styles */
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { text-align: left; padding: 8px 12px; background-color: #f8fafc; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
+          td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: top; }
+          tr:last-child td { border-bottom: none; }
+          
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+            @page { margin: 1.5cm; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
+          
+          ${htmlContent.includes('<style>') ? '' : ''}
+        </style>
+      </head>
+      <body>
+        <div class="report-header">
+          <div>
+            <h1>${title}</h1>
+            <p>Generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}</p>
+          </div>
+          <div style="font-size: 12px; color: #94a3b8;">Sistema InvenTory</div>
+        </div>
+        
+        <div class="report-content">
+          ${htmlContent}
+        </div>
+        
+        <script>
+           window.onload = function() { setTimeout(function() { window.print(); }, 800); }
+        </script>
+      </body>
+    </html>
+  `;
+  
+  printWindow.document.write(fullHtml);
+  printWindow.document.close();
+};
+
+/**
  * Genera una vista previa genérica para reportes (tabla simple HTML)
  */
 export const openPrintPreview = (data: any[], title: string) => {
@@ -195,59 +257,16 @@ export const openPrintPreview = (data: any[], title: string) => {
   }
 
   const headers = Object.keys(data[0]);
-  const printWindow = window.open('', '_blank', 'width=1000,height=800');
-
-  if (!printWindow) {
-    alert("Por favor habilita las ventanas emergentes para ver el reporte.");
-    return;
-  }
-
-  const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Vista Previa - ${title}</title>
-        <style>
-          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #334155; padding: 40px; }
-          .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
-          .header-content h1 { margin: 0; color: #0f172a; font-size: 24px; margin-bottom: 4px; }
-          .header-content p { margin: 0; color: #64748b; font-size: 14px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
-          th { text-align: left; padding: 10px; background-color: #f1f5f9; color: #475569; border-bottom: 2px solid #cbd5e1; font-weight: 600; text-transform: uppercase; }
-          td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
-          tr:nth-child(even) { background-color: #f8fafc; }
-          tr:hover { background-color: #f1f5f9; }
-          .btn-print { padding: 10px 20px; background-color: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; display: flex; align-items: center; gap: 8px; font-size: 14px; }
-          .btn-print:hover { background-color: #1d4ed8; }
-          @media print {
-            .btn-print { display: none; }
-            body { padding: 0; }
-            @page { margin: 1.5cm; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="header-content">
-            <h1>Reporte: ${title.replace(/_/g, ' ')}</h1>
-            <p>Generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}</p>
-          </div>
-          <button class="btn-print" onclick="window.print()">
-            Imprimir / Guardar PDF
-          </button>
-        </div>
-        <table>
-          <thead>
-            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-          </thead>
-          <tbody>
-            ${data.map(row => `<tr>${headers.map(header => `<td>${row[header] ?? ''}</td>`).join('')}</tr>`).join('')}
-          </tbody>
-        </table>
-      </body>
-    </html>
+  const tableHtml = `
+    <table>
+      <thead>
+        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+      </thead>
+      <tbody>
+        ${data.map(row => `<tr>${headers.map(header => `<td>${row[header] ?? ''}</td>`).join('')}</tr>`).join('')}
+      </tbody>
+    </table>
   `;
 
-  printWindow.document.write(htmlContent);
-  printWindow.document.close();
+  printCustomHTML(tableHtml, title);
 };
