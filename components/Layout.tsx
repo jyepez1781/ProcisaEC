@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, Menu, X, Settings, Building2, Users, Wrench, Lock, ChevronDown, Key } from 'lucide-react';
 import { api } from '../services/mockApi';
 import { Usuario, Notificacion } from '../types';
+import Swal from 'sweetalert2';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -35,11 +36,21 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
     try {
       await api.changePassword(user.id, passwordForm.newPass);
-      alert("Contraseña actualizada correctamente");
+      Swal.fire({
+        title: '¡Éxito!',
+        text: 'Contraseña actualizada correctamente',
+        icon: 'success',
+        confirmButtonColor: '#2563eb'
+      });
       setIsPasswordModalOpen(false);
       setPasswordForm({ newPass: '', confirmPass: '' });
     } catch (err: any) {
-      alert("Error: " + err.message);
+      Swal.fire({
+        title: 'Error',
+        text: err.message,
+        icon: 'error',
+        confirmButtonColor: '#2563eb'
+      });
     }
   };
 

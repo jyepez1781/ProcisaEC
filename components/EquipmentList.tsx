@@ -2,9 +2,9 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useEquipment, ModalAction } from '../hooks/useEquipment';
-import { EquipmentFilters } from './equipment/EquipmentFilters';
-import { EquipmentTable } from './equipment/EquipmentTable';
-import { EquipmentForm } from './equipment/EquipmentForm';
+import { EquipmentFilters } from './equipmentList/EquipmentFilters';
+import { EquipmentTable } from './equipmentList/EquipmentTable';
+import { EquipmentForm } from './equipmentList/EquipmentForm';
 import { Modal } from './common/Modal';
 import { Equipo } from '../types';
 

@@ -1,5 +1,6 @@
 
 import { Usuario, Equipo } from '../types';
+import Swal from 'sweetalert2';
 
 /**
  * Genera el documento de asignación (Carta Responsiva + Anexo 1)
@@ -7,7 +8,12 @@ import { Usuario, Equipo } from '../types';
 export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => {
   const printWindow = window.open('', '_blank', 'width=900,height=800');
   if (!printWindow) {
-    alert('Por favor permita ventanas emergentes para ver el reporte.');
+    Swal.fire({
+      title: 'Ventana Emergente Bloqueada',
+      text: 'Por favor permite las ventanas emergentes (pop-ups) para ver el documento de asignación.',
+      icon: 'warning',
+      confirmButtonColor: '#2563eb'
+    });
     return;
   }
 
@@ -191,7 +197,7 @@ export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => 
 export const printCustomHTML = (htmlContent: string, title: string) => {
   const printWindow = window.open('', '_blank', 'width=1100,height=800');
   if (!printWindow) {
-    alert("Por favor habilita las ventanas emergentes.");
+    Swal.fire('Ventana Bloqueada', 'Por favor habilita las ventanas emergentes para imprimir.', 'warning');
     return;
   }
   
@@ -252,7 +258,7 @@ export const printCustomHTML = (htmlContent: string, title: string) => {
  */
 export const openPrintPreview = (data: any[], title: string) => {
   if (data.length === 0) {
-    alert("No hay datos para generar la vista previa.");
+    Swal.fire('Sin Datos', 'No hay datos para generar la vista previa.', 'info');
     return;
   }
 

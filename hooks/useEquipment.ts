@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { Equipo, TipoEquipo, Usuario, Departamento, EstadoEquipo } from '../types';
 import { equipmentService, catalogService } from '../services/equipmentService';
 import { generateAssignmentDocument } from '../utils/documentGenerator';
+import Swal from 'sweetalert2';
 
 export type ModalAction = 'CREATE' | 'EDIT' | 'ASSIGN' | 'RETURN' | 'BAJA' | 'TO_MAINTENANCE' | 'MARK_DISPOSAL' | null;
 
@@ -95,7 +97,12 @@ export const useEquipment = () => {
       await loadData();
       return true;
     } catch (error: any) {
-      alert(error.message || "Error procesando la acción");
+      Swal.fire({
+        title: 'Error',
+        text: error.message || "Error procesando la acción",
+        icon: 'error',
+        confirmButtonColor: '#2563eb'
+      });
       return false;
     }
   };
