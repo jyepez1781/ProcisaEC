@@ -2,7 +2,8 @@
 import { Equipo, Usuario, Departamento, Puesto, TipoEquipo, HistorialMovimiento, HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia, ReporteGarantia, Notificacion } from '../types';
 
 // URL base de tu API Laravel (ajusta el puerto si es necesario)
-const API_URL = 'http://localhost:8000/api';
+//const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://10.68.104.57:8000/api';
 
 // Helper para headers con Token (Asumiendo Laravel Sanctum)
 const getHeaders = () => {
