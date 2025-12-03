@@ -24,8 +24,8 @@ export const EquipmentStackChart: React.FC<EquipmentStackChartProps> = ({ breakd
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 className="text-lg font-semibold text-slate-700 mb-4">Distribución de Equipos por Tipo y Estado</h3>
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+        <h3 className="text-lg font-semibold text-slate-700 dark:text-white mb-4">Distribución de Equipos por Tipo y Estado</h3>
         {data.length > 0 ? (
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -33,14 +33,14 @@ export const EquipmentStackChart: React.FC<EquipmentStackChartProps> = ({ breakd
                 data={data}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#475569" strokeOpacity={0.2} />
+                <XAxis dataKey="name" tick={{ fill: '#94a3b8' }} />
+                <YAxis allowDecimals={false} tick={{ fill: '#94a3b8' }} />
                 <Tooltip 
-                  cursor={{fill: '#f8fafc'}}
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} 
+                  cursor={{fill: '#f8fafc', opacity: 0.2}}
+                  contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
                 <Bar dataKey={EstadoEquipo.ACTIVO} stackId="a" fill={STATUS_COLORS[EstadoEquipo.ACTIVO]} name="Activo" />
                 <Bar dataKey={EstadoEquipo.DISPONIBLE} stackId="a" fill={STATUS_COLORS[EstadoEquipo.DISPONIBLE]} name="Disponible" />
                 <Bar dataKey={EstadoEquipo.EN_MANTENIMIENTO} stackId="a" fill={STATUS_COLORS[EstadoEquipo.EN_MANTENIMIENTO]} name="Mantenimiento" />
@@ -49,7 +49,7 @@ export const EquipmentStackChart: React.FC<EquipmentStackChartProps> = ({ breakd
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="h-80 flex items-center justify-center text-slate-400">
+          <div className="h-80 flex items-center justify-center text-slate-400 dark:text-slate-500">
             Sin datos para graficar
           </div>
         )}

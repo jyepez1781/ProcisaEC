@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { DetallePlan, EstadoPlan, PlanMantenimiento } from '../../types';
 import { ChevronLeft, Save, GripVertical, CheckCircle, Clock, AlertCircle, Wrench, Download, Printer } from 'lucide-react';
@@ -309,28 +310,28 @@ export const PlanningCalendar: React.FC<PlanningCalendarProps> = ({ plan, initia
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-lg text-slate-600">
+          <button onClick={onBack} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <div>
-             <h2 className="text-xl font-bold text-slate-800">{plan.nombre}</h2>
-             <span className="text-sm text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">{isNew ? 'Borrador' : plan.estado}</span>
+             <h2 className="text-xl font-bold text-slate-800 dark:text-white">{plan.nombre}</h2>
+             <span className="text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">{isNew ? 'Borrador' : plan.estado}</span>
           </div>
         </div>
         
         <div className="flex flex-wrap gap-2">
             <button 
                 onClick={handleExportExcel}
-                className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
                 title="Exportar listado a Excel"
             >
                 <Download className="w-4 h-4" /> Excel
             </button>
             <button 
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
                 title="Imprimir vista de calendario"
             >
                 <Printer className="w-4 h-4" /> PDF
@@ -347,8 +348,8 @@ export const PlanningCalendar: React.FC<PlanningCalendarProps> = ({ plan, initia
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex-1 bg-slate-50 rounded-xl overflow-x-auto border border-slate-200 custom-scrollbar">
-         <div className="min-w-[1200px] h-full grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 divide-x divide-slate-200">
+      <div className="flex-1 bg-slate-50 dark:bg-slate-900 rounded-xl overflow-x-auto border border-slate-200 dark:border-slate-700 custom-scrollbar">
+         <div className="min-w-[1200px] h-full grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 divide-x divide-slate-200 dark:divide-slate-700">
             {MONTH_NAMES.map((monthName, idx) => {
                 const monthIndex = idx + 1;
                 const items = schedule[monthIndex] || [];
@@ -356,11 +357,11 @@ export const PlanningCalendar: React.FC<PlanningCalendarProps> = ({ plan, initia
                 return (
                     <div 
                         key={monthIndex} 
-                        className="flex flex-col h-full min-h-[500px] bg-white"
+                        className="flex flex-col h-full min-h-[500px] bg-white dark:bg-slate-800"
                         onDragOver={(e) => handleDragOver(e, monthIndex)}
                         onDrop={(e) => handleDrop(e, monthIndex)}
                     >
-                        <div className="p-3 bg-slate-50 border-b border-slate-100 text-center font-bold text-slate-700 text-sm uppercase sticky top-0 z-10">
+                        <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 text-center font-bold text-slate-700 dark:text-slate-200 text-sm uppercase sticky top-0 z-10">
                             {monthName} <span className="text-xs text-slate-400 font-normal ml-1">({items.length})</span>
                         </div>
                         <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-250px)] custom-scrollbar">
@@ -372,17 +373,17 @@ export const PlanningCalendar: React.FC<PlanningCalendarProps> = ({ plan, initia
                                     onClick={() => handleTaskClick(task)}
                                     className={`
                                         p-2 rounded border text-xs shadow-sm cursor-pointer hover:shadow-md transition-all relative group
-                                        ${task.estado === EstadoPlan.REALIZADO ? 'bg-green-50 border-green-200 opacity-75' : ''}
-                                        ${task.estado === EstadoPlan.EN_PROCESO ? 'bg-amber-50 border-amber-200 ring-1 ring-amber-300' : ''}
-                                        ${task.estado === EstadoPlan.PENDIENTE ? 'bg-white border-slate-200 hover:border-blue-300' : ''}
-                                        ${task.estado === EstadoPlan.RETRASADO ? 'bg-red-50 border-red-200' : ''}
+                                        ${task.estado === EstadoPlan.REALIZADO ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 opacity-75' : ''}
+                                        ${task.estado === EstadoPlan.EN_PROCESO ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 ring-1 ring-amber-300 dark:ring-amber-700' : ''}
+                                        ${task.estado === EstadoPlan.PENDIENTE ? 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500 text-slate-800 dark:text-slate-200' : ''}
+                                        ${task.estado === EstadoPlan.RETRASADO ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : ''}
                                     `}
                                 >
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="font-bold text-slate-700">{task.equipo_codigo}</span>
+                                        <span className="font-bold text-slate-700 dark:text-slate-200">{task.equipo_codigo}</span>
                                         {getStatusIcon(task.estado)}
                                     </div>
-                                    <p className="text-slate-600 truncate mb-1">{task.equipo_modelo}</p>
+                                    <p className="text-slate-600 dark:text-slate-300 truncate mb-1">{task.equipo_modelo}</p>
                                     <p className="text-[10px] text-slate-400 flex items-center gap-1">
                                         <GripVertical className="w-3 h-3 opacity-0 group-hover:opacity-100" />
                                         {task.equipo_ubicacion}

@@ -32,7 +32,7 @@ const EquipmentTypes: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">Tipos de Equipo</h2>
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Tipos de Equipo</h2>
         <button 
           onClick={handleOpenCreate}
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"

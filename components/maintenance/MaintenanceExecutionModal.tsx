@@ -69,15 +69,15 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Registrar Ejecución de Mantenimiento" maxWidth="max-w-2xl">
       <div className="flex flex-col gap-6">
-        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 text-sm">
+        <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">
           <div className="grid grid-cols-2 gap-4">
             <div>
-               <span className="text-slate-500 block text-xs uppercase font-bold">Equipo</span>
-               <span className="text-slate-900 font-medium">{task.equipo_codigo} - {task.equipo_modelo}</span>
+               <span className="text-slate-500 dark:text-slate-400 block text-xs uppercase font-bold">Equipo</span>
+               <span className="text-slate-900 dark:text-white font-medium">{task.equipo_codigo} - {task.equipo_modelo}</span>
             </div>
             <div>
-               <span className="text-slate-500 block text-xs uppercase font-bold">Ubicación</span>
-               <span className="text-slate-700">{task.equipo_ubicacion}</span>
+               <span className="text-slate-500 dark:text-slate-400 block text-xs uppercase font-bold">Ubicación</span>
+               <span className="text-slate-700 dark:text-slate-300">{task.equipo_ubicacion}</span>
             </div>
           </div>
         </div>
@@ -85,42 +85,42 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Fecha Ejecución</label>
-                <input required type="date" className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha Ejecución</label>
+                <input required type="date" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
                   value={formData.fecha} onChange={e => setFormData({...formData, fecha: e.target.value})} />
              </div>
              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Técnico Responsable</label>
-                <input required type="text" className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Técnico Responsable</label>
+                <input required type="text" className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
                   placeholder="Nombre del técnico"
                   value={formData.tecnico} onChange={e => setFormData({...formData, tecnico: e.target.value})} />
              </div>
           </div>
 
           <div>
-             <label className="block text-sm font-medium text-slate-700 mb-1">Observaciones / Hallazgos</label>
-             <textarea required rows={3} className="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500"
+             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones / Hallazgos</label>
+             <textarea required rows={3} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
                 placeholder="Describa el trabajo realizado..."
                 value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
           </div>
 
           {/* Evidence Section */}
-          <div className="border-t pt-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">Evidencia (Foto o PDF)</label>
+          <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Evidencia (Foto o PDF)</label>
             
             {!file ? (
                 <div 
                   onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-300 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 hover:border-blue-400 transition-colors"
+                  className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-blue-400 transition-colors"
                 >
                     <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                    <p className="text-sm text-slate-600 font-medium">Click para subir archivo</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Click para subir archivo</p>
                     <p className="text-xs text-slate-400">PDF, JPG, PNG (Max 5MB)</p>
                 </div>
             ) : (
-                <div className="border rounded-lg p-3 flex items-start gap-4 bg-slate-50 relative">
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 flex items-start gap-4 bg-slate-50 dark:bg-slate-700/50 relative">
                     <button type="button" onClick={clearFile} className="absolute top-2 right-2 text-slate-400 hover:text-red-500"><X className="w-4 h-4" /></button>
-                    <div className="w-16 h-16 bg-white border rounded flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="w-16 h-16 bg-white dark:bg-slate-800 border dark:border-slate-600 rounded flex items-center justify-center overflow-hidden shrink-0">
                         {file.type.includes('image') ? (
                             <img src={previewUrl!} alt="Preview" className="w-full h-full object-cover" />
                         ) : (
@@ -128,10 +128,10 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 truncate">{file.name}</p>
-                        <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB</p>
+                        <p className="text-sm font-medium text-slate-800 dark:text-white truncate">{file.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{(file.size / 1024).toFixed(1)} KB</p>
                         {file.type.includes('image') && (
-                            <a href={previewUrl!} target="_blank" rel="noreferrer" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                            <a href={previewUrl!} target="_blank" rel="noreferrer" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-1">
                                 <Eye className="w-3 h-3" /> Ver Imagen Completa
                             </a>
                         )}
@@ -147,9 +147,9 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancelar</button>
-            <button type="submit" disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors">Cancelar</button>
+            <button type="submit" disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
                <CheckCircle className="w-4 h-4" /> {loading ? 'Guardando...' : 'Registrar Ejecución'}
             </button>
           </div>

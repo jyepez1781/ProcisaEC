@@ -59,39 +59,39 @@ export const PlanningConfig: React.FC<PlanningConfigProps> = ({ onGenerate, onVi
     <div className="max-w-5xl mx-auto space-y-8">
       
       {/* --- Generar Nuevo Plan --- */}
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
         <div className="flex items-start gap-4 mb-6">
-            <div className="p-3 bg-blue-100 rounded-xl">
-                <CalendarRange className="w-8 h-8 text-blue-600" />
+            <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                <CalendarRange className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-                <h2 className="text-xl font-bold text-slate-800">Generador de Plan Anual</h2>
-                <p className="text-slate-500 mt-1">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white">Generador de Plan Anual</h2>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">
                     Seleccione la ciudad y el año. El sistema analizará los equipos ubicados en dicha ciudad
                     y distribuirá la carga de mantenimiento automáticamente.
                 </p>
             </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-50 p-6 rounded-lg border border-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-50 dark:bg-slate-900/50 p-6 rounded-lg border border-slate-100 dark:border-slate-700">
             <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Año del Plan</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Año del Plan</label>
                 <input 
                     type="number" 
                     min={2024} 
                     max={2030}
-                    className="w-full border border-slate-300 rounded-lg px-4 py-2 text-center text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-4 py-2 text-center text-lg font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
                     value={year}
                     onChange={e => setYear(Number(e.target.value))}
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Ciudad / Sede</label>
+                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Ciudad / Sede</label>
                 <div className="relative">
                     <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                     <select
-                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none bg-white font-medium appearance-none"
+                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-800 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 font-medium appearance-none"
                         value={selectedCityId}
                         onChange={e => setSelectedCityId(e.target.value)}
                     >
@@ -112,52 +112,52 @@ export const PlanningConfig: React.FC<PlanningConfigProps> = ({ onGenerate, onVi
       </div>
 
       {/* --- Historial --- */}
-      <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
          <div className="flex items-center gap-3 mb-6">
             <List className="w-6 h-6 text-slate-400" />
-            <h3 className="text-lg font-bold text-slate-800">Historial de Planes</h3>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white">Historial de Planes</h3>
          </div>
          
          {loadingHistory ? (
-            <div className="text-center py-8 text-slate-400">Cargando historial...</div>
+            <div className="text-center py-8 text-slate-400 dark:text-slate-500">Cargando historial...</div>
          ) : history.length === 0 ? (
-            <div className="text-center py-8 text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+            <div className="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-200 dark:border-slate-700">
                 No hay planes registrados.
             </div>
          ) : (
-            <div className="overflow-hidden border border-slate-200 rounded-lg">
-                <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
+            <div className="overflow-hidden border border-slate-200 dark:border-slate-700 rounded-lg">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Nombre</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Ciudad</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Año</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Creado Por</th>
-                            <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Nombre</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Ciudad</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Año</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Estado</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Creado Por</th>
+                            <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-slate-200">
+                    <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                         {history.map(plan => (
-                            <tr key={plan.id} className="hover:bg-slate-50">
-                                <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-800">{plan.nombre}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-slate-600">
+                            <tr key={plan.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-800 dark:text-white">{plan.nombre}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
                                     <div className="flex items-center gap-1">
                                         <MapPin className="w-3 h-3 text-slate-400" />
                                         {plan.ciudad_nombre || 'General'}
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-slate-600">{plan.anio}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-slate-600 dark:text-slate-300">{plan.anio}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${plan.estado === 'ACTIVO' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                                    <span className={`px-2 py-1 text-xs font-bold rounded-full ${plan.estado === 'ACTIVO' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
                                         {plan.estado}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{plan.creado_por}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{plan.creado_por}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-right">
                                     <button 
                                         onClick={() => onViewPlan(plan.id)}
-                                        className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
                                         title="Ver Plan"
                                     >
                                         <Eye className="w-5 h-5" />

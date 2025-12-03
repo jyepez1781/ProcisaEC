@@ -28,16 +28,16 @@ const Reports: React.FC = () => {
 
   const TabButton = ({ id, icon: Icon, label }: any) => (
     <button onClick={() => setActiveTab(id)} 
-      className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${activeTab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+      className={`flex items-center gap-2 px-6 py-3 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${activeTab === id ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>
       <Icon className="w-4 h-4" /> {label}
     </button>
   );
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">Centro de Reportes</h2>
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Centro de Reportes</h2>
       
-      <div className="flex border-b border-slate-200 overflow-x-auto bg-white rounded-t-lg shadow-sm">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto bg-white dark:bg-slate-800 rounded-t-lg shadow-sm">
         <TabButton id="ASSIGNMENTS" icon={CalendarRange} label="Asignaciones" />
         <TabButton id="LICENSES" icon={Key} label="Licencias Asignadas" />
         <TabButton id="HISTORY" icon={History} label="Bitácora de Movimientos" />
@@ -47,7 +47,7 @@ const Reports: React.FC = () => {
         <TabButton id="DISPOSAL" icon={Trash2} label="Bajas de Equipos" />
       </div>
 
-      <div className="bg-white p-6 rounded-b-lg shadow-sm border border-t-0 min-h-[500px]">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-b-lg shadow-sm border border-t-0 border-slate-200 dark:border-slate-700 min-h-[500px]">
         {activeTab === 'ASSIGNMENTS' && <AssignmentsTab usuarios={users} equipos={equipos} />}
         {activeTab === 'LICENSES' && <LicenseReportTab />}
         {activeTab === 'HISTORY' && <HistoryTab />}

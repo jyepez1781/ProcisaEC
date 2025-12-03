@@ -125,15 +125,15 @@ export const MaintenanceReportTab: React.FC = () => {
   return (
     <div className="space-y-6">
         {/* Toolbar: Search and Exports */}
-        <div className="p-4 bg-slate-50 border rounded-lg flex flex-col md:flex-row gap-4 items-end justify-between">
+        <div className="p-4 bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col md:flex-row gap-4 items-end justify-between transition-colors">
             <div className="w-full md:w-1/2">
-                <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
                     <Search className="w-3 h-3" /> Buscar Equipo
                 </label>
                 <input 
                     type="text"
                     placeholder="Buscar por código, modelo o proveedor..."
-                    className="w-full p-2 border border-slate-300 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                     value={filterText}
                     onChange={e => setFilterText(e.target.value)}
                 />
@@ -142,13 +142,13 @@ export const MaintenanceReportTab: React.FC = () => {
             <div className="flex gap-2">
                 <button 
                     onClick={() => generateExcelFromData(prepareExportData(), 'Reporte_Mantenimiento')}
-                    className="flex items-center gap-2 bg-white border border-slate-300 shadow-sm px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm transition-colors"
+                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm transition-colors"
                 >
                     <Download className="w-4 h-4" /> Excel
                 </button>
                 <button 
                     onClick={handlePrintPDF}
-                    className="flex items-center gap-2 bg-white border border-slate-300 shadow-sm px-4 py-2 rounded-lg text-slate-700 hover:bg-slate-50 font-medium text-sm transition-colors"
+                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm transition-colors"
                 >
                     <Printer className="w-4 h-4" /> PDF
                 </button>
@@ -157,68 +157,68 @@ export const MaintenanceReportTab: React.FC = () => {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 flex justify-between items-center">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30 flex justify-between items-center transition-colors">
                 <div>
-                    <p className="text-sm text-blue-600 font-medium">Total Registros</p>
-                    <p className="text-2xl font-bold text-blue-800">{filteredRegistros.length}</p>
+                    <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Total Registros</p>
+                    <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{filteredRegistros.length}</p>
                 </div>
-                <div className="p-3 bg-blue-100 rounded-full text-blue-600">
+                <div className="p-3 bg-blue-100 dark:bg-blue-800/50 rounded-full text-blue-600 dark:text-blue-400">
                     <Wrench className="w-6 h-6" />
                 </div>
             </div>
-            <div className="bg-amber-50 p-4 rounded-lg border border-amber-100 flex justify-between items-center">
+            <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-900/30 flex justify-between items-center transition-colors">
                 <div>
-                    <p className="text-sm text-amber-600 font-medium">Costo Acumulado</p>
-                    <p className="text-2xl font-bold text-amber-800">{formatCurrency(totalCost)}</p>
+                    <p className="text-sm text-amber-600 dark:text-amber-400 font-medium">Costo Acumulado</p>
+                    <p className="text-2xl font-bold text-amber-800 dark:text-amber-300">{formatCurrency(totalCost)}</p>
                 </div>
-                <div className="p-3 bg-amber-100 rounded-full text-amber-600">
+                <div className="p-3 bg-amber-100 dark:bg-amber-800/50 rounded-full text-amber-600 dark:text-amber-400">
                     <span className="text-xl font-bold">$</span>
                 </div>
             </div>
         </div>
 
-        <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
-            <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm transition-colors">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead className="bg-slate-50 dark:bg-slate-900/50">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Fecha</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Equipo</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Tipo</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Proveedor</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Costo</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Trabajo Realizado</th>
-                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase">Doc</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Fecha</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Equipo</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Tipo</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Proveedor</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Costo</th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Trabajo Realizado</th>
+                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Doc</th>
                     </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
+                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                     {loading ? (
-                        <tr><td colSpan={7} className="p-8 text-center text-slate-500">Cargando...</td></tr>
+                        <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando...</td></tr>
                     ) : filteredRegistros.map(reg => (
-                        <tr key={reg.id} className="hover:bg-slate-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{reg.fecha}</td>
+                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{reg.fecha}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-slate-900">{reg.equipo_codigo}</div>
-                                <div className="text-xs text-slate-500">{reg.equipo_modelo}</div>
+                                <div className="text-sm font-medium text-slate-900 dark:text-slate-200">{reg.equipo_codigo}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400">{reg.equipo_modelo}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${reg.tipo_mantenimiento === 'Correctivo' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}>
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${reg.tipo_mantenimiento === 'Correctivo' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'}`}>
                                     {reg.tipo_mantenimiento}
                                 </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{reg.proveedor}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700">{formatCurrency(reg.costo)}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate" title={reg.descripcion}>{reg.descripcion}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{reg.proveedor}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-200">{formatCurrency(reg.costo)}</td>
+                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate" title={reg.descripcion}>{reg.descripcion}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                 {reg.archivo_orden ? (
                                     <button 
                                         onClick={() => setFileToView(reg.archivo_orden!)}
-                                        className="text-blue-600 hover:bg-blue-50 p-1 rounded transition-colors"
+                                        className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1 rounded transition-colors"
                                         title="Ver Orden de Servicio"
                                     >
                                         <Eye className="w-4 h-4" />
                                     </button>
                                 ) : (
-                                    <span className="text-slate-300 cursor-not-allowed inline-block p-1" title="Sin archivo adjunto">
+                                    <span className="text-slate-300 dark:text-slate-600 cursor-not-allowed inline-block p-1" title="Sin archivo adjunto">
                                         <FileText className="w-4 h-4" />
                                     </span>
                                 )}
@@ -226,7 +226,7 @@ export const MaintenanceReportTab: React.FC = () => {
                         </tr>
                     ))}
                     {!loading && filteredRegistros.length === 0 && (
-                        <tr><td colSpan={7} className="p-8 text-center text-slate-500">No hay registros que coincidan con la búsqueda.</td></tr>
+                        <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">No hay registros que coincidan con la búsqueda.</td></tr>
                     )}
                 </tbody>
             </table>
@@ -234,15 +234,15 @@ export const MaintenanceReportTab: React.FC = () => {
 
         {/* Modal para ver archivo */}
         <Modal isOpen={!!fileToView} onClose={() => setFileToView(null)} title="Orden de Servicio Firmada">
-             <div className="p-8 text-center bg-slate-50 rounded-lg">
+             <div className="p-8 text-center bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                  <div className="mb-4 text-slate-400">Simulación de Visor PDF</div>
-                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 rounded-lg bg-white">
+                 <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800">
                      <FileText className="w-12 h-12 text-red-500 mb-2" />
-                     <p className="font-mono text-sm text-slate-700 font-medium break-all">{fileToView}</p>
+                     <p className="font-mono text-sm text-slate-700 dark:text-slate-200 font-medium break-all">{fileToView}</p>
                      <p className="text-xs text-slate-400 mt-2">En producción, aquí se mostraría el PDF embebido.</p>
                  </div>
                  <div className="mt-6 flex justify-center">
-                    <button onClick={() => setFileToView(null)} className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors">
+                    <button onClick={() => setFileToView(null)} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">
                         Cerrar Visor
                     </button>
                  </div>

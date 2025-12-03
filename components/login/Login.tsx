@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Usuario } from '../../types';
 import { useLogin } from '../../hooks/useLogin';
@@ -19,8 +18,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   } = useLogin(onLogin);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-900 p-4 transition-colors">
+      <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-lg w-full max-w-md border border-slate-200 dark:border-slate-700">
         <LoginHeader />
         
         <LoginForm 

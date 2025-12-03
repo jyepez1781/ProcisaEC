@@ -15,8 +15,8 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({ data }) => {
     .range(['#10b981', '#3b82f6', '#f59e0b', '#f97316']);
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-      <h3 className="text-lg font-semibold text-slate-700 mb-4">Estado del Inventario (Activo)</h3>
+    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors">
+      <h3 className="text-lg font-semibold text-slate-700 dark:text-white mb-4">Estado del Inventario (Activo)</h3>
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -28,13 +28,17 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({ data }) => {
               outerRadius={100}
               paddingAngle={5}
               dataKey="value"
+              stroke="none"
             >
               {filteredData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={colorScale(entry.name)} />
               ))}
             </Pie>
-            <Tooltip />
-            <Legend verticalAlign="bottom" height={36} />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', borderRadius: '8px', color: '#f8fafc' }}
+              itemStyle={{ color: '#f8fafc' }}
+            />
+            <Legend verticalAlign="bottom" height={36} wrapperStyle={{ paddingTop: '20px' }} />
           </PieChart>
         </ResponsiveContainer>
       </div>

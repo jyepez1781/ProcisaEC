@@ -86,27 +86,27 @@ const Settings: React.FC = () => {
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-slate-500">Cargando configuración...</div>;
+  if (loading) return <div className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando configuración...</div>;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-3 bg-blue-100 rounded-xl">
-          <Mail className="w-8 h-8 text-blue-600" />
+        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+          <Mail className="w-8 h-8 text-blue-600 dark:text-blue-400" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Configuración de Correo</h2>
-          <p className="text-slate-500">Administra las notificaciones y copias de seguridad de los envíos.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Configuración de Correo</h2>
+          <p className="text-slate-500 dark:text-slate-400">Administra las notificaciones y copias de seguridad de los envíos.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-6 border-b border-slate-100 bg-slate-50">
-          <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+          <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-500" />
             Información General
           </h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Estos correos se enviarán automáticamente a los usuarios responsables cuando ocurran eventos importantes.
           </p>
         </div>
@@ -114,10 +114,10 @@ const Settings: React.FC = () => {
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div>
-               <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Remitente</label>
+               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del Remitente</label>
                <input 
                   type="text" 
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
                   placeholder="Ej. Sistema InvenTory"
                   value={config.remitente}
                   onChange={e => setConfig({...config, remitente: e.target.value})}
@@ -125,10 +125,10 @@ const Settings: React.FC = () => {
                <p className="text-xs text-slate-400 mt-1">Nombre que aparecerá en la bandeja de entrada.</p>
              </div>
              <div>
-               <label className="block text-sm font-medium text-slate-700 mb-1">Servidor SMTP (Host)</label>
+               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Servidor SMTP (Host)</label>
                <input 
                   type="text" 
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
                   value={config.smtp_host || ''}
                   onChange={e => setConfig({...config, smtp_host: e.target.value})}
                   placeholder="Ej. smtp.office365.com"
@@ -136,16 +136,16 @@ const Settings: React.FC = () => {
              </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-6">
-             <label className="block text-sm font-medium text-slate-700 mb-2">Destinatarios en Copia (CC)</label>
-             <p className="text-sm text-slate-500 mb-3">
+          <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
+             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destinatarios en Copia (CC)</label>
+             <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                Estas direcciones recibirán una copia de <strong>todos</strong> los correos enviados. Si un equipo no tiene usuario asignado, el correo se enviará únicamente a estas direcciones.
              </p>
              
              <div className="flex gap-2 mb-3">
                 <input 
                   type="email" 
-                  className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="flex-1 px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
                   placeholder="ingrese.correo@empresa.com"
                   value={newEmail}
                   onChange={e => setNewEmail(e.target.value)}
@@ -153,7 +153,7 @@ const Settings: React.FC = () => {
                 />
                 <button 
                   onClick={handleAddEmail}
-                  className="bg-slate-100 text-slate-700 hover:bg-slate-200 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                  className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" /> Agregar
                 </button>
@@ -161,7 +161,7 @@ const Settings: React.FC = () => {
 
              <div className="flex flex-wrap gap-2">
                 {config.correos_copia.map(email => (
-                  <span key={email} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-100">
+                  <span key={email} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm border border-blue-100 dark:border-blue-800">
                     {email}
                     <button onClick={() => removeEmail(email)} className="hover:text-red-500 ml-1">
                       <X className="w-3 h-3" />
@@ -174,49 +174,49 @@ const Settings: React.FC = () => {
              </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-6">
-             <h4 className="font-medium text-slate-800 mb-4">Eventos de Notificación</h4>
+          <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
+             <h4 className="font-medium text-slate-800 dark:text-white mb-4">Eventos de Notificación</h4>
              <div className="space-y-4">
-                <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   <input 
                     type="checkbox" 
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
                     checked={config.notificar_asignacion}
                     onChange={e => setConfig({...config, notificar_asignacion: e.target.checked})}
                   />
                   <div>
-                    <div className="text-sm font-semibold text-slate-700">Asignación de Equipos</div>
-                    <div className="text-xs text-slate-500">Enviar correo cuando un equipo es asignado a un usuario.</div>
+                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Asignación de Equipos</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Enviar correo cuando un equipo es asignado a un usuario.</div>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+                <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                   <input 
                     type="checkbox" 
-                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                    className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
                     checked={config.notificar_mantenimiento}
                     onChange={e => setConfig({...config, notificar_mantenimiento: e.target.checked})}
                   />
                   <div>
-                    <div className="text-sm font-semibold text-slate-700">Finalización de Mantenimiento</div>
-                    <div className="text-xs text-slate-500">Enviar correo cuando un mantenimiento finaliza y el equipo retorna al usuario.</div>
+                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Finalización de Mantenimiento</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Enviar correo cuando un mantenimiento finaliza y el equipo retorna al usuario.</div>
                   </div>
                 </label>
 
-                <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                   <label className="block text-sm font-semibold text-slate-700 mb-2">Anticipación de Alerta (Mantenimiento Programado)</label>
+                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Anticipación de Alerta (Mantenimiento Programado)</label>
                    <div className="flex items-center gap-3">
                        <input 
                           type="number" 
                           min="1"
                           max="30"
-                          className="w-24 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center"
+                          className="w-24 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-center bg-white dark:bg-slate-700 dark:text-white"
                           value={config.dias_anticipacion_alerta || 15}
                           onChange={e => setConfig({...config, dias_anticipacion_alerta: Number(e.target.value)})}
                        />
-                       <span className="text-sm text-slate-600">días antes del inicio del mes.</span>
+                       <span className="text-sm text-slate-600 dark:text-slate-400">días antes del inicio del mes.</span>
                    </div>
-                   <p className="text-xs text-slate-500 mt-2">
+                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
                       El sistema enviará un correo automático a los usuarios que tengan equipos en el plan de mantenimiento del mes siguiente.
                    </p>
                 </div>
@@ -224,7 +224,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-end">
            <button 
              onClick={handleSave}
              disabled={saving}

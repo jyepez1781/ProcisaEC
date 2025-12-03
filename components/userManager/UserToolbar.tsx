@@ -11,7 +11,7 @@ interface UserToolbarProps {
 export const UserToolbar: React.FC<UserToolbarProps> = ({ filterText, onFilterChange, onNewUser }) => {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <h2 className="text-2xl font-bold text-slate-800">Administración de Usuarios</h2>
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Administración de Usuarios</h2>
       
       <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
         <div className="relative w-full sm:w-64">
@@ -19,7 +19,7 @@ export const UserToolbar: React.FC<UserToolbarProps> = ({ filterText, onFilterCh
           <input 
             type="text"
             placeholder="Buscar usuario..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-800 dark:text-slate-200 placeholder-slate-400"
             value={filterText}
             onChange={(e) => onFilterChange(e.target.value)}
           />

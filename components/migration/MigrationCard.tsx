@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from 'react';
 import { Download, Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
 import { migrationService } from '../../services/migrationService';
@@ -59,20 +60,20 @@ export const MigrationCard: React.FC<MigrationCardProps> = ({ title, description
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col h-full">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 flex flex-col h-full transition-colors">
       <div className="flex items-center gap-4 mb-4">
-        <div className="p-3 bg-indigo-50 rounded-lg text-indigo-600">
+        <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
           {icon}
         </div>
         <div>
-          <h3 className="text-lg font-bold text-slate-800">{title}</h3>
-          <p className="text-sm text-slate-500">{description}</p>
+          <h3 className="text-lg font-bold text-slate-800 dark:text-white">{title}</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
         </div>
       </div>
 
       <div className="flex-1 space-y-4">
-        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-sm text-slate-600">
-          <p className="font-semibold mb-2">Instrucciones:</p>
+        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-600 dark:text-slate-300">
+          <p className="font-semibold mb-2 text-slate-700 dark:text-slate-200">Instrucciones:</p>
           <ul className="list-disc pl-4 space-y-1">
             <li>Descarga la plantilla <strong>Excel (.xlsx)</strong>.</li>
             <li>Llena los datos respetando el orden de las columnas.</li>
@@ -86,7 +87,7 @@ export const MigrationCard: React.FC<MigrationCardProps> = ({ title, description
         <button 
           onClick={handleDownload}
           disabled={downloading}
-          className="flex items-center justify-center gap-2 w-full py-2.5 border border-slate-300 rounded-lg text-slate-700 font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+          className="flex items-center justify-center gap-2 w-full py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
         >
           {downloading ? 'Generando...' : <><Download className="w-4 h-4" /> Descargar Plantilla</>}
         </button>

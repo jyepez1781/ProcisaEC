@@ -36,16 +36,16 @@ const OrganizationManager: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-800">Organización</h2>
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Organización</h2>
       
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 overflow-x-auto">
+      <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
         <button
           onClick={() => setActiveTab('COUNTRIES')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
             activeTab === 'COUNTRIES' 
-              ? 'border-blue-600 text-blue-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <Globe className="w-4 h-4" />
@@ -55,8 +55,8 @@ const OrganizationManager: React.FC = () => {
           onClick={() => setActiveTab('CITIES')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
             activeTab === 'CITIES' 
-              ? 'border-blue-600 text-blue-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <MapPin className="w-4 h-4" />
@@ -66,8 +66,8 @@ const OrganizationManager: React.FC = () => {
           onClick={() => setActiveTab('DEPTS')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
             activeTab === 'DEPTS' 
-              ? 'border-blue-600 text-blue-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <Building2 className="w-4 h-4" />
@@ -77,8 +77,8 @@ const OrganizationManager: React.FC = () => {
           onClick={() => setActiveTab('JOBS')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
             activeTab === 'JOBS' 
-              ? 'border-blue-600 text-blue-600' 
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <Briefcase className="w-4 h-4" />
@@ -87,9 +87,9 @@ const OrganizationManager: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
         {loading ? (
-          <div className="text-center py-8 text-slate-500">Cargando datos...</div>
+          <div className="text-center py-8 text-slate-500 dark:text-slate-400">Cargando datos...</div>
         ) : (
           <>
             {activeTab === 'COUNTRIES' && (

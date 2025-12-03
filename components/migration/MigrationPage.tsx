@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Database, Users, Laptop, Key, Building2, Briefcase, UserCheck } from 'lucide-react';
 import { MigrationCard } from './MigrationCard';
@@ -6,12 +7,12 @@ const MigrationPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-indigo-100 rounded-xl">
-          <Database className="w-8 h-8 text-indigo-600" />
+        <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl">
+          <Database className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Módulo de Migración</h2>
-          <p className="text-slate-500">Carga masiva de datos desde plantillas Excel/CSV.</p>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Módulo de Migración</h2>
+          <p className="text-slate-500 dark:text-slate-400">Carga masiva de datos desde plantillas Excel/CSV.</p>
         </div>
       </div>
 

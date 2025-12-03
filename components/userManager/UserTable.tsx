@@ -23,57 +23,57 @@ export const UserTable: React.FC<UserTableProps> = ({
   totalFiltered, currentPage, totalPages, onPageChange, itemsPerPage
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col transition-colors">
       {loading ? (
-        <div className="p-8 text-center text-slate-500">Cargando usuarios...</div>
+        <div className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando usuarios...</div>
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+              <thead className="bg-slate-50 dark:bg-slate-900/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">N° Empleado / Usuario</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Nombre Completo</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Departamento / Puesto</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Rol</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Estado</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase">Acciones</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">N° Empleado / Usuario</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Nombre Completo</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Departamento / Puesto</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Rol</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Estado</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                 {users.map(u => {
                   const isSelf = currentUser?.id === u.id;
                   const isInactive = !u.activo;
                   const isDisabled = isSelf || isInactive;
 
                   return (
-                    <tr key={u.id} className="hover:bg-slate-50">
+                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex flex-col">
-                          <span className="font-mono text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded w-fit mb-1">
+                          <span className="font-mono text-xs text-blue-600 dark:text-blue-400 font-medium bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded w-fit mb-1">
                             {u.numero_empleado || 'S/N'}
                           </span>
-                          <span className="font-medium text-slate-900">{u.nombre_usuario}</span>
-                          <span className="text-xs text-slate-500">{u.correo}</span>
+                          <span className="font-medium text-slate-900 dark:text-white">{u.nombre_usuario}</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">{u.correo}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-slate-700">{u.nombre_completo}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-slate-700 dark:text-slate-200">{u.nombre_completo}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-900">{u.departamento_nombre || '-'}</div>
-                        <div className="text-xs text-slate-500">{u.puesto_nombre || '-'}</div>
+                        <div className="text-sm text-slate-900 dark:text-white">{u.departamento_nombre || '-'}</div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">{u.puesto_nombre || '-'}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{u.rol}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{u.rol}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {u.activo ? 
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">Activo</span> : 
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800">Inactivo</span>
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Activo</span> : 
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">Inactivo</span>
                         }
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button 
                           type="button"
                           onClick={(e) => { e.preventDefault(); onEdit(u); }} 
-                          className="text-blue-600 hover:text-blue-900 mr-3" 
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3" 
                           title="Editar"
                         >
                           <Edit className="w-4 h-4" />
@@ -86,7 +86,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                             onStatusAction(u);
                           }}
                           disabled={isDisabled}
-                          className={`${!isDisabled ? 'text-amber-600 hover:text-amber-900 cursor-pointer' : 'text-slate-300 cursor-not-allowed'}`}
+                          className={`${!isDisabled ? 'text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 cursor-pointer' : 'text-slate-300 dark:text-slate-600 cursor-not-allowed'}`}
                           title={isSelf ? "No puedes desactivar tu propio usuario" : (isInactive ? "Usuario ya inactivo" : "Desactivar Usuario")}
                         >
                           <UserX className="w-4 h-4" />
@@ -97,7 +97,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                 })}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No se encontraron usuarios.</td>
+                    <td colSpan={6} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">No se encontraron usuarios.</td>
                   </tr>
                 )}
               </tbody>
@@ -106,8 +106,8 @@ export const UserTable: React.FC<UserTableProps> = ({
           
           {/* Pagination Controls */}
           {users.length > 0 && (
-            <div className="px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-sm text-slate-500">
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-slate-500 dark:text-slate-400">
                 Mostrando <span className="font-medium">{((currentPage - 1) * itemsPerPage) + 1}</span> a <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalFiltered)}</span> de <span className="font-medium">{totalFiltered}</span> usuarios
               </div>
               
@@ -115,7 +115,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                 <button
                   onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
                   disabled={currentPage === 1}
-                  className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -128,7 +128,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                       className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                         currentPage === idx + 1 
                           ? 'bg-blue-600 text-white' 
-                          : 'text-slate-600 hover:bg-slate-100'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                       }`}
                     >
                       {idx + 1}
@@ -139,7 +139,7 @@ export const UserTable: React.FC<UserTableProps> = ({
                 <button
                   onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="p-2 border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>

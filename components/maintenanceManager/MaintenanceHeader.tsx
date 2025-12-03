@@ -9,12 +9,12 @@ interface MaintenanceHeaderProps {
 export const MaintenanceHeader: React.FC<MaintenanceHeaderProps> = ({ count }) => {
   return (
     <div className="flex justify-between items-center">
-      <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-        <Wrench className="w-6 h-6 text-amber-600" /> 
+      <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+        <Wrench className="w-6 h-6 text-amber-600 dark:text-amber-500" /> 
         Gestión de Mantenimiento
       </h2>
-      <div className="text-sm text-slate-500">
-        Equipos en taller: <span className="font-bold text-slate-800">{count}</span>
+      <div className="text-sm text-slate-500 dark:text-slate-400">
+        Equipos en taller: <span className="font-bold text-slate-800 dark:text-white">{count}</span>
       </div>
     </div>
   );

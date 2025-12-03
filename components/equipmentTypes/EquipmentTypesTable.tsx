@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 import { TipoEquipo } from '../../types';
 import { Edit, Trash2 } from 'lucide-react';
@@ -13,39 +12,39 @@ interface EquipmentTypesTableProps {
 
 export const EquipmentTypesTable: React.FC<EquipmentTypesTableProps> = ({ tipos, loading, onEdit, onDelete }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors">
       {loading ? (
-        <div className="p-8 text-center text-slate-500">Cargando tipos...</div>
+        <div className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando tipos...</div>
       ) : (
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+          <thead className="bg-slate-50 dark:bg-slate-900/50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Nombre</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Descripción</th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">Freq. Anual</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Acciones</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Nombre</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Descripción</th>
+              <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Freq. Anual</th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Acciones</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
+          <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
             {tipos.map((tipo) => (
-              <tr key={tipo.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">#{tipo.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{tipo.nombre}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{tipo.descripcion}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-blue-600">
+              <tr key={tipo.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">#{tipo.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900 dark:text-white">{tipo.nombre}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{tipo.descripcion}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-blue-600 dark:text-blue-400">
                    {tipo.frecuencia_anual ?? 1}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button 
                     onClick={() => onEdit(tipo)}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
+                    className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-300 mr-4"
                   >
                     <Edit className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={() => onDelete(tipo.id)}
-                    className="text-red-600 hover:text-red-900"
+                    className="text-red-600 hover:text-red-900 dark:hover:text-red-300"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -54,7 +53,7 @@ export const EquipmentTypesTable: React.FC<EquipmentTypesTableProps> = ({ tipos,
             ))}
              {tipos.length === 0 && (
                 <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No hay tipos de equipo registrados.</td>
+                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">No hay tipos de equipo registrados.</td>
                 </tr>
             )}
           </tbody>

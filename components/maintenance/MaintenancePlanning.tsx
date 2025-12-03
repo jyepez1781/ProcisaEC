@@ -97,7 +97,7 @@ const MaintenancePlanning: React.FC = () => {
     <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
        {view === 'CONFIG' && (
            <div className="flex-1 overflow-auto">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Planificación de Mantenimiento</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6">Planificación de Mantenimiento</h2>
                 <PlanningConfig 
                     onGenerate={handleGeneratePlan}
                     onViewPlan={handleViewPlan}

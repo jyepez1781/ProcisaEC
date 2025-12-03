@@ -42,11 +42,11 @@ export const HistoryTab: React.FC = () => {
 
   const getActionColor = (accion: string) => {
     switch (accion) {
-      case 'ASIGNACION': return 'text-green-600 bg-green-50 border-green-200';
-      case 'RECEPCION': return 'text-blue-600 bg-blue-50 border-blue-200';
-      case 'BAJA': return 'text-red-600 bg-red-50 border-red-200';
-      case 'MANTENIMIENTO': return 'text-amber-600 bg-amber-50 border-amber-200';
-      default: return 'text-slate-600 bg-slate-50 border-slate-200';
+      case 'ASIGNACION': return 'text-green-600 bg-green-50 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800';
+      case 'RECEPCION': return 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800';
+      case 'BAJA': return 'text-red-600 bg-red-50 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800';
+      case 'MANTENIMIENTO': return 'text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800';
+      default: return 'text-slate-600 bg-slate-50 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600';
     }
   };
 
@@ -127,12 +127,12 @@ export const HistoryTab: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-200">
+      <div className="flex justify-between items-center p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors">
          <div className="flex items-center gap-4">
             <div className="relative">
                 <Filter className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
                 <select 
-                    className="pl-9 pr-4 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    className="pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 dark:text-white"
                     value={filterType}
                     onChange={(e) => handleTypeChange(e.target.value)}
                 >
@@ -144,36 +144,36 @@ export const HistoryTab: React.FC = () => {
          <div className="flex gap-2">
             <button 
                 onClick={() => generateExcelFromData(prepareExportData(), 'Historial_Movimientos')}
-                className="flex items-center gap-2 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 transition-colors"
             >
                 <Download className="w-4 h-4" /> Excel
             </button>
             <button 
                 onClick={handlePrintPDF}
-                className="flex items-center gap-2 text-slate-600 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 bg-white transition-colors"
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 transition-colors"
             >
                 <Printer className="w-4 h-4" /> PDF
             </button>
          </div>
       </div>
 
-      <div className="bg-white border rounded-lg overflow-hidden shadow-sm">
-         <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm transition-colors">
+         <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+            <thead className="bg-slate-50 dark:bg-slate-900/50">
                 <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Fecha</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Acción</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Equipo</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Responsable</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Detalle</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Fecha</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Acción</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Equipo</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Responsable</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Detalle</th>
                 </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
+            <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                 {loading ? (
-                    <tr><td colSpan={5} className="p-8 text-center text-slate-500">Cargando...</td></tr>
+                    <tr><td colSpan={5} className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando...</td></tr>
                 ) : historial.map(h => (
-                    <tr key={h.id} className="hover:bg-slate-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 flex items-center gap-2">
+                    <tr key={h.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
                             <Calendar className="w-3 h-3 text-slate-400" />
                             {h.fecha}
                         </td>
@@ -182,13 +182,13 @@ export const HistoryTab: React.FC = () => {
                                 {h.tipo_accion.replace('_', ' ')}
                             </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800 dark:text-slate-200">
                             {h.equipo_codigo}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
                             {h.usuario_responsable}
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 max-w-md truncate">
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-md truncate">
                             {h.detalle}
                         </td>
                     </tr>

@@ -34,7 +34,7 @@ const EntityManager: React.FC<EntityManagerProps> = (props) => {
   return (
     <div className="max-w-4xl">
       <div className="flex justify-between items-center mb-6">
-        <p className="text-slate-600">Administra los {title.toLowerCase()}s disponibles en el sistema.</p>
+        <p className="text-slate-600 dark:text-slate-400">Administra los {title.toLowerCase()}s disponibles en el sistema.</p>
         <button 
           onClick={openCreateModal} 
           className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-sm transition-colors shadow-sm"

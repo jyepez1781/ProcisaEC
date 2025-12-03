@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { HistorialAsignacion, Usuario, Equipo, Licencia } from '../../types';
 import { reportService } from '../../services/reportService';
@@ -236,13 +237,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
   return (
     <div className="space-y-6">
       {/* Toolbar */}
-      <div className="p-4 bg-slate-50 border rounded-lg flex flex-col md:flex-row gap-4 items-end justify-between">
+      <div className="p-4 bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700 rounded-lg flex flex-col md:flex-row gap-4 items-end justify-between transition-colors">
         <div className="w-full md:w-1/3">
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+            <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1 flex items-center gap-1">
                 <Search className="w-3 h-3" /> Filtrar Usuario
             </label>
             <select 
-                className="w-full p-2 border border-slate-300 rounded text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full p-2 border border-slate-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                 value={filterUserId}
                 onChange={e => setFilterUserId(e.target.value)}
             >
@@ -254,13 +255,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
         <div className="flex gap-2">
             <button 
                 onClick={() => generateExcelFromData(prepareExportData(), 'Reporte_Activos_Por_Usuario')}
-                className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
                 <Download className="w-4 h-4" /> Excel
             </button>
             <button 
                 onClick={handlePrintPDF}
-                className="flex items-center gap-2 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
             >
                 <Printer className="w-4 h-4" /> PDF
             </button>
@@ -270,34 +271,34 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
       {/* Listado Agrupado */}
       <div className="space-y-8">
         {loading ? (
-             <div className="p-12 text-center text-slate-500">Cargando activos...</div>
+             <div className="p-12 text-center text-slate-500 dark:text-slate-400">Cargando activos...</div>
         ) : userAssetsList.length === 0 ? (
-             <div className="p-12 text-center text-slate-500 border rounded-lg bg-slate-50">
+             <div className="p-12 text-center text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800">
                 No se encontraron asignaciones para los criterios seleccionados.
              </div>
         ) : (
             userAssetsList.map(({ user, equipment, licenses }) => (
-                <div key={user.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                <div key={user.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors">
                     {/* User Header */}
-                    <div className="bg-slate-100 px-6 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="bg-slate-100 dark:bg-slate-700/50 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
                                 {user.nombres.charAt(0)}{user.apellidos.charAt(0)}
                             </div>
                             <div>
-                                <h3 className="font-bold text-slate-800 text-lg">{user.nombre_completo}</h3>
-                                <p className="text-sm text-slate-500 flex items-center gap-2">
+                                <h3 className="font-bold text-slate-800 dark:text-white text-lg">{user.nombre_completo}</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                     <User className="w-3 h-3" /> {user.departamento_nombre || 'Sin Departamento'} 
-                                    <span className="text-slate-300">|</span> 
+                                    <span className="text-slate-300 dark:text-slate-600">|</span> 
                                     {user.puesto_nombre || 'Sin Cargo'}
                                 </p>
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <span className="px-3 py-1 bg-white border rounded-full text-xs font-medium text-slate-600 flex items-center gap-1">
+                            <span className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1">
                                 <Laptop className="w-3 h-3 text-blue-500" /> {equipment.length} Equipos
                             </span>
-                            <span className="px-3 py-1 bg-white border rounded-full text-xs font-medium text-slate-600 flex items-center gap-1">
+                            <span className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-full text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1">
                                 <Key className="w-3 h-3 text-purple-500" /> {licenses.length} Licencias
                             </span>
                         </div>
@@ -305,13 +306,13 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
 
                     <div className="p-0 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Equipos Section */}
-                        <div className="border rounded-lg overflow-hidden h-fit">
-                            <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 font-semibold text-blue-800 text-sm flex items-center gap-2">
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-fit">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2 border-b border-blue-100 dark:border-blue-900/30 font-semibold text-blue-800 dark:text-blue-300 text-sm flex items-center gap-2">
                                 <Laptop className="w-4 h-4" /> Equipos Asignados
                             </div>
                             {equipment.length > 0 ? (
                                 <table className="min-w-full text-sm">
-                                    <thead className="bg-slate-50 text-slate-500">
+                                    <thead className="bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400">
                                         <tr>
                                             <th className="px-4 py-2 text-left text-xs uppercase">Código</th>
                                             <th className="px-4 py-2 text-left text-xs uppercase">Modelo</th>
@@ -319,19 +320,19 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
                                             <th className="px-4 py-2 text-center text-xs uppercase">Doc</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                         {equipment.map(eq => (
-                                            <tr key={eq.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-3 font-medium text-slate-700">{eq.equipo_codigo}</td>
-                                                <td className="px-4 py-3 text-slate-600 truncate max-w-[150px]" title={eq.equipo_modelo}>{eq.equipo_modelo}</td>
-                                                <td className="px-4 py-3 text-slate-600">{eq.fecha_inicio}</td>
+                                            <tr key={eq.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                                <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{eq.equipo_codigo}</td>
+                                                <td className="px-4 py-3 text-slate-600 dark:text-slate-400 truncate max-w-[150px]" title={eq.equipo_modelo}>{eq.equipo_modelo}</td>
+                                                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{eq.fecha_inicio}</td>
                                                 <td className="px-4 py-3 text-center">
                                                     {eq.archivo_pdf ? (
-                                                        <button onClick={() => setFileToView(eq.archivo_pdf!)} className="text-blue-600 hover:bg-blue-50 p-1 rounded" title="Ver Documento">
+                                                        <button onClick={() => setFileToView(eq.archivo_pdf!)} className="text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1 rounded" title="Ver Documento">
                                                             <Eye className="w-4 h-4"/>
                                                         </button>
                                                     ) : (
-                                                        <button onClick={() => handleUploadClick(eq.id)} className="text-slate-400 hover:text-blue-600 p-1 rounded hover:bg-slate-50" title="Subir Documento Firmado">
+                                                        <button onClick={() => handleUploadClick(eq.id)} className="text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-700" title="Subir Documento Firmado">
                                                             <Upload className="w-4 h-4"/>
                                                         </button>
                                                     )}
@@ -346,26 +347,26 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
                         </div>
 
                         {/* Licencias Section */}
-                        <div className="border rounded-lg overflow-hidden h-fit">
-                            <div className="bg-purple-50 px-4 py-2 border-b border-purple-100 font-semibold text-purple-800 text-sm flex items-center gap-2">
+                        <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden h-fit">
+                            <div className="bg-purple-50 dark:bg-purple-900/20 px-4 py-2 border-b border-purple-100 dark:border-purple-900/30 font-semibold text-purple-800 dark:text-purple-300 text-sm flex items-center gap-2">
                                 <Key className="w-4 h-4" /> Licencias Asignadas
                             </div>
                             {licenses.length > 0 ? (
                                 <table className="min-w-full text-sm">
-                                    <thead className="bg-slate-50 text-slate-500">
+                                    <thead className="bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400">
                                         <tr>
                                             <th className="px-4 py-2 text-left text-xs uppercase">Software</th>
                                             <th className="px-4 py-2 text-left text-xs uppercase">Clave / ID</th>
                                             <th className="px-4 py-2 text-left text-xs uppercase">Vence</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                         {licenses.map(lic => (
-                                            <tr key={lic.id} className="hover:bg-slate-50">
-                                                <td className="px-4 py-3 font-medium text-slate-700">{lic.tipo_nombre}</td>
-                                                <td className="px-4 py-3 text-slate-500 font-mono text-xs">{lic.clave}</td>
+                                            <tr key={lic.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                                <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{lic.tipo_nombre}</td>
+                                                <td className="px-4 py-3 text-slate-500 dark:text-slate-400 font-mono text-xs">{lic.clave}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${new Date(lic.fecha_vencimiento) < new Date() ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${new Date(lic.fecha_vencimiento) < new Date() ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'}`}>
                                                         {lic.fecha_vencimiento}
                                                     </span>
                                                 </td>
@@ -386,9 +387,9 @@ export const AssignmentsTab: React.FC<AssignmentsTabProps> = ({ usuarios }) => {
       <input type="file" ref={fileInputRef} className="hidden" accept="application/pdf,image/*" onChange={handleFileChange} />
 
       <Modal isOpen={!!fileToView} onClose={() => setFileToView(null)} title="Vista Previa de Documento">
-         <div className="p-8 text-center bg-slate-50 rounded-lg">
+         <div className="p-8 text-center bg-slate-50 dark:bg-slate-700/50 rounded-lg">
              <div className="mb-4 text-slate-400">Simulación de Visor PDF</div>
-             <div className="font-mono text-sm bg-white p-2 border rounded inline-block text-slate-600">{fileToView}</div>
+             <div className="font-mono text-sm bg-white dark:bg-slate-800 p-2 border border-slate-200 dark:border-slate-600 rounded inline-block text-slate-600 dark:text-slate-300">{fileToView}</div>
          </div>
       </Modal>
     </div>

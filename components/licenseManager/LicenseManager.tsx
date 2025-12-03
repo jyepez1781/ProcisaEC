@@ -21,17 +21,17 @@ const LicenseManager: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <Key className="w-6 h-6 text-purple-600" /> Gestión de Licencias
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+            <Key className="w-6 h-6 text-purple-600 dark:text-purple-400" /> Gestión de Licencias
         </h2>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex border-b border-slate-200 dark:border-slate-700">
         <button
           onClick={() => setActiveTab('CATALOG')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === 'CATALOG' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            activeTab === 'CATALOG' ? 'border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <Shield className="w-4 h-4" /> Catálogo & Stock
@@ -39,7 +39,7 @@ const LicenseManager: React.FC = () => {
         <button
           onClick={() => setActiveTab('ASSIGNMENTS')}
           className={`flex items-center gap-2 px-6 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === 'ASSIGNMENTS' ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500 hover:text-slate-700'
+            activeTab === 'ASSIGNMENTS' ? 'border-purple-600 text-purple-600 dark:text-purple-400 dark:border-purple-400' : 'border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <UserCheck className="w-4 h-4" /> Asignaciones
@@ -47,8 +47,8 @@ const LicenseManager: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        {loading ? <div className="text-center py-8 text-slate-500">Cargando datos...</div> : (
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        {loading ? <div className="text-center py-8 text-slate-500 dark:text-slate-400">Cargando datos...</div> : (
           <>
             {activeTab === 'CATALOG' && (
               <LicenseCatalogTab 

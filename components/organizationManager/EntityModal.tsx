@@ -93,12 +93,12 @@ export const EntityModal: React.FC<EntityModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title={editingItem ? `Editar ${title}` : `Nuevo ${title}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del {title}</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del {title}</label>
           <input 
             required 
             autoFocus
             type="text" 
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
             value={formData.nombre}
             onChange={e => setFormData({...formData, nombre: e.target.value})}
             placeholder={`Ej. ${title === 'Departamento' ? 'Marketing' : 'Nombre'}`}
@@ -108,11 +108,11 @@ export const EntityModal: React.FC<EntityModalProps> = ({
         {/* Campo Abreviatura (País y Ciudad) */}
         {(title === 'País' || title === 'Ciudad') && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Abreviatura / Siglas</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Abreviatura / Siglas</label>
               <input 
                 type="text" 
                 maxLength={5}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase bg-white dark:bg-slate-700 dark:text-white"
                 value={formData.abreviatura}
                 onChange={e => setFormData({...formData, abreviatura: e.target.value.toUpperCase()})}
                 placeholder="Ej. EC, GYE"
@@ -123,10 +123,10 @@ export const EntityModal: React.FC<EntityModalProps> = ({
         {/* Selector de País (Solo para Ciudad) */}
         {title === 'Ciudad' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">País</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">País</label>
               <select 
                 required
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
                 value={formData.pais_id}
                 onChange={e => setFormData({...formData, pais_id: e.target.value})}
               >
@@ -141,10 +141,10 @@ export const EntityModal: React.FC<EntityModalProps> = ({
         {/* Campos para Departamento (Ciudad y Bodega) */}
         {withWarehouseOption && cities.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Ciudad</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ciudad</label>
             <select 
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
               value={formData.ciudad_id}
               onChange={e => setFormData({...formData, ciudad_id: e.target.value})}
             >
@@ -158,29 +158,29 @@ export const EntityModal: React.FC<EntityModalProps> = ({
 
         {withWarehouseOption && (
             <div className="pt-2">
-              <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors">
+              <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                 <input 
                   type="checkbox" 
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-slate-700 dark:border-slate-600"
                   checked={formData.es_bodega}
                   onChange={e => setFormData({...formData, es_bodega: e.target.checked})}
                 />
                 <div className="flex-1">
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-                      <Warehouse className="w-4 h-4 text-slate-500" />
+                    <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-200">
+                      <Warehouse className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                       Funciona como Bodega de Sistemas
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">Habilitar para áreas donde se almacenan equipos de IT.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Habilitar para áreas donde se almacenan equipos de IT.</p>
                 </div>
               </label>
             </div>
         )}
         
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
           <button 
             type="button" 
             onClick={onClose} 
-            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium transition-colors"
+            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors"
           >
             Cancelar
           </button>
