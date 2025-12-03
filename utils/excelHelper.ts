@@ -1,22 +1,23 @@
 
-import * as XLSX from 'xlsx';
+// @ts-ignore
+import { utils, writeFile, read } from 'xlsx';
 
 // Genera una plantilla Excel vacía con encabezados
 export const generateExcelTemplate = (headers: string[], filename: string) => {
-  const ws = XLSX.utils.aoa_to_sheet([headers]);
+  const ws = utils.aoa_to_sheet([headers]);
   
   const wscols = headers.map(h => ({ wch: h.length + 5 }));
   ws['!cols'] = wscols;
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Plantilla");
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, "Plantilla");
 
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  writeFile(wb, `${filename}.xlsx`);
 };
 
 // Genera un Excel con datos prellenados con auto-ajuste de columnas
 export const generateExcelFromData = (data: any[], filename: string) => {
-  const ws = XLSX.utils.json_to_sheet(data);
+  const ws = utils.json_to_sheet(data);
   
   // Calcular ancho de columnas basado en contenido y encabezados
   if (data.length > 0) {
@@ -37,9 +38,9 @@ export const generateExcelFromData = (data: any[], filename: string) => {
       ws['!cols'] = wscols;
   }
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Datos");
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  const wb = utils.book_new();
+  utils.book_append_sheet(wb, ws, "Datos");
+  writeFile(wb, `${filename}.xlsx`);
 };
 
 export const parseExcel = async (file: File): Promise<any[]> => {
@@ -49,10 +50,10 @@ export const parseExcel = async (file: File): Promise<any[]> => {
     reader.onload = (e) => {
       try {
         const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'array' });
+        const workbook = read(data, { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        const jsonData = utils.sheet_to_json(worksheet);
         resolve(jsonData);
       } catch (error) {
         reject(error);
