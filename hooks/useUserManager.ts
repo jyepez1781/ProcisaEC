@@ -15,7 +15,7 @@ export const useUserManager = (currentUser: Usuario | null) => {
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 5;
+  const ITEMS_PER_PAGE = 20;
 
   // Edit/Create Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,17 +26,8 @@ export const useUserManager = (currentUser: Usuario | null) => {
   const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<Usuario | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // Reset page when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filterText]);
-
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const [u, d, p] = await Promise.all([
         api.getUsuarios(),
@@ -50,9 +41,21 @@ export const useUserManager = (currentUser: Usuario | null) => {
       console.error("Error loading data", error);
       Swal.fire('Error', 'No se pudieron cargar los datos de usuarios', 'error');
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+    // Hot Reload every 10 seconds for users
+    const interval = setInterval(() => loadData(true), 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Reset page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterText]);
 
   // Filter Logic
   const filteredUsers = useMemo(() => {

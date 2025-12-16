@@ -1,36 +1,42 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/mockApi';
-import { TipoLicencia, Licencia, Usuario } from '../types';
+import { TipoLicencia, Licencia, Usuario, Equipo } from '../types';
 import Swal from 'sweetalert2';
 
 export const useLicenseManager = () => {
   const [tipos, setTipos] = useState<TipoLicencia[]>([]);
   const [licencias, setLicencias] = useState<Licencia[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [equipos, setEquipos] = useState<Equipo[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const [t, l, u] = await Promise.all([
+      const [t, l, u, e] = await Promise.all([
         api.getTipoLicencias(),
         api.getLicencias(),
-        api.getUsuarios()
+        api.getUsuarios(),
+        api.getEquipos()
       ]);
       setTipos(t);
       setLicencias(l);
       setUsuarios(u.filter(user => user.activo));
+      setEquipos(e);
     } catch (e) {
       console.error("Error loading license data", e);
       Swal.fire('Error', 'No se pudieron cargar los datos de licencias', 'error');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadData();
+    // Hot Reload every 10 seconds for licenses
+    const interval = setInterval(() => loadData(false), 10000);
+    return () => clearInterval(interval);
   }, [loadData]);
 
  const createType = async (data: { nombre: string, proveedor: string, descripcion: string, stockInicial: number, fechaVencimiento: string }) => {
@@ -101,7 +107,7 @@ export const useLicenseManager = () => {
   };
 
   return {
-    data: { tipos, licencias, usuarios, loading },
+    data: { tipos, licencias, usuarios, equipos, loading },
     actions: { createType, addStock, assignLicense, unassignLicense, refresh: loadData }
   };
 };

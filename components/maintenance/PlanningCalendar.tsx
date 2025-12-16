@@ -324,14 +324,14 @@ export const PlanningCalendar: React.FC<PlanningCalendarProps> = ({ plan, initia
         <div className="flex flex-wrap gap-2">
             <button 
                 onClick={handleExportExcel}
-                className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 title="Exportar listado a Excel"
             >
                 <Download className="w-4 h-4" /> Excel
             </button>
             <button 
                 onClick={handleExportPDF}
-                className="flex items-center gap-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 px-4 py-2 rounded-lg font-medium text-sm transition-colors"
+                className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 title="Imprimir vista de calendario"
             >
                 <Printer className="w-4 h-4" /> PDF
@@ -348,6 +348,7 @@ export const PlanningCalendar: React.FC<PlanningCalendarProps> = ({ plan, initia
       </div>
 
       {/* Calendar Grid */}
+      {/* ... (rest of the component unchanged) ... */}
       <div className="flex-1 bg-slate-50 dark:bg-slate-900 rounded-xl overflow-x-auto border border-slate-200 dark:border-slate-700 custom-scrollbar">
          <div className="min-w-[1200px] h-full grid grid-cols-4 lg:grid-cols-6 xl:grid-cols-12 divide-x divide-slate-200 dark:divide-slate-700">
             {MONTH_NAMES.map((monthName, idx) => {

@@ -34,8 +34,8 @@ export const useMaintenanceManager = () => {
   const [formData, setFormData] = useState<MaintenanceFormData>(INITIAL_FORM_STATE);
   const [reportFile, setReportFile] = useState<File | null>(null);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
+  const loadData = useCallback(async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const [allEquipos, deptData] = await Promise.all([
         api.getEquipos(),
@@ -48,12 +48,15 @@ export const useMaintenanceManager = () => {
       console.error(error);
       Swal.fire('Error', 'No se pudieron cargar los datos de mantenimiento', 'error');
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     loadData();
+    // Hot Reload every 5 seconds
+    const interval = setInterval(() => loadData(true), 5000);
+    return () => clearInterval(interval);
   }, [loadData]);
 
   const openModal = (equipo: Equipo) => {

@@ -1,17 +1,26 @@
+
 import React, { useState } from 'react';
 import { Equipo, EstadoEquipo } from '../../types';
 import { MoreVertical, Edit, UserCheck, RotateCcw, Wrench, Archive, Trash2, Box, User } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { StatusBadge } from '../common/StatusBadge';
 import { ModalAction } from '../../hooks/useEquipment';
+import { Pagination } from '../common/Pagination';
 
 interface EquipmentTableProps {
   groupedEquipos: Record<string, Equipo[]>;
   grouping: string;
   onAction: (action: ModalAction, equipo: Equipo) => void;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+    totalItems: number;
+    itemsPerPage: number;
+  };
 }
 
-export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, grouping, onAction }) => {
+export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, grouping, onAction, pagination }) => {
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
 
   const toggleMenu = (e: React.MouseEvent, id: number) => {
@@ -20,7 +29,7 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
   };
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden pb-32" onClick={() => setOpenMenuId(null)}>
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col" onClick={() => setOpenMenuId(null)}>
       <div className="overflow-x-auto min-h-[400px]">
         <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
           <thead className="bg-slate-50 dark:bg-slate-900/50">
@@ -89,11 +98,13 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
                               <button onClick={() => onAction('TO_MAINTENANCE', equipo)} className="w-full text-left px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex gap-2"><Wrench className="w-4 h-4"/> Enviar a Mantenimiento</button>
                            )}
 
-                           {!['Baja', 'Para Baja'].includes(equipo.estado) && (
+                           {/* Pre-Baja: No disponible si está asignado (Activo) */}
+                           {!['Baja', 'Para Baja', 'Activo'].includes(equipo.estado) && (
                               <button onClick={() => onAction('MARK_DISPOSAL', equipo)} className="w-full text-left px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex gap-2"><Archive className="w-4 h-4"/> Pre-Baja</button>
                            )}
                            
-                           {equipo.estado !== EstadoEquipo.BAJA && (
+                           {/* Baja: No disponible si está asignado (Activo) */}
+                           {equipo.estado !== EstadoEquipo.BAJA && equipo.estado !== EstadoEquipo.ACTIVO && (
                               <button onClick={() => onAction('BAJA', equipo)} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex gap-2"><Trash2 className="w-4 h-4"/> Dar Baja</button>
                            )}
                          </div>
@@ -106,6 +117,16 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
           </tbody>
         </table>
       </div>
+      
+      {Object.keys(groupedEquipos).length > 0 && (
+        <Pagination 
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={pagination.onPageChange}
+            totalItems={pagination.totalItems}
+            itemsPerPage={pagination.itemsPerPage}
+        />
+      )}
     </div>
   );
 };

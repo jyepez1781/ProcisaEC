@@ -1,22 +1,43 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Key, Shield, UserCheck } from 'lucide-react';
 import { useLicenseManager } from '../../hooks/useLicenseManager';
 import { LicenseCatalogTab } from './LicenseCatalogTab';
 import { LicenseAssignmentsTab } from './LicenseAssignmentsTab';
 import { CreateTypeModal, StockModal, AssignModal, UnassignModal } from './LicenseModals';
-import { Licencia } from '../../types';
+import { Licencia, EstadoEquipo } from '../../types';
 
 const LicenseManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'CATALOG' | 'ASSIGNMENTS'>('CATALOG');
   const { data, actions } = useLicenseManager();
-  const { tipos, licencias, usuarios, loading } = data;
+  const { tipos, licencias, usuarios, equipos, loading } = data;
 
   // Modal States
   const [isCreateTypeOpen, setIsCreateTypeOpen] = useState(false);
   const [stockModalData, setStockModalData] = useState<{ isOpen: boolean; tipoId: number }>({ isOpen: false, tipoId: 0 });
   const [assignModalData, setAssignModalData] = useState<{ isOpen: boolean; license: Licencia | null }>({ isOpen: false, license: null });
   const [unassignModalData, setUnassignModalData] = useState<{ isOpen: boolean; license: Licencia | null }>({ isOpen: false, license: null });
+
+  // Lógica de Filtrado de Usuarios Elegibles
+  // Solo usuarios que tienen asignado un equipo de tipo computo (Laptop, Desktop, Workstation)
+  const eligibleUsers = useMemo(() => {
+    const computingKeywords = ['laptop', 'desktop', 'workstation', 'portatil', 'pc', 'computador', 'notebook'];
+    
+    return usuarios.filter(user => {
+        return equipos.some(eq => {
+            // El equipo debe estar asignado al usuario
+            const isAssignedToUser = eq.responsable_id === user.id;
+            // El equipo debe estar Activo (no en baja, ni disponible)
+            const isActive = eq.estado === EstadoEquipo.ACTIVO;
+            // El tipo debe ser de cómputo
+            const isComputingType = computingKeywords.some(keyword => 
+                (eq.tipo_nombre || '').toLowerCase().includes(keyword)
+            );
+
+            return isAssignedToUser && isActive && isComputingType;
+        });
+    });
+  }, [usuarios, equipos]);
 
   return (
     <div className="space-y-6">
@@ -89,7 +110,7 @@ const LicenseManager: React.FC = () => {
         isOpen={assignModalData.isOpen}
         onClose={() => setAssignModalData({ isOpen: false, license: null })}
         license={assignModalData.license}
-        usuarios={usuarios}
+        usuarios={eligibleUsers} // Pasamos la lista filtrada
         onAssign={actions.assignLicense}
       />
 

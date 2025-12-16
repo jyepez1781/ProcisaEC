@@ -5,6 +5,11 @@ import { reportService } from '../../services/reportService';
 import { Filter, User, Box, Layers, Download, Key, Printer } from 'lucide-react';
 import { generateExcelFromData } from '../../utils/excelHelper';
 import { openPrintPreview, printCustomHTML } from '../../utils/documentGenerator';
+import { Pagination } from '../common/Pagination';
+
+interface LicenseAssignmentsTabProps {
+  // ... props if any
+}
 
 export const LicenseReportTab: React.FC = () => {
   const [licencias, setLicencias] = useState<Licencia[]>([]);
@@ -18,6 +23,10 @@ export const LicenseReportTab: React.FC = () => {
   
   // Grouping - Default to TYPE
   const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('TYPE');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     const loadData = async () => {
@@ -40,13 +49,24 @@ export const LicenseReportTab: React.FC = () => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterType, filterUser, grouping]);
+
   const filteredData = licencias.filter(l => {
     const matchType = filterType ? l.tipo_id === Number(filterType) : true;
     const matchUser = filterUser ? l.usuario_id === Number(filterUser) : true;
     return matchType && matchUser;
   });
 
-  const groupedData = filteredData.reduce((acc, item) => {
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const paginatedData = filteredData.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const groupedData = paginatedData.reduce((acc, item) => {
     const key = grouping === 'NONE' 
       ? 'Todas las Asignaciones' 
       : (grouping === 'TYPE' ? item.tipo_nombre : (item.usuario_nombre || 'Desconocido'));
@@ -87,10 +107,21 @@ export const LicenseReportTab: React.FC = () => {
       </style>
     `;
 
-    if (Object.keys(groupedData).length === 0) {
+    if (filteredData.length === 0) {
        htmlContent += `<div style="text-align:center; padding: 20px; color: #94a3b8; font-style: italic;">No hay datos para mostrar.</div>`;
     } else {
-       Object.entries(groupedData).forEach(([groupKey, items]: [string, Licencia[]]) => {
+       // Group ALL data for PDF, not just paginated
+       const pdfGroups = filteredData.reduce((acc, item) => {
+            const key = grouping === 'NONE' 
+            ? 'Todas las Asignaciones' 
+            : (grouping === 'TYPE' ? item.tipo_nombre : (item.usuario_nombre || 'Desconocido'));
+            
+            if (!acc[key]) acc[key] = [];
+            acc[key].push(item);
+            return acc;
+        }, {} as Record<string, Licencia[]>);
+
+       Object.entries(pdfGroups).forEach(([groupKey, items]: [string, Licencia[]]) => {
           htmlContent += `<div class="group-wrapper">`;
           
           // Header
@@ -183,14 +214,14 @@ export const LicenseReportTab: React.FC = () => {
          <div className="flex items-center gap-3">
              <div className="flex flex-col">
                  <label className="text-[10px] font-bold text-slate-400 uppercase mb-1">Agrupar Por</label>
-                 <div className="flex border border-slate-200 dark:border-slate-600 rounded overflow-hidden bg-white dark:bg-slate-800">
-                    <button onClick={() => setGrouping('NONE')} className={`px-3 py-2 text-xs flex items-center gap-1 ${grouping === 'NONE' ? 'bg-purple-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                 <div className="flex border border-slate-200 dark:border-slate-600 rounded overflow-hidden bg-white dark:bg-slate-800 h-[38px]">
+                    <button onClick={() => setGrouping('NONE')} className={`px-3 flex items-center gap-1 text-xs font-medium ${grouping === 'NONE' ? 'bg-purple-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                         <Layers className="w-3 h-3" /> Plano
                     </button>
-                    <button onClick={() => setGrouping('TYPE')} className={`px-3 py-2 text-xs flex items-center gap-1 ${grouping === 'TYPE' ? 'bg-purple-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                    <button onClick={() => setGrouping('TYPE')} className={`px-3 flex items-center gap-1 text-xs font-medium ${grouping === 'TYPE' ? 'bg-purple-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                         <Box className="w-3 h-3" /> Tipo
                     </button>
-                    <button onClick={() => setGrouping('USER')} className={`px-3 py-2 text-xs flex items-center gap-1 ${grouping === 'USER' ? 'bg-purple-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                    <button onClick={() => setGrouping('USER')} className={`px-3 flex items-center gap-1 text-xs font-medium ${grouping === 'USER' ? 'bg-purple-600 text-white' : 'hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                         <User className="w-3 h-3" /> Usuario
                     </button>
                  </div>
@@ -201,13 +232,13 @@ export const LicenseReportTab: React.FC = () => {
                 <div className="flex gap-2">
                     <button 
                         onClick={() => generateExcelFromData(prepareExportData(), 'Reporte_Licencias_Asignadas')}
-                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded text-sm font-medium h-[34px]"
+                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                     >
-                        <Download className="w-4 h-4" /> Exportar
+                        <Download className="w-4 h-4" /> Excel
                     </button>
                     <button 
                         onClick={handlePrintPDF}
-                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded text-sm font-medium h-[34px]"
+                        className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                     >
                         <Printer className="w-4 h-4" /> PDF
                     </button>
@@ -269,6 +300,16 @@ export const LicenseReportTab: React.FC = () => {
              ))
           )}
        </div>
+       
+       {!loading && filteredData.length > 0 && (
+            <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filteredData.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+            />
+       )}
     </div>
   );
 };

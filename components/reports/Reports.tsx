@@ -12,7 +12,7 @@ import { LicenseReportTab } from './LicenseReportTab';
 import { DisposalReportTab } from './DisposalReportTab';
 
 const Reports: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('ASSIGNMENTS');
+  const [activeTab, setActiveTab] = useState('LICENSES');
   
   // Data for Assignments Tab (shared logic)
   const [users, setUsers] = useState<Usuario[]>([]);
@@ -38,8 +38,8 @@ const Reports: React.FC = () => {
       <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Centro de Reportes</h2>
       
       <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto bg-white dark:bg-slate-800 rounded-t-lg shadow-sm">
-        <TabButton id="ASSIGNMENTS" icon={CalendarRange} label="Asignaciones" />
         <TabButton id="LICENSES" icon={Key} label="Licencias Asignadas" />
+        <TabButton id="ASSIGNMENTS" icon={CalendarRange} label="Asignaciones" />
         <TabButton id="HISTORY" icon={History} label="Bitácora de Movimientos" />
         <TabButton id="MAINTENANCE" icon={Wrench} label="Historial Mantenimiento" />
         <TabButton id="WARRANTY" icon={ShieldAlert} label="Garantías" />
@@ -48,8 +48,8 @@ const Reports: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 p-6 rounded-b-lg shadow-sm border border-t-0 border-slate-200 dark:border-slate-700 min-h-[500px]">
-        {activeTab === 'ASSIGNMENTS' && <AssignmentsTab usuarios={users} equipos={equipos} />}
         {activeTab === 'LICENSES' && <LicenseReportTab />}
+        {activeTab === 'ASSIGNMENTS' && <AssignmentsTab usuarios={users} equipos={equipos} />}
         {activeTab === 'HISTORY' && <HistoryTab />}
         {activeTab === 'MAINTENANCE' && <MaintenanceReportTab />}
         {activeTab === 'WARRANTY' && <WarrantiesTab />}

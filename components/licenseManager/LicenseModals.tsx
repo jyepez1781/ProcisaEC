@@ -169,6 +169,10 @@ export const AssignModal: React.FC<AssignModalProps> = ({ isOpen, onClose, licen
               <option key={u.id} value={u.id}>{u.nombre_completo} - {u.departamento_nombre}</option>
             ))}
           </select>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+             <AlertCircle className="w-3 h-3" />
+             Solo se muestran usuarios con equipos de cómputo asignados (Laptop/PC).
+          </p>
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700 mt-6">
           <button type="button" onClick={onClose} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors">Cancelar</button>

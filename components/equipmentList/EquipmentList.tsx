@@ -14,7 +14,8 @@ const EquipmentPage: React.FC = () => {
     tipos, usuarios, bodegas, cities, countries,
     filters, setFilters, 
     grouping, setGrouping, 
-    handleAction 
+    handleAction,
+    currentPage, totalPages, setCurrentPage, totalItems, ITEMS_PER_PAGE
   } = useEquipment();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -73,7 +74,14 @@ const EquipmentPage: React.FC = () => {
       <EquipmentTable 
         groupedEquipos={groupedEquipos} 
         grouping={grouping} 
-        onAction={openModal} 
+        onAction={openModal}
+        pagination={{
+            currentPage,
+            totalPages,
+            onPageChange: setCurrentPage,
+            totalItems,
+            itemsPerPage: ITEMS_PER_PAGE
+        }}
       />
 
       <Modal isOpen={modalOpen} onClose={closeModal} title={getModalTitle()}>

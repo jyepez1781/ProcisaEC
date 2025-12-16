@@ -2,9 +2,10 @@
 import React, { useState, useRef } from 'react';
 import { DetallePlan, EvidenciaMantenimiento } from '../../types';
 import { Modal } from '../common/Modal';
-import { Upload, Eye, FileText, CheckCircle, Image as ImageIcon, X } from 'lucide-react';
+import { Upload, Eye, FileText, CheckCircle, Image as ImageIcon, X, Sparkles, Loader2 } from 'lucide-react';
 import { maintenancePlanningService } from '../../services/maintenancePlanningService';
 import Swal from 'sweetalert2';
+import { GoogleGenAI } from "@google/genai";
 
 interface ExecutionModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   if (!isOpen || !task) return null;
 
@@ -37,6 +39,26 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
       
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const handleAIAssist = async () => {
+    if (!formData.observaciones.trim()) return;
+    setIsAiLoading(true);
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Actúa como un técnico experto en soporte IT. Reescribe el siguiente reporte de hallazgos de mantenimiento para que sea más formal, técnico y preciso. Corrige ortografía y gramática. Solo devuelve el texto mejorado sin introducciones. Texto original: "${formData.observaciones}"`,
+        });
+        const text = response.text;
+        if (text) {
+            setFormData(prev => ({ ...prev, observaciones: text.trim() }));
+        }
+    } catch (error) {
+        console.error("AI Error", error);
+    } finally {
+        setIsAiLoading(false);
     }
   };
 
@@ -97,11 +119,25 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
              </div>
           </div>
 
-          <div>
-             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones / Hallazgos</label>
-             <textarea required rows={3} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+          <div className="relative">
+             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex justify-between">
+                Observaciones / Hallazgos
+             </label>
+             <textarea required rows={3} className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white pr-10"
                 placeholder="Describa el trabajo realizado..."
                 value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
+             
+             {formData.observaciones.length > 5 && (
+                 <button
+                    type="button"
+                    onClick={handleAIAssist}
+                    disabled={isAiLoading}
+                    className="absolute right-2 bottom-3 p-1.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
+                    title="Mejorar redacción con Gemini AI"
+                 >
+                    {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                 </button>
+             )}
           </div>
 
           {/* Evidence Section */}

@@ -1,5 +1,4 @@
 
-
 import { Usuario, Equipo } from '../types';
 import Swal from 'sweetalert2';
 
@@ -179,6 +178,236 @@ export const getAssignmentDocumentHTML = (usuario: Usuario, equipo: Equipo): str
 };
 
 /**
+ * Genera el string HTML del Acta de Recepción / Devolución
+ */
+export const getReceptionDocumentHTML = (usuario: Usuario, equipo: Equipo, fechaRecepcion: string, observaciones: string, licenciasLiberadas: string[] = []): string => {
+  const fechaCorta = new Date().toLocaleDateString('es-ES');
+
+  let licenciasHtml = '';
+  if (licenciasLiberadas.length > 0) {
+      licenciasHtml = `
+      <div class="section">
+         <div class="label" style="width: 100%; margin-bottom: 5px; font-weight: bold;">Licencias de Software Liberadas:</div>
+         <ul style="margin-top: 5px; font-size: 10pt; padding-left: 20px;">
+            ${licenciasLiberadas.map(l => `<li>${l}</li>`).join('')}
+         </ul>
+         <p style="font-size: 8pt; color: #666; margin-top:5px; font-style: italic;">
+            * El usuario ha entregado las credenciales y/o declara que ya no tiene acceso a estos recursos de software.
+         </p>
+      </div>
+      `;
+  }
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Acta de Recepción</title>
+        <style>
+          @page { size: A4 portrait; margin: 2cm; }
+          body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; margin: 0; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+          .logo-box { text-align: left; margin-bottom: 10px; }
+          .title { font-weight: bold; font-size: 14pt; text-transform: uppercase; margin-bottom: 5px; }
+          .subtitle { font-size: 10pt; font-weight: bold; }
+          .section { margin-bottom: 20px; }
+          .label { font-weight: bold; display: inline-block; width: 150px; }
+          .table-container { margin: 20px 0; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+          th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10pt; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+          .info-item { margin-bottom: 5px; }
+          
+          .signatures { margin-top: 100px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          .sig-box { width: 45%; text-align: center; }
+          .sig-line { border-top: 1px solid #000; margin-bottom: 5px; margin-top: 50px; }
+          .sig-role { font-size: 9pt; font-weight: bold; margin-bottom: 2px; }
+          .sig-name { font-size: 10pt; }
+          
+          .footer-note { font-size: 8pt; text-align: center; margin-top: 50px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+           <div class="logo-box">
+              <img src="/logoAnexoCarso.png" style="max-height: 50px;" alt="Logo" onerror="this.style.display='none';"/>
+           </div>
+           <div class="title">ACTA DE RECEPCIÓN / DEVOLUCIÓN DE EQUIPO</div>
+           <div class="subtitle">DEPARTAMENTO DE TECNOLOGÍA</div>
+           <div style="text-align: right; margin-top: 10px; font-size: 9pt;">Fecha Impresión: ${fechaCorta}</div>
+        </div>
+
+        <div class="section">
+           <p style="text-align: justify;">
+             Por medio de la presente se hace constar la devolución del equipo de cómputo y/o periféricos asignados al colaborador, detallando a continuación las características y el estado de los mismos.
+           </p>
+        </div>
+
+        <div class="section" style="background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd;">
+           <div class="info-grid">
+              <div class="info-item"><span class="label">Fecha Recepción:</span> ${fechaRecepcion}</div>
+              <div class="info-item"><span class="label">Ubicación:</span> ${equipo.ubicacion_nombre || 'Bodega IT'}</div>
+              <div class="info-item"><span class="label">Usuario Devuelve:</span> ${usuario.nombre_completo}</div>
+              <div class="info-item"><span class="label">Departamento:</span> ${usuario.departamento_nombre || 'N/A'}</div>
+           </div>
+        </div>
+
+        <div class="table-container">
+           <h3>Detalle del Equipo</h3>
+           <table>
+              <thead>
+                 <tr>
+                    <th style="width: 20%;">Tipo</th>
+                    <th style="width: 20%;">Marca</th>
+                    <th style="width: 30%;">Modelo</th>
+                    <th style="width: 30%;">Serie / Código</th>
+                 </tr>
+              </thead>
+              <tbody>
+                 <tr>
+                    <td>${equipo.tipo_nombre}</td>
+                    <td>${equipo.marca}</td>
+                    <td>${equipo.modelo}</td>
+                    <td>
+                      <strong>Serie:</strong> ${equipo.numero_serie}<br>
+                      <strong>Activo:</strong> ${equipo.codigo_activo}
+                    </td>
+                 </tr>
+              </tbody>
+           </table>
+        </div>
+
+        <div class="section">
+           <div class="label" style="width: 100%; margin-bottom: 5px; font-weight: bold;">Observaciones / Estado del Equipo:</div>
+           <div style="border: 1px solid #000; padding: 10px; min-height: 80px; font-style: italic;">
+              ${observaciones || 'El equipo se recibe funcionando correctamente, con sus accesorios completos.'}
+           </div>
+        </div>
+
+        ${licenciasHtml}
+
+        <div class="signatures">
+           <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-role">ENTREGADO POR (USUARIO)</div>
+              <div class="sig-name">${usuario.nombre_completo}</div>
+              <div class="sig-name" style="font-size: 8pt;">C.I. / Empleado: ${usuario.numero_empleado || '__________'}</div>
+           </div>
+           <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-role">RECIBIDO POR (IT)</div>
+              <div class="sig-name">Administrador de Inventario</div>
+              <div class="sig-name" style="font-size: 8pt;">Departamento de Tecnología</div>
+           </div>
+        </div>
+        
+        <div class="footer-note">
+           Este documento certifica la devolución del activo fijo propiedad de la empresa.
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Genera el string HTML del Acta de Baja
+ */
+export const getDisposalDocumentHTML = (equipo: Equipo, motivo: string): string => {
+  const fechaCorta = new Date().toLocaleDateString('es-ES');
+  const fechaCompleta = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Acta de Baja Técnica</title>
+        <style>
+          @page { size: A4 portrait; margin: 2cm; }
+          body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; margin: 0; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+          .title { font-weight: bold; font-size: 16pt; text-transform: uppercase; margin-bottom: 5px; }
+          .subtitle { font-size: 11pt; font-weight: bold; color: #444; }
+          
+          .section-box { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
+          .box-title { background: #eee; padding: 5px; border-bottom: 1px solid #000; font-weight: bold; margin: -10px -10px 10px -10px; text-align:center; font-size:10pt;}
+          
+          table { width: 100%; border-collapse: collapse; }
+          td { padding: 5px; vertical-align: top; }
+          .label { font-weight: bold; width: 140px; display:inline-block; }
+          
+          .reason-box { border: 1px solid #000; padding: 15px; min-height: 100px; margin: 10px 0; background-color: #fafafa; }
+          
+          .signatures { margin-top: 80px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          .sig-box { width: 45%; text-align: center; }
+          .sig-line { border-top: 1px solid #000; margin-bottom: 5px; margin-top: 50px; }
+          .sig-role { font-size: 9pt; font-weight: bold; margin-bottom: 2px; }
+          
+          .footer-note { font-size: 8pt; text-align: center; margin-top: 50px; color: #666; border-top: 1px solid #ddd; padding-top:10px;}
+        </style>
+      </head>
+      <body>
+        <div class="header">
+           <img src="/logoAnexoCarso.png" style="max-height: 50px; float:left;" alt="Logo" onerror="this.style.display='none';"/>
+           <div class="title">INFORME TÉCNICO DE BAJA</div>
+           <div class="subtitle">DEPARTAMENTO DE SISTEMAS</div>
+           <div style="clear:both;"></div>
+        </div>
+
+        <p style="text-align: right; font-size: 10pt;">
+           <strong>Fecha:</strong> ${fechaCompleta}
+        </p>
+
+        <div class="section-box">
+           <div class="box-title">DATOS DEL EQUIPO</div>
+           <table>
+              <tr>
+                 <td><span class="label">Código Activo:</span> ${equipo.codigo_activo}</td>
+                 <td><span class="label">Fecha Compra:</span> ${equipo.fecha_compra}</td>
+              </tr>
+              <tr>
+                 <td><span class="label">Tipo:</span> ${equipo.tipo_nombre}</td>
+                 <td><span class="label">Marca:</span> ${equipo.marca}</td>
+              </tr>
+              <tr>
+                 <td><span class="label">Modelo:</span> ${equipo.modelo}</td>
+                 <td><span class="label">Serie:</span> ${equipo.numero_serie}</td>
+              </tr>
+           </table>
+        </div>
+
+        <div style="margin-bottom: 5px; font-weight: bold;">DIAGNÓSTICO TÉCNICO / MOTIVO DE BAJA:</div>
+        <div class="reason-box">
+           ${motivo}
+        </div>
+
+        <p style="text-align: justify; font-size: 10pt; margin-top: 20px;">
+           Tras la revisión técnica realizada, se determina que el equipo detallado anteriormente ya no cumple con las condiciones operativas necesarias para su funcionamiento dentro de la organización, o su reparación resulta económicamente inviable. Por lo tanto, se recomienda su <strong>BAJA DEFINITIVA</strong> del inventario de activos fijos.
+        </p>
+
+        <div class="signatures">
+           <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-role">ELABORADO POR (SOPORTE TÉCNICO)</div>
+              <div style="font-size: 9pt;">Firma y Sello</div>
+           </div>
+           <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-role">APROBADO POR (JEFATURA)</div>
+              <div style="font-size: 9pt;">Firma y Sello</div>
+           </div>
+        </div>
+        
+        <div class="footer-note">
+           Documento generado por el Sistema InvenTory - Control de Activos
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
  * Genera el documento de asignación y abre la ventana de impresión
  */
 export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => {
@@ -204,297 +433,103 @@ export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => 
 };
 
 /**
- * Genera la Orden de Servicio (Mantenimiento)
+ * Genera el documento de recepción/devolución y abre la ventana de impresión
  */
-export const generateServiceOrder = (
-    equipo: Equipo, 
-    formData: { tipo: string, proveedor: string, descripcion: string, costo: number }
-) => {
-    const printWindow = window.open('', '_blank', 'width=900,height=1100');
-    if (!printWindow) {
-      Swal.fire('Ventana Bloqueada', 'Habilita pop-ups.', 'warning');
-      return;
-    }
-
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('es-ES');
-    const isCorrective = formData.tipo === 'Correctivo';
-    
-    // Checkmarks
-    const chkNormal = '☐';
-    const chkUrgente = '☐'; // Could be logic driven
-    const chkInterno = '☐';
-    const chkExterno = '☑'; // Assuming provider implies external often, but logic can vary
-    const chkCorr = isCorrective ? '☑' : '☐';
-    const chkPrev = !isCorrective ? '☑' : '☐';
-
-    const htmlContent = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Orden de Servicio</title>
-        <style>
-          @page { size: A4 portrait; margin: 1cm; }
-          body { font-family: Arial, sans-serif; font-size: 10px; margin: 0; color: #000; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 5px; }
-          td, th { border: 2px solid #000; padding: 3px 5px; vertical-align: middle; }
-          .no-border { border: none !important; }
-          .bold { font-weight: bold; }
-          .text-center { text-align: center; }
-          .text-right { text-align: right; }
-          .header-title { font-size: 16px; font-weight: bold; text-align: center; border: none; }
-          
-          /* Header Layout */
-          .header-container { display: flex; border: 2px solid #000; margin-bottom: 2px; }
-          .logo-box { width: 150px; padding: 5px; border-right: 2px solid #000; display: flex; align-items: center; justify-content: center; }
-          .title-box { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; }
-          
-          .info-table td { border: none; padding: 2px 5px; }
-          .info-section { border: 2px solid #000; padding: 2px; margin-bottom: 2px; }
-          
-          .section-header { background-color: #ddd; font-weight: bold; text-align: center; padding: 2px; border: 2px solid #000; border-bottom: none; }
-          
-          .input-line { border-bottom: 1px solid #000; display: inline-block; min-width: 50px; }
-          
-          .grid-table th { background-color: #f0f0f0; text-align: center; font-weight: bold; }
-          .grid-table td { height: 15px; }
-          
-          .blue-header { background-color: #3b82f6; color: white; font-weight: bold; text-align: center; border: 1px solid #000; }
-          .blue-row td { border: 1px solid #000; }
-          
-          .footer-section { margin-top: 10px; border: 2px solid #000; padding: 5px; min-height: 80px; }
-          .signatures { display: flex; justify-content: space-around; margin-top: 40px; margin-bottom: 10px; }
-          .sig-box { text-align: center; width: 40%; }
-          .sig-line { border-top: 2px solid #000; margin-top: 30px; }
-          
-          .fr-code { font-size: 8px; text-align: right; margin-top: 5px; }
-        </style>
-      </head>
-      <body>
-        
-        <!-- Header -->
-        <div class="header-container">
-            <div class="logo-box">
-                <img src="/logoAnexoCarso.png" alt="CARSO" style="max-width:100%;" />
-            </div>
-            <div class="title-box">Orden de Servicio</div>
-        </div>
-
-        <!-- Info Section 1 -->
-        <div class="info-section">
-            <table class="no-border" style="border: none;">
-                <tr>
-                    <td class="no-border" style="width: 15%;"><strong>Area / Depto.:</strong></td>
-                    <td class="no-border" style="width: 35%; border-bottom: 1px solid #000 !important;">${equipo.ubicacion_nombre || ''}</td>
-                    <td class="no-border" style="width: 10%;"><strong>Fecha:</strong></td>
-                    <td class="no-border" style="width: 40%; border-bottom: 1px solid #000 !important;">${dateStr}</td>
-                </tr>
-                <tr>
-                   <td class="no-border"><strong>Prioridad:</strong></td>
-                   <td class="no-border" colspan="3">
-                        Normal ${chkNormal} &nbsp;&nbsp; Urgente ${chkUrgente}
-                   </td>
-                </tr>
-                <tr>
-                    <td class="no-border"><strong>Maquina o Equipo Afectado:</strong></td>
-                    <td class="no-border" style="border-bottom: 1px solid #000 !important;">${equipo.tipo_nombre} ${equipo.marca} ${equipo.modelo} (${equipo.codigo_activo})</td>
-                    <td class="no-border"><strong>Km / Horómetro:</strong></td>
-                    <td class="no-border" style="border-bottom: 1px solid #000 !important;"></td>
-                </tr>
-            </table>
-        </div>
-        
-        <!-- Description -->
-        <div class="info-section" style="min-height: 80px;">
-             <table class="no-border" style="border: none;">
-                <tr>
-                    <td class="no-border" style="width: 25%;"><strong>Descripción del problema o falla:</strong></td>
-                    <td class="no-border" style="width: 45%;"></td>
-                    <td class="no-border" style="width: 10%; text-align: right;"><strong>No. Orden:</strong></td>
-                    <td class="no-border" style="border-bottom: 1px solid #000 !important; width: 20%;">${Math.floor(Math.random() * 10000)}</td>
-                </tr>
-             </table>
-             <div style="padding: 5px;">${formData.descripcion}</div>
-             <br><br>
-             <div style="text-align: right; padding-right: 10px;"><strong>Solicitado por:</strong> ${equipo.responsable_nombre || 'N/A'}</div>
-        </div>
-
-        <!-- Maint Type -->
-        <div class="info-section">
-            <table class="no-border" style="border: none;">
-                <tr>
-                    <td class="no-border" style="width: 15%;"><strong>Mantenimiento:</strong></td>
-                    <td class="no-border" style="width: 35%;">Interno ${chkInterno} &nbsp;&nbsp; Externo ${chkExterno}</td>
-                    <td class="no-border" style="width: 15%;"><strong>Servicio:</strong></td>
-                    <td class="no-border" style="border-bottom: 1px solid #000 !important;">${formData.proveedor}</td>
-                </tr>
-                <tr>
-                    <td class="no-border"></td>
-                    <td class="no-border"></td>
-                    <td class="no-border"><strong>Fecha de inicio:</strong></td>
-                    <td class="no-border" style="border-bottom: 1px solid #000 !important;">${dateStr}</td>
-                </tr>
-                <tr>
-                    <td class="no-border"><strong>Tipo de mtto:</strong></td>
-                    <td class="no-border">Correctivo ${chkCorr} &nbsp;&nbsp; Preventivo ${chkPrev}</td>
-                    <td class="no-border"><strong>Asignado a:</strong></td>
-                    <td class="no-border" style="border-bottom: 1px solid #000 !important;">CHRISTIAN CORDERO</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Trabajos Efectuados -->
-        <table class="grid-table" style="margin-top: 2px;">
-            <tr>
-                <th style="width: 80%;">Trabajos efectuados:</th>
-                <th style="width: 10%;">Cantidad</th>
-                <th style="width: 10%;">Total</th>
-            </tr>
-            <!-- Rows -->
-            ${Array.from({length: 8}).map((_, i) => `
-            <tr>
-                <td>${i === 0 ? formData.descripcion : ''}</td>
-                <td></td>
-                <td></td>
-            </tr>
-            `).join('')}
-             <tr>
-                <td style="border: 2px solid #000; font-weight: bold;">Fecha de Termino:</td>
-                <td style="border: 2px solid #000; font-weight: bold;">Total</td>
-                <td style="border: 2px solid #000;">${formData.costo > 0 ? formData.costo.toFixed(2) : '0'}</td>
-            </tr>
-        </table>
-
-        <!-- Materiales -->
-        <table class="grid-table blue-row" style="margin-top: 2px;">
-            <tr>
-                <th class="blue-header" style="width: 5%;">No</th>
-                <th class="blue-header" style="width: 45%;">Materiales utilizados</th>
-                <th class="blue-header" style="width: 50%;">Observaciones</th>
-            </tr>
-            ${Array.from({length: 10}).map((_, i) => `
-            <tr>
-                <td style="text-align: center;">${i + 1}</td>
-                <td></td>
-                <td></td>
-            </tr>
-            `).join('')}
-        </table>
-
-        <!-- Footer -->
-        <div class="footer-section">
-            <strong>Datos del Proveedor</strong>
-            <br><br>
-            ${formData.proveedor}
-        </div>
-
-        <div style="margin-top: 5px; font-size: 9px; text-align: center;">
-            En caso de que el equipo o maquinaría presente algun tipo de falla, deberá notificarlo al responsable de mantenimiento para verificar las condiciones a seguir.
-        </div>
-
-        <div class="signatures">
-            <div class="sig-box">
-                <strong>Vo. Bo. Solicitante</strong>
-                <div class="sig-line"></div>
-            </div>
-            <div class="sig-box">
-                <strong>Autoriza</strong>
-                <div class="sig-line"></div>
-            </div>
-        </div>
-        
-        <div class="fr-code">FR-MT-03 Rev.01</div>
-
-        <script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>
-      </body>
-    </html>
-    `;
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-};
-
-/**
- * Imprime un reporte con diseño HTML personalizado
- */
-export const printCustomHTML = (htmlContent: string, title: string) => {
-  const printWindow = window.open('', '_blank', 'width=1100,height=800');
+export const generateReceptionDocument = (usuario: Usuario, equipo: Equipo, observaciones: string, licenciasLiberadas: string[] = []) => {
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
   if (!printWindow) {
-    Swal.fire('Ventana Bloqueada', 'Por favor habilita las ventanas emergentes para imprimir.', 'warning');
+    Swal.fire({
+      title: 'Ventana Emergente Bloqueada',
+      text: 'Por favor permite las ventanas emergentes (pop-ups) para ver el documento.',
+      icon: 'warning',
+      confirmButtonColor: '#2563eb'
+    });
     return;
   }
+
+  const fechaRecepcion = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+  const htmlContent = getReceptionDocumentHTML(usuario, equipo, fechaRecepcion, observaciones, licenciasLiberadas);
   
-  const fullHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>${title}</title>
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-          body { font-family: 'Inter', sans-serif; color: #334155; padding: 40px; background-color: #fff; }
-          .report-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
-          .report-header h1 { margin: 0; color: #0f172a; font-size: 24px; font-weight: 700; }
-          .report-header p { margin: 0; color: #64748b; font-size: 13px; margin-top: 5px; }
-          
-          /* Table Styles */
-          table { width: 100%; border-collapse: collapse; font-size: 12px; }
-          th { text-align: left; padding: 8px 12px; background-color: #f8fafc; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; }
-          td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #1e293b; vertical-align: top; }
-          tr:last-child td { border-bottom: none; }
-          
-          @media print {
-            body { padding: 0; }
-            .no-print { display: none; }
-            @page { margin: 1.5cm; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          }
-          
-          ${htmlContent.includes('<style>') ? '' : ''}
-        </style>
-      </head>
-      <body>
-        <div class="report-header">
-          <div>
-            <h1>${title}</h1>
-            <p>Generado el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}</p>
-          </div>
-          <div style="font-size: 12px; color: #94a3b8;">Sistema InvenTory</div>
-        </div>
-        
-        <div class="report-content">
-          ${htmlContent}
-        </div>
-        
-        <script>
-           window.onload = function() { setTimeout(function() { window.print(); }, 800); }
-        </script>
-      </body>
-    </html>
-  `;
-  
+  const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
+  const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
+
   printWindow.document.write(fullHtml);
   printWindow.document.close();
 };
 
 /**
- * Genera una vista previa genérica para reportes (tabla simple HTML)
+ * Genera el documento de baja y abre la ventana de impresión
  */
-export const openPrintPreview = (data: any[], title: string) => {
-  if (data.length === 0) {
-    Swal.fire('Sin Datos', 'No hay datos para generar la vista previa.', 'info');
+export const generateDisposalDocument = (equipo: Equipo, motivo: string) => {
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) {
+    Swal.fire({
+      title: 'Ventana Emergente Bloqueada',
+      text: 'Por favor permite las ventanas emergentes (pop-ups) para ver el documento.',
+      icon: 'warning',
+      confirmButtonColor: '#2563eb'
+    });
     return;
   }
 
-  const headers = Object.keys(data[0]);
-  const tableHtml = `
-    <table>
-      <thead>
-        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
-      </thead>
-      <tbody>
-        ${data.map(row => `<tr>${headers.map(header => `<td>${row[header] ?? ''}</td>`).join('')}</tr>`).join('')}
-      </tbody>
-    </table>
-  `;
+  const htmlContent = getDisposalDocumentHTML(equipo, motivo);
+  const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
+  const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
 
-  printCustomHTML(tableHtml, title);
+  printWindow.document.write(fullHtml);
+  printWindow.document.close();
 };
+
+export const printCustomHTML = (htmlContent: string, title: string) => {
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) return;
+  printWindow.document.write(`<html><head><title>${title}</title></head><body>${htmlContent}<script>window.onload=function(){window.print();}</script></body></html>`);
+  printWindow.document.close();
+};
+
+export const openPrintPreview = (html: string) => {
+    printCustomHTML(html, 'Vista Previa');
+};
+
+export const generateServiceOrder = (equipo: Equipo, data: any) => {
+    const html = `
+      <html>
+      <head>
+        <title>Orden de Servicio</title>
+        <style>
+          body { font-family: sans-serif; padding: 20px; }
+          .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
+          .title { font-size: 20px; font-weight: bold; }
+          .info { margin-bottom: 15px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #f0f0f0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">ORDEN DE SERVICIO TÉCNICO</div>
+          <div>Departamento de Tecnología</div>
+        </div>
+        <div class="info">
+          <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Equipo:</strong> ${equipo.tipo_nombre} - ${equipo.marca} ${equipo.modelo}</p>
+          <p><strong>Código:</strong> ${equipo.codigo_activo}</p>
+          <p><strong>Serie:</strong> ${equipo.numero_serie}</p>
+        </div>
+        <table>
+          <tr><th>Tipo de Servicio</th><td>${data.tipo}</td></tr>
+          <tr><th>Proveedor / Técnico</th><td>${data.proveedor}</td></tr>
+          <tr><th>Costo Estimado</th><td>$${data.costo}</td></tr>
+          <tr><th>Descripción del Trabajo</th><td>${data.descripcion}</td></tr>
+        </table>
+        <br><br>
+        <div style="display:flex; justify-content:space-between; margin-top:50px;">
+           <div style="border-top:1px solid #000; width:40%; text-align:center;">Firma Técnico / Proveedor</div>
+           <div style="border-top:1px solid #000; width:40%; text-align:center;">Firma Supervisor IT</div>
+        </div>
+      </body>
+      </html>
+    `;
+    printCustomHTML(html, 'Orden de Servicio');
+}

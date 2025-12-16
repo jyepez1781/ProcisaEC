@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, Menu, X, Settings as SettingsIcon, Building2, Users, Wrench, Lock, ChevronDown, Key, CalendarClock, Mail, Database, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, Menu, X, Settings as SettingsIcon, Building2, Users, Wrench, Lock, ChevronDown, Key, CalendarClock, Mail, Database, Sun, Moon, ChevronLeft, ChevronRight, Menu as MenuIcon } from 'lucide-react';
 import { api } from '../services/mockApi';
 import { Usuario, Notificacion } from '../types';
 import Swal from 'sweetalert2';
@@ -16,6 +17,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
   
   // Header Menu State
@@ -69,15 +71,16 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     return (
       <Link 
         to={to} 
+        title={isSidebarCollapsed ? label : ''}
         onClick={() => setIsMobileMenuOpen(false)}
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+        className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-2' : 'gap-3 px-4'} py-3 rounded-lg transition-all duration-200 group relative ${
             isActive 
               ? 'bg-orange-600 text-white shadow-md font-medium' 
               : 'text-blue-100 hover:bg-blue-800 hover:text-white dark:hover:bg-slate-800'
         }`}
       >
-        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300 group-hover:text-white'}`} />
-        <span>{label}</span>
+        <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-300 group-hover:text-white'} shrink-0`} />
+        {!isSidebarCollapsed && <span className="whitespace-nowrap overflow-hidden transition-opacity duration-300">{label}</span>}
       </Link>
     );
   };
@@ -85,25 +88,39 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const passwordsMatch = passwordForm.newPass === passwordForm.confirmPass;
   const isFormValid = passwordForm.newPass.length > 0 && passwordsMatch;
 
+  // Sidebar width calculation for desktop
+  const sidebarWidthClass = isSidebarCollapsed ? 'w-20' : 'w-64';
+  const mainMarginClass = isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64';
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-      {/* Sidebar Desktop - Azul Institucional (Mantiene identidad en Dark Mode o cambia a Slate oscuro) */}
-      <aside className="hidden md:flex flex-col w-64 bg-blue-900 dark:bg-slate-950 border-r border-blue-800 dark:border-slate-800 fixed h-full z-20 shadow-lg transition-colors">
-        <div className="p-6 border-b border-blue-800 dark:border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center shadow-sm">
+      {/* Sidebar Desktop - Azul Institucional */}
+      <aside className={`hidden md:flex flex-col ${sidebarWidthClass} bg-blue-900 dark:bg-slate-950 border-r border-blue-800 dark:border-slate-800 fixed h-full z-20 shadow-lg transition-all duration-300 ease-in-out`}>
+        <div className={`p-4 border-b border-blue-800 dark:border-slate-800 flex ${isSidebarCollapsed ? 'flex-col justify-center gap-4' : 'flex-row justify-between items-center'}`}>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-lg flex items-center justify-center shadow-sm shrink-0">
               <Laptop className="w-6 h-6 text-blue-900 dark:text-orange-500" />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-white">
-              <span className="text-orange-500">I</span>
-              <span>nven</span>
-              <span className="text-orange-500">T</span>
-              <span>ory</span>
-            </span>
+            {!isSidebarCollapsed && (
+              <span className="text-2xl font-bold tracking-tight text-white whitespace-nowrap opacity-100 transition-opacity duration-300">
+                <span className="text-orange-500">I</span>
+                <span>nven</span>
+                <span className="text-orange-500">T</span>
+                <span>ory</span>
+              </span>
+            )}
           </div>
+          
+          <button 
+              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 dark:hover:bg-slate-800 transition-colors"
+              title={isSidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
+          >
+              {isSidebarCollapsed ? <MenuIcon className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
+          </button>
         </div>
         
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
           <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
           <NavItem to="/organizacion" icon={Building2} label="Organización" />
           <NavItem to="/usuarios" icon={Users} label="Usuarios" />
@@ -113,8 +130,12 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <NavItem to="/planificacion" icon={CalendarClock} label="Planificación" />
           <NavItem to="/licencias" icon={Key} label="Licencias" />
           <NavItem to="/reportes" icon={FileText} label="Reportes" />
-          <div className="pt-4 mt-4 border-t border-blue-800 dark:border-slate-800">
-            <p className="px-4 text-xs font-semibold text-blue-400 dark:text-slate-500 uppercase tracking-wider mb-2">Sistema</p>
+          <div className={`pt-4 mt-4 border-t border-blue-800 dark:border-slate-800 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
+            {isSidebarCollapsed ? (
+                <div className="h-px w-8 bg-blue-800 dark:bg-slate-800 mb-2"></div>
+            ) : (
+                <p className="px-4 text-xs font-semibold text-blue-400 dark:text-slate-500 uppercase tracking-wider mb-2 whitespace-nowrap">Sistema</p>
+            )}
             <NavItem to="/migracion" icon={Database} label="Migración" />
             <NavItem to="/configuracion" icon={Mail} label="Config. Correo" />
           </div>
@@ -126,7 +147,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
         <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
       )}
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar (Always expanded when open) */}
       <aside className={`fixed inset-y-0 left-0 w-64 bg-blue-900 dark:bg-slate-950 z-40 transform transition-transform duration-300 md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex justify-between items-center border-b border-blue-800 dark:border-slate-800">
           <span className="text-2xl font-bold tracking-tight text-white">
@@ -138,18 +159,20 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <button onClick={() => setIsMobileMenuOpen(false)}><X className="w-6 h-6 text-blue-200" /></button>
         </div>
         <nav className="p-4 space-y-1 overflow-y-auto">
-          {/* Mismos items que desktop */}
-          <NavItem to="/" icon={LayoutDashboard} label="Dashboard" />
-          <NavItem to="/organizacion" icon={Building2} label="Organización" />
-          <NavItem to="/usuarios" icon={Users} label="Usuarios" />
-          <NavItem to="/tipos" icon={SettingsIcon} label="Tipos de Equipo" />
-          <NavItem to="/equipos" icon={Laptop} label="Equipos" />
-          <NavItem to="/mantenimiento" icon={Wrench} label="Mantenimiento" />
-          <NavItem to="/planificacion" icon={CalendarClock} label="Planificación" />
-          <NavItem to="/licencias" icon={Key} label="Licencias" />
-          <NavItem to="/reportes" icon={FileText} label="Reportes" />
-          <NavItem to="/migracion" icon={Database} label="Migración" />
-          <NavItem to="/configuracion" icon={Mail} label="Config. Correo" />
+          <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><LayoutDashboard className="w-5 h-5" /><span>Dashboard</span></Link>
+          <Link to="/organizacion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Building2 className="w-5 h-5" /><span>Organización</span></Link>
+          <Link to="/usuarios" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Users className="w-5 h-5" /><span>Usuarios</span></Link>
+          <Link to="/tipos" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><SettingsIcon className="w-5 h-5" /><span>Tipos de Equipo</span></Link>
+          <Link to="/equipos" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Laptop className="w-5 h-5" /><span>Equipos</span></Link>
+          <Link to="/mantenimiento" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Wrench className="w-5 h-5" /><span>Mantenimiento</span></Link>
+          <Link to="/planificacion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><CalendarClock className="w-5 h-5" /><span>Planificación</span></Link>
+          <Link to="/licencias" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Key className="w-5 h-5" /><span>Licencias</span></Link>
+          <Link to="/reportes" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><FileText className="w-5 h-5" /><span>Reportes</span></Link>
+          <div className="pt-4 mt-4 border-t border-blue-800 dark:border-slate-800">
+             <p className="px-4 text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Sistema</p>
+             <Link to="/migracion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Database className="w-5 h-5" /><span>Migración</span></Link>
+             <Link to="/configuracion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Mail className="w-5 h-5" /><span>Config. Correo</span></Link>
+          </div>
         </nav>
         <div className="p-4 border-t border-blue-800 dark:border-slate-800">
              <button onClick={onLogout} className="flex items-center gap-3 px-4 py-3 w-full text-blue-100 hover:bg-red-600 hover:text-white rounded-lg transition-colors">
@@ -160,7 +183,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 md:ml-64 flex flex-col min-h-screen transition-all duration-200">
+      <main className={`flex-1 ${mainMarginClass} flex flex-col min-h-screen transition-all duration-300 ease-in-out`}>
         {/* Top Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shadow-sm h-16">
           <button className="md:hidden p-2" onClick={() => setIsMobileMenuOpen(true)}>

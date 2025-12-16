@@ -93,37 +93,27 @@ export const migrationService = {
       throw new Error("El archivo está vacío o tiene un formato incorrecto.");
     }
 
+    // Helper to process response regardless of API version (mock returns number, live returns object)
+    const processResponse = (res: any) => {
+        if (res && typeof res === 'object' && 'count' in res) {
+            return res.count;
+        }
+        return res;
+    };
+
     switch (type) {
       case 'EQUIPOS':
-        {
-          const res = await api.bulkCreateEquipos(data);
-          return typeof res === 'object' && res !== null && 'count' in res ? res.count : res;
-        }
+        return processResponse(await api.bulkCreateEquipos(data));
       case 'USUARIOS':
-        {
-          const res = await api.bulkCreateUsuarios(data);
-          return typeof res === 'object' && res !== null && 'count' in res ? res.count : res;
-        }
+        return processResponse(await api.bulkCreateUsuarios(data));
       case 'LICENCIAS':
-        {
-          const res = await api.bulkCreateLicencias(data);
-          return typeof res === 'object' && res !== null && 'count' in res ? res.count : res;
-        }
+        return processResponse(await api.bulkCreateLicencias(data));
       case 'DEPARTAMENTOS':
-        {
-          const res = await api.bulkCreateDepartamentos(data);
-          return typeof res === 'object' && res !== null && 'count' in res ? res.count : res;
-        }
+        return processResponse(await api.bulkCreateDepartamentos(data));
       case 'PUESTOS':
-        {
-          const res = await api.bulkCreatePuestos(data);
-          return typeof res === 'object' && res !== null && 'count' in res ? res.count : res;
-        }
+        return processResponse(await api.bulkCreatePuestos(data));
       case 'ASIGNACIONES':
-        {
-          const res = await api.bulkCreateAsignaciones(data);
-          return typeof res === 'object' && res !== null && 'count' in res ? res.count : res;
-        }
+        return processResponse(await api.bulkCreateAsignaciones(data));
       default:
         throw new Error("Tipo de migración no soportado");
     }

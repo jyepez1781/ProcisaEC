@@ -1,8 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Equipo, TipoEquipo, Usuario, Departamento, EstadoEquipo, Ciudad, Pais } from '../../types';
-import { Save, Upload, X, FileText, RefreshCw } from 'lucide-react';
+import { Save, Upload, X, FileText, RefreshCw, Sparkles, Loader2, Unplug, Printer, Download, AlertCircle, Lock } from 'lucide-react';
 import { ModalAction } from '../../hooks/useEquipment';
+import { GoogleGenAI } from "@google/genai";
+import { generateReceptionDocument, generateDisposalDocument, generateAssignmentDocument } from '../../utils/documentGenerator';
+import { api } from '../../services/mockApi';
+import Swal from 'sweetalert2';
 
 interface EquipmentFormProps {
   action: ModalAction;
@@ -31,13 +35,17 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       };
     }
     if (action === 'EDIT' && equipo) return { ...equipo };
-    if (action === 'ASSIGN') return { usuario_id: usuarios[0]?.id || '', ubicacion: '', observaciones: '' };
-    if (['RETURN', 'MARK_DISPOSAL'].includes(action || '')) return { observaciones: '', ubicacion_id: bodegas[0]?.id || '' };
+    if (action === 'ASSIGN') return { usuario_id: '', ubicacion: '', observaciones: '' };
+    if (action === 'RETURN') return { observaciones: '', ubicacion_id: bodegas[0]?.id || '', releaseLicenses: false };
+    if (['MARK_DISPOSAL'].includes(action || '')) return { observaciones: '', ubicacion_id: bodegas[0]?.id || '' };
     return { observaciones: '' };
   });
 
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [userLicenses, setUserLicenses] = useState<string[]>([]);
+  const [hasGeneratedDoc, setHasGeneratedDoc] = useState(false); // State to track document generation
 
   // Auto-generate Asset Code Logic
   useEffect(() => {
@@ -63,8 +71,57 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     }
   }, [formData.ubicacion_id, formData.numero_serie, action, bodegas, cities, countries]);
 
+  // Fetch licenses for the responsible user if action is RETURN
+  useEffect(() => {
+    if (action === 'RETURN' && equipo?.responsable_id) {
+        api.getLicencias().then(all => {
+            const userLics = all
+                .filter(l => l.usuario_id === equipo.responsable_id)
+                .map(l => `${l.tipo_nombre} (Key: ${l.clave})`);
+            setUserLicenses(userLics);
+        });
+    }
+  }, [action, equipo]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validaciones específicas para RECEPCIÓN
+    if (action === 'RETURN') {
+        if (!hasGeneratedDoc) {
+            Swal.fire('Acción Requerida', 'Debe generar y descargar el Acta de Recepción antes de guardar.', 'warning');
+            return;
+        }
+        if (!evidenceFile) {
+            Swal.fire('Documento Faltante', 'Es obligatorio subir el Acta de Recepción firmada.', 'warning');
+            return;
+        }
+    }
+
+    // Validaciones específicas para BAJA
+    if (action === 'BAJA') {
+        if (!hasGeneratedDoc) {
+            Swal.fire('Acción Requerida', 'Debe generar el Acta de Baja antes de continuar.', 'warning');
+            return;
+        }
+        if (!evidenceFile) {
+            Swal.fire('Evidencia Faltante', 'Es obligatorio subir el Acta de Baja firmada/aprobada.', 'warning');
+            return;
+        }
+    }
+
+    // Validaciones específicas para ASIGNACIÓN
+    if (action === 'ASSIGN') {
+        if (!hasGeneratedDoc) {
+            Swal.fire('Acción Requerida', 'Debe generar el Acta de Entrega antes de completar la asignación.', 'warning');
+            return;
+        }
+        if (!evidenceFile) {
+            Swal.fire('Documento Faltante', 'Es obligatorio subir el Acta de Entrega firmada para completar la asignación.', 'warning');
+            return;
+        }
+    }
+
     setLoading(true);
     // Merge file into data if exists
     const dataToSubmit = { ...formData, evidenceFile };
@@ -78,9 +135,109 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     }
   };
 
+  const handleUploadClick = (e: React.MouseEvent) => {
+      const isReturn = action === 'RETURN';
+      const isBaja = action === 'BAJA';
+      const isAssign = action === 'ASSIGN';
+      
+      let docName = 'el documento';
+      if(isReturn) docName = 'Acta de Recepción';
+      if(isBaja) docName = 'Acta de Baja';
+      if(isAssign) docName = 'Acta de Entrega';
+      
+      if ((isReturn || isBaja || isAssign) && !hasGeneratedDoc) {
+          e.preventDefault(); 
+          Swal.fire({
+              title: 'Paso Bloqueado',
+              text: `Primero debe generar el ${docName}. Una vez generada, se habilitará la carga del documento.`,
+              icon: 'info',
+              confirmButtonColor: '#2563eb'
+          });
+      }
+  };
+
+  const handlePrintAssignment = () => {
+      // Validación: Campos obligatorios
+      if (!formData.usuario_id || !formData.ubicacion) {
+          Swal.fire('Campos incompletos', 'Debe seleccionar un usuario y una ubicación física antes de generar el acta.', 'warning');
+          return;
+      }
+
+      if (!equipo) return;
+      const user = usuarios.find(u => u.id === Number(formData.usuario_id));
+      if (user) {
+          // Inyectamos observaciones temporales si existen para que salgan en el acta
+          const equipoParaActa = { ...equipo, observaciones: formData.observaciones || equipo.observaciones };
+          generateAssignmentDocument(user, equipoParaActa);
+          setHasGeneratedDoc(true);
+      }
+  };
+
+  const handlePrintReception = () => {
+      if (!formData.observaciones || formData.observaciones.trim().length === 0) {
+          Swal.fire('Campos incompletos', 'Debe ingresar las observaciones antes de generar el acta.', 'warning');
+          return;
+      }
+
+      if (!equipo || !equipo.responsable_id) return;
+      const user = usuarios.find(u => u.id === equipo.responsable_id);
+      if (user) {
+          const licsToPrint = formData.releaseLicenses ? userLicenses : [];
+          generateReceptionDocument(user, equipo, formData.observaciones, licsToPrint);
+          setHasGeneratedDoc(true);
+      }
+  };
+
+  const handlePrintDisposal = () => {
+      if (!formData.observaciones || formData.observaciones.trim().length < 5) {
+          Swal.fire('Descripción Insuficiente', 'Debe ingresar una descripción detallada del motivo de la baja antes de generar el acta.', 'warning');
+          return;
+      }
+
+      if (!equipo) return;
+      generateDisposalDocument(equipo, formData.observaciones);
+      setHasGeneratedDoc(true);
+  };
+
+  const handleAIAssist = async () => {
+    if (!formData.observaciones.trim()) return;
+    setIsAiLoading(true);
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const promptContext = action === 'BAJA' ? 'justificación técnica de baja de activo' : 'motivo de envío a mantenimiento técnico o recepción';
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Actúa como un técnico de IT. Mejora la redacción de esta ${promptContext} de un equipo informático. Hazla formal, clara y técnica. Corrige errores. Texto: "${formData.observaciones}"`,
+        });
+        const text = response.text;
+        if (text) {
+            setFormData((prev: any) => ({ ...prev, observaciones: text.trim() }));
+        }
+    } catch (error) {
+        console.error("AI Error", error);
+    } finally {
+        setIsAiLoading(false);
+    }
+  };
+
   const isLaptop = () => {
     const selected = tipos.find(t => t.id === Number(formData.tipo_equipo_id));
     return selected?.nombre.toLowerCase().includes('laptop');
+  };
+
+  const isRestrictedAction = action === 'RETURN' || action === 'BAJA' || action === 'ASSIGN';
+
+  const getGenerateButtonLabel = () => {
+      if (action === 'BAJA') return 'Acta de Baja';
+      if (action === 'RETURN') return 'Acta de Recepción';
+      if (action === 'ASSIGN') return 'Acta de Entrega';
+      return 'Documento';
+  };
+
+  const handleGenerateClick = () => {
+      if (action === 'BAJA') handlePrintDisposal();
+      else if (action === 'RETURN') handlePrintReception();
+      else if (action === 'ASSIGN') handlePrintAssignment();
   };
 
   return (
@@ -158,7 +315,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
              <div>
                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Serie Cargador</label>
                <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
-                  value={formData.serie_cargador} onChange={e => setFormData({...formData, serie_cargador: e.target.value})} />
+                  value={formData.serie_cargador} onChange={e => setFormData({...formData,serie_cargador: e.target.value})} />
              </div>
           )}
 
@@ -197,74 +354,167 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
            <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación Física</label>
               <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                 placeholder="Ej. Oficina Contabilidad Piso 2"
                  value={formData.ubicacion} onChange={e => setFormData({...formData, ubicacion: e.target.value})} />
            </div>
-           <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
-              <textarea className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white" rows={3}
+           
+           <div className="relative">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones (Opcional)</label>
+              <textarea className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white pr-10" rows={3}
                  value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
+              
+              {formData.observaciones.length > 5 && (
+                 <button
+                    type="button"
+                    onClick={handleAIAssist}
+                    disabled={isAiLoading}
+                    className="absolute right-2 bottom-3 p-1.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
+                    title="Mejorar redacción con AI"
+                 >
+                    {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                 </button>
+              )}
            </div>
         </>
       )}
 
-      {/* --- RETURN / DISPOSAL --- */}
-      {['RETURN', 'MARK_DISPOSAL'].includes(action || '') && (
+      {/* --- RETURN / DISPOSAL (PART 1: FIELDS) --- */}
+      {['RETURN', 'MARK_DISPOSAL', 'BAJA', 'TO_MAINTENANCE'].includes(action || '') && (
         <>
-           <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación (Bodega)</label>
-              <select required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
-                 value={formData.ubicacion_id} onChange={e => setFormData({...formData, ubicacion_id: Number(e.target.value)})}>
-                 {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
-              </select>
+           {/* Solo mostrar ubicación de destino si es RETORNO o PARA BAJA */}
+           {['RETURN', 'MARK_DISPOSAL'].includes(action || '') && (
+               <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación (Bodega)</label>
+                  <select required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
+                     value={formData.ubicacion_id} onChange={e => setFormData({...formData, ubicacion_id: Number(e.target.value)})}>
+                     {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
+                  </select>
+               </div>
+           )}
+
+           <div className="relative">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  {action === 'BAJA' ? 'Justificación Técnica / Motivo' : 'Observaciones / Estado del Equipo'}
+              </label>
+              <textarea required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white pr-10" rows={3}
+                 value={formData.observaciones} 
+                 onChange={e => setFormData({...formData, observaciones: e.target.value})} 
+                 placeholder={action === 'BAJA' ? 'Explique detalladamente por qué se da de baja...' : ''}
+              />
+              
+              {formData.observaciones.length > 5 && (
+                 <button
+                    type="button"
+                    onClick={handleAIAssist}
+                    disabled={isAiLoading}
+                    className="absolute right-2 bottom-3 p-1.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
+                    title="Mejorar redacción con AI"
+                 >
+                    {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                 </button>
+              )}
            </div>
-           <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones</label>
-              <textarea required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white" rows={3}
-                 value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
-           </div>
+
+           {/* Checkbox para liberar licencias solo en devolución */}
+           {action === 'RETURN' && (
+               <div className="pt-2 mb-2">
+                   <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-red-50 dark:bg-red-900/20">
+                       <input 
+                           type="checkbox" 
+                           className="w-4 h-4 text-red-600 rounded focus:ring-red-500 dark:bg-slate-700 dark:border-slate-600"
+                           checked={formData.releaseLicenses}
+                           onChange={e => setFormData({...formData, releaseLicenses: e.target.checked})}
+                       />
+                       <div className="flex-1">
+                           <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-200">
+                               <Unplug className="w-4 h-4 text-red-600 dark:text-red-400" />
+                               Liberar Licencias Asignadas
+                           </div>
+                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                               Si se marca, se desvincularán todas las licencias de software del usuario que devuelve el equipo.
+                           </p>
+                           {formData.releaseLicenses && userLicenses.length > 0 && (
+                               <div className="mt-2 pl-2 border-l-2 border-red-300 dark:border-red-700">
+                                   <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold mb-1">Se liberarán {userLicenses.length} licencias:</p>
+                                   <ul className="text-xs text-slate-600 dark:text-slate-400 list-disc list-inside">
+                                       {userLicenses.map((lic, idx) => (
+                                           <li key={idx} className="truncate">{lic}</li>
+                                       ))}
+                                   </ul>
+                               </div>
+                           )}
+                       </div>
+                   </label>
+               </div>
+           )}
         </>
       )}
 
-      {/* --- BAJA / MAINTENANCE --- */}
-      {['BAJA', 'TO_MAINTENANCE'].includes(action || '') && (
-        <>
-          <div>
-             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Motivo / Falla</label>
-             <textarea required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white" rows={3}
-                value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
-          </div>
-          
-          {action === 'BAJA' && (
-            <div className="pt-2">
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Evidencia de Baja (Opcional)</label>
+      {/* --- SECCIÓN DE DOCUMENTOS (RETURN, BAJA y ASSIGN) --- */}
+      {isRestrictedAction && (
+           <div className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mt-3">
+               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Documentación Obligatoria</p>
+               
+               <div className="flex gap-3 mb-3">
+                   <button 
+                       type="button" 
+                       onClick={handleGenerateClick}
+                       className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-lg text-sm transition-colors ${hasGeneratedDoc ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800 dark:text-green-300' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                   >
+                       <Printer className="w-4 h-4" /> {hasGeneratedDoc ? 'Documento Generado' : `Generar ${getGenerateButtonLabel()}`}
+                   </button>
+               </div>
+
+               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Subir Acta Firmada (Requerido)</label>
                {!evidenceFile ? (
-                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-slate-300 dark:border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-2 pb-2">
-                          <Upload className="w-6 h-6 text-slate-400 mb-1" />
-                          <p className="text-xs text-slate-500 dark:text-slate-400">Subir Informe Técnico / Foto</p>
-                      </div>
-                      <input type="file" className="hidden" accept="image/*,application/pdf" onChange={handleFileChange} />
-                  </label>
+                   <label 
+                       onClick={handleUploadClick}
+                       className={`flex flex-col items-center justify-center w-full h-20 border-2 border-dashed rounded-lg transition-colors ${
+                           hasGeneratedDoc 
+                               ? 'border-slate-300 dark:border-slate-600 cursor-pointer bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700' 
+                               : 'border-slate-200 dark:border-slate-700 cursor-not-allowed bg-slate-100 dark:bg-slate-800/50 opacity-60'
+                       }`}
+                   >
+                       <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                           {hasGeneratedDoc ? <Upload className="w-5 h-5 text-slate-400 mb-1" /> : <Lock className="w-5 h-5 text-slate-400 mb-1" />}
+                           <p className="text-xs text-slate-500 dark:text-slate-400">{hasGeneratedDoc ? "PDF o Imagen" : "Genere el acta primero"}</p>
+                       </div>
+                       <input 
+                           type="file" 
+                           className="hidden" 
+                           accept="image/*,application/pdf" 
+                           onChange={handleFileChange} 
+                           disabled={!hasGeneratedDoc}
+                       />
+                   </label>
                ) : (
-                  <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-blue-800 dark:text-blue-200 truncate">{evidenceFile.name}</p>
-                          <p className="text-xs text-blue-600 dark:text-blue-300">{(evidenceFile.size / 1024).toFixed(1)} KB</p>
-                      </div>
-                      <button type="button" onClick={() => setEvidenceFile(null)} className="text-slate-400 hover:text-red-500">
-                          <X className="w-4 h-4" />
-                      </button>
-                  </div>
+                   <div className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                       <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                       <div className="flex-1 min-w-0">
+                           <p className="text-xs font-medium text-blue-800 dark:text-blue-200 truncate">{evidenceFile.name}</p>
+                       </div>
+                       <button type="button" onClick={() => setEvidenceFile(null)} className="text-slate-400 hover:text-red-500">
+                           <X className="w-4 h-4" />
+                       </button>
+                   </div>
                )}
-            </div>
-          )}
-        </>
+               
+               {(!hasGeneratedDoc || !evidenceFile) && (
+                   <div className="flex items-start gap-2 mt-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-2 rounded">
+                       <AlertCircle className="w-4 h-4 shrink-0" />
+                       <span>Debe descargar el acta y subirla firmada para continuar.</span>
+                   </div>
+               )}
+           </div>
       )}
 
       <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
          <button type="button" onClick={onCancel} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors">Cancelar</button>
-         <button type="submit" disabled={loading} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 transition-colors">
+         <button 
+            type="submit" 
+            disabled={loading || (isRestrictedAction && (!hasGeneratedDoc || !evidenceFile))} 
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+         >
             <Save className="w-4 h-4" /> {loading ? 'Guardando...' : 'Guardar'}
          </button>
       </div>

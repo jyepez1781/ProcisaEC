@@ -16,7 +16,8 @@
     "lucide-react": "0.344.0",
     "d3-scale": "4.0.2",
     "sweetalert2": "11.10.5",
-    "xlsx": "latest"
+    "xlsx": "latest",
+    "@google/genai": "latest"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

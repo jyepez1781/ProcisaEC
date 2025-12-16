@@ -1,9 +1,10 @@
 
-import React from 'react';
-import { X, Save, Zap, CheckCircle, Warehouse, AlertTriangle, Printer, Upload, FileText, UserCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Save, Zap, CheckCircle, Warehouse, AlertTriangle, Printer, Upload, FileText, UserCheck, Sparkles, Loader2 } from 'lucide-react';
 import { Equipo, Departamento } from '../../types';
 import { MaintenanceFormData } from '../../hooks/useMaintenanceManager';
 import { generateServiceOrder } from '../../utils/documentGenerator';
+import { GoogleGenAI } from "@google/genai";
 
 interface FinalizeMaintenanceModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ interface FinalizeMaintenanceModalProps {
 export const FinalizeMaintenanceModal: React.FC<FinalizeMaintenanceModalProps> = ({
   isOpen, onClose, equipo, bodegas, formData, reportFile, onFormChange, onFileChange, onSubmit
 }) => {
+  const [isAiLoading, setIsAiLoading] = useState(false);
+
   if (!isOpen || !equipo) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -35,6 +38,26 @@ export const FinalizeMaintenanceModal: React.FC<FinalizeMaintenanceModalProps> =
       if (e.target.files && e.target.files[0]) {
           if (onFileChange) onFileChange(e.target.files[0]);
       }
+  };
+
+  const handleAIAssist = async () => {
+    if (!formData.descripcion.trim()) return;
+    setIsAiLoading(true);
+    try {
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: `Eres un supervisor de mantenimiento IT. Mejora la redacción del siguiente detalle de trabajo realizado para un reporte técnico oficial. Hazlo profesional, conciso y corrige cualquier error ortográfico. Texto: "${formData.descripcion}"`,
+        });
+        const text = response.text;
+        if (text) {
+            onFormChange({ descripcion: text.trim() });
+        }
+    } catch (error) {
+        console.error("AI Error", error);
+    } finally {
+        setIsAiLoading(false);
+    }
   };
 
   const isLaptop = () => {
@@ -118,16 +141,27 @@ export const FinalizeMaintenanceModal: React.FC<FinalizeMaintenanceModalProps> =
                     </div>
                 )}
 
-                <div>
+                <div className="relative">
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Detalle del Trabajo</label>
                     <textarea 
                     required
                     rows={3}
                     placeholder="Describe qué reparaciones o cambios se realizaron..."
-                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white pr-10"
                     value={formData.descripcion}
                     onChange={e => onFormChange({ descripcion: e.target.value })}
                     />
+                    {formData.descripcion.length > 5 && (
+                        <button
+                            type="button"
+                            onClick={handleAIAssist}
+                            disabled={isAiLoading}
+                            className="absolute right-2 bottom-3 p-1.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
+                            title="Mejorar redacción con Gemini AI"
+                        >
+                            {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                        </button>
+                    )}
                 </div>
 
                 {/* Service Order Logic */}

@@ -1,730 +1,512 @@
 
-import { Equipo, EstadoEquipo, RolUsuario, Usuario, ReporteGarantia, Notificacion, TipoEquipo, HistorialMovimiento, Departamento, Puesto, HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia, Ciudad, PlanMantenimiento, DetallePlan, EvidenciaMantenimiento, EstadoPlan, FrecuenciaMantenimiento, EmailConfig, Pais } from '../types';
-import { liveApi } from './liveApi';
+import { 
+  Usuario, Equipo, TipoEquipo, Departamento, Puesto, Ciudad, Pais,
+  EstadoEquipo, RolUsuario, Licencia, TipoLicencia, PlanMantenimiento, 
+  DetallePlan, EstadoPlan, EmailConfig, Notificacion, HistorialMovimiento,
+  HistorialAsignacion, RegistroMantenimiento, ReporteGarantia
+} from '../types';
 
-// --- CONFIGURACIÓN DEL BACKEND ---
-// Cambia esto a TRUE cuando tengas tu backend Laravel corriendo en localhost:8000
-const USE_LIVE_API = true; 
-// ---------------------------------
+// Helper para fechas dinámicas
+const getDate = (daysOffset: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + daysOffset);
+    return d.toISOString().split('T')[0];
+};
 
-// --- Mock Data Initialization ---
+const getYear = (yearOffset: number) => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() + yearOffset);
+    return d.toISOString().split('T')[0];
+};
 
+// --- 1. UBICACIÓN Y ORGANIZACIÓN ---
 let MOCK_PAISES: Pais[] = [
-  { id: 1, nombre: 'Ecuador', abreviatura: 'EC' }
+  { id: 1, nombre: 'Ecuador', abreviatura: 'EC' },
+  { id: 2, nombre: 'México', abreviatura: 'MX' },
 ];
 
 let MOCK_CIUDADES: Ciudad[] = [
   { id: 1, nombre: 'Guayaquil', abreviatura: 'GYE', pais_id: 1, pais_nombre: 'Ecuador' },
   { id: 2, nombre: 'Quito', abreviatura: 'UIO', pais_id: 1, pais_nombre: 'Ecuador' },
-  { id: 3, nombre: 'Cuenca', abreviatura: 'CUE', pais_id: 1, pais_nombre: 'Ecuador' }
+  { id: 3, nombre: 'Ciudad de México', abreviatura: 'CDMX', pais_id: 2, pais_nombre: 'México' },
 ];
 
 let MOCK_DEPARTAMENTOS: Departamento[] = [
-  { id: 1, nombre: 'Tecnología (IT)', es_bodega: true, ciudad_id: 1, ciudad_nombre: 'Guayaquil' },
-  { id: 2, nombre: 'Recursos Humanos', es_bodega: false, ciudad_id: 2, ciudad_nombre: 'Quito' },
-  { id: 3, nombre: 'Ventas', es_bodega: false, ciudad_id: 1, ciudad_nombre: 'Guayaquil' },
-  { id: 4, nombre: 'Finanzas', es_bodega: false, ciudad_id: 3, ciudad_nombre: 'Cuenca' }
+  { id: 1, nombre: 'Tecnología (Bodega GYE)', es_bodega: true, ciudad_id: 1, ciudad_nombre: 'Guayaquil' },
+  { id: 2, nombre: 'Recursos Humanos', es_bodega: false, ciudad_id: 1, ciudad_nombre: 'Guayaquil' },
+  { id: 3, nombre: 'Finanzas', es_bodega: false, ciudad_id: 1, ciudad_nombre: 'Guayaquil' },
+  { id: 4, nombre: 'Operaciones UIO', es_bodega: false, ciudad_id: 2, ciudad_nombre: 'Quito' },
+  { id: 5, nombre: 'Bodega IT CDMX', es_bodega: true, ciudad_id: 3, ciudad_nombre: 'Ciudad de México' },
 ];
 
 let MOCK_PUESTOS: Puesto[] = [
-  { id: 1, nombre: 'Gerente' },
-  { id: 2, nombre: 'Desarrollador' },
-  { id: 3, nombre: 'Analista' },
-  { id: 4, nombre: 'Vendedor' },
-  { id: 5, nombre: 'Soporte Técnico' }
+  { id: 1, nombre: 'Gerente de TI' },
+  { id: 2, nombre: 'Analista de Soporte' },
+  { id: 3, nombre: 'Jefe de RRHH' },
+  { id: 4, nombre: 'Contador Senior' },
+  { id: 5, nombre: 'Desarrollador Fullstack' },
 ];
 
-// Helper to build full name
-const buildName = (n: string, a: string) => `${n} ${a}`;
-
-let MOCK_USERS: Usuario[] = [
-  { id: 1, nombre_usuario: 'admin', numero_empleado: 'EMP-001', nombres: 'Admin', apellidos: 'Sistema', nombre_completo: 'Admin Sistema', correo: 'admin@sys.com', password: '123', rol: RolUsuario.ADMIN, departamento_id: 1, departamento_nombre: 'Tecnología (IT)', puesto_id: 1, puesto_nombre: 'Gerente', activo: true },
-  { id: 2, nombre_usuario: 'tecnico1', numero_empleado: 'EMP-002', nombres: 'Juan', apellidos: 'Técnico', nombre_completo: 'Juan Técnico', correo: 'juan@sys.com', password: '123', rol: RolUsuario.TECNICO, departamento_id: 1, departamento_nombre: 'Tecnología (IT)', puesto_id: 5, puesto_nombre: 'Soporte Técnico', activo: true },
-  { id: 3, nombre_usuario: 'empl1', numero_empleado: 'EMP-003', nombres: 'Maria', apellidos: 'Ventas', nombre_completo: 'Maria Ventas', correo: 'maria@sys.com', password: '123', rol: RolUsuario.USUARIO, departamento_id: 3, departamento_nombre: 'Ventas', puesto_id: 4, puesto_nombre: 'Vendedor', activo: true },
+// --- 2. USUARIOS ---
+let MOCK_USUARIOS: Usuario[] = [
+  { 
+    id: 1, nombre_usuario: 'admin', nombre_completo: 'Administrador Sistema', nombres: 'Admin', apellidos: 'Sys', 
+    correo: 'admin@sys.com', password: '123', rol: RolUsuario.ADMIN, activo: true, 
+    departamento_id: 1, departamento_nombre: 'Tecnología (Bodega GYE)', puesto_id: 1, puesto_nombre: 'Gerente de TI', numero_empleado: 'ADM001' 
+  },
+  { 
+    id: 2, nombre_usuario: 'jperez', nombre_completo: 'Juan Pérez', nombres: 'Juan', apellidos: 'Pérez', 
+    correo: 'jperez@sys.com', password: '123', rol: RolUsuario.USUARIO, activo: true, 
+    departamento_id: 2, departamento_nombre: 'Recursos Humanos', puesto_id: 3, puesto_nombre: 'Jefe de RRHH', numero_empleado: 'EMP050' 
+  },
+  { 
+    id: 3, nombre_usuario: 'mlopez', nombre_completo: 'María López', nombres: 'María', apellidos: 'López', 
+    correo: 'mlopez@sys.com', password: '123', rol: RolUsuario.TECNICO, activo: true, 
+    departamento_id: 1, departamento_nombre: 'Tecnología (Bodega GYE)', puesto_id: 2, puesto_nombre: 'Analista de Soporte', numero_empleado: 'TEC002' 
+  },
+  { 
+    id: 4, nombre_usuario: 'cgarcia', nombre_completo: 'Carlos García', nombres: 'Carlos', apellidos: 'García', 
+    correo: 'cgarcia@sys.com', password: '123', rol: RolUsuario.USUARIO, activo: true, 
+    departamento_id: 3, departamento_nombre: 'Finanzas', puesto_id: 4, puesto_nombre: 'Contador Senior', numero_empleado: 'EMP088' 
+  },
+  { 
+    id: 5, nombre_usuario: 'lrodriguez', nombre_completo: 'Lucía Rodríguez', nombres: 'Lucía', apellidos: 'Rodríguez', 
+    correo: 'lrodriguez@sys.com', password: '123', rol: RolUsuario.USUARIO, activo: false, 
+    departamento_id: 4, departamento_nombre: 'Operaciones UIO', puesto_id: 5, puesto_nombre: 'Desarrollador Fullstack', numero_empleado: 'EMP099' 
+  },
 ];
 
-let MOCK_TIPOS: TipoEquipo[] = [
-  { id: 1, nombre: 'Laptop', descripcion: 'Computadora portátil', frecuencia_anual: 2 },
+// --- 3. CATÁLOGOS EQUIPOS Y LICENCIAS ---
+let MOCK_TIPOS_EQUIPO: TipoEquipo[] = [
+  { id: 1, nombre: 'Laptop', descripcion: 'Computadora portátil estándar', frecuencia_anual: 2 },
   { id: 2, nombre: 'Desktop', descripcion: 'Computadora de escritorio', frecuencia_anual: 1 },
-  { id: 3, nombre: 'Monitor', descripcion: 'Pantalla externa', frecuencia_anual: 0 },
-  { id: 4, nombre: 'Impresora', descripcion: 'Impresora láser o inyección', frecuencia_anual: 1 },
-];
-
-let MOCK_EQUIPOS: Equipo[] = [
-  { id: 1, codigo_activo: 'EQ-2023-001', numero_serie: 'SN123456', marca: 'Dell', modelo: 'Latitude 5420', tipo_equipo_id: 1, tipo_nombre: 'Laptop', serie_cargador: 'CH-999111', fecha_compra: '2023-01-15', valor_compra: 1200, anos_garantia: 3, estado: EstadoEquipo.ACTIVO, ubicacion_id: 1, ubicacion_nombre: 'Piso 2 - Ventas', responsable_id: 3, responsable_nombre: 'Maria Ventas', observaciones: 'Asignado a ventas', frecuencia_mantenimiento: FrecuenciaMantenimiento.SEMESTRAL },
-  { id: 2, codigo_activo: 'EQ-2021-045', numero_serie: 'SN987654', marca: 'HP', modelo: 'ProBook 450', tipo_equipo_id: 1, tipo_nombre: 'Laptop', fecha_compra: '2021-03-10', valor_compra: 900, anos_garantia: 3, estado: EstadoEquipo.DISPONIBLE, ubicacion_id: 2, ubicacion_nombre: 'Bodega IT', observaciones: 'Reingresado, listo para asignar', frecuencia_mantenimiento: FrecuenciaMantenimiento.TRIMESTRAL },
-  { id: 3, codigo_activo: 'EQ-2020-012', numero_serie: 'SN456123', marca: 'Lenovo', modelo: 'ThinkCentre M720', tipo_equipo_id: 2, tipo_nombre: 'Desktop', fecha_compra: '2020-05-20', valor_compra: 800, anos_garantia: 4, estado: EstadoEquipo.EN_MANTENIMIENTO, ubicacion_id: 3, ubicacion_nombre: 'Taller Externo', observaciones: 'Falla en disco duro', frecuencia_mantenimiento: FrecuenciaMantenimiento.ANUAL },
-  { id: 4, codigo_activo: 'EQ-2019-099', numero_serie: 'SN112233', marca: 'Dell', modelo: 'Optiplex 3060', tipo_equipo_id: 2, tipo_nombre: 'Desktop', fecha_compra: '2019-02-01', valor_compra: 750, anos_garantia: 3, estado: EstadoEquipo.BAJA, ubicacion_id: 4, ubicacion_nombre: 'Almacén Bajas', observaciones: 'Obsoleto, pantalla azul', frecuencia_mantenimiento: FrecuenciaMantenimiento.ANUAL },
-  { id: 5, codigo_activo: 'EQ-2024-005', numero_serie: 'SN998877', marca: 'Apple', modelo: 'MacBook Air M2', tipo_equipo_id: 1, tipo_nombre: 'Laptop', fecha_compra: '2024-02-20', valor_compra: 1400, anos_garantia: 1, estado: EstadoEquipo.ACTIVO, ubicacion_id: 1, ubicacion_nombre: 'Dirección General', observaciones: '', frecuencia_mantenimiento: FrecuenciaMantenimiento.BIMESTRAL },
-  { id: 6, codigo_activo: 'EQ-2020-055', numero_serie: 'SN554433', marca: 'HP', modelo: 'EliteDisplay', tipo_equipo_id: 3, tipo_nombre: 'Monitor', fecha_compra: '2020-06-15', valor_compra: 200, anos_garantia: 3, estado: EstadoEquipo.ACTIVO, ubicacion_id: 1, ubicacion_nombre: 'Piso 2 - Ventas', observaciones: '', frecuencia_mantenimiento: FrecuenciaMantenimiento.ANUAL },
-];
-
-let MOCK_HISTORIAL: HistorialMovimiento[] = [
-  { id: 1, equipo_id: 1, equipo_codigo: 'EQ-2023-001', tipo_accion: 'CREACION', fecha: '2023-01-15', usuario_responsable: 'Admin', detalle: 'Ingreso inicial al inventario' },
-  { id: 2, equipo_id: 1, equipo_codigo: 'EQ-2023-001', tipo_accion: 'ASIGNACION', fecha: '2023-01-20', usuario_responsable: 'Admin', detalle: 'Asignado a Maria Ventas' },
-];
-
-let MOCK_ASIGNACIONES: HistorialAsignacion[] = [
-  { id: 1, equipo_codigo: 'EQ-2023-001', equipo_modelo: 'Latitude 5420', usuario_nombre: 'Maria Ventas', usuario_departamento: 'Ventas', fecha_inicio: '2023-01-20', fecha_fin: null, ubicacion: 'Piso 2', archivo_pdf: undefined }
-];
-
-let MOCK_MANTENIMIENTOS: RegistroMantenimiento[] = [
-  { id: 1, equipo_id: 3, equipo_codigo: 'EQ-2020-012', equipo_modelo: 'ThinkCentre M720', fecha: '2024-03-10', tipo_mantenimiento: 'Correctivo', proveedor: 'Taller Externo', costo: 120, descripcion: 'Cambio de Disco Duro', archivo_orden: 'orden_firmada_001.pdf' }
+  { id: 3, nombre: 'Monitor', descripcion: 'Monitor externo', frecuencia_anual: 0 },
+  { id: 4, nombre: 'Impresora', descripcion: 'Impresora láser de red', frecuencia_anual: 4 },
+  { id: 5, nombre: 'Tablet', descripcion: 'Dispositivo móvil', frecuencia_anual: 1 },
 ];
 
 let MOCK_TIPOS_LICENCIA: TipoLicencia[] = [
-  { id: 1, nombre: 'Office 365 Business', proveedor: 'Microsoft', descripcion: 'Licencia anual por usuario' },
-  { id: 2, nombre: 'Adobe Creative Cloud', proveedor: 'Adobe', descripcion: 'Suite completa de diseño' }
+  { id: 1, nombre: 'Microsoft 365 Business', proveedor: 'Microsoft', descripcion: 'Suite de oficina y correo' },
+  { id: 2, nombre: 'Adobe Creative Cloud', proveedor: 'Adobe', descripcion: 'Suite de diseño gráfico' },
+  { id: 3, nombre: 'AutoCAD 2024', proveedor: 'Autodesk', descripcion: 'Diseño asistido por computadora' },
+  { id: 4, nombre: 'Antivirus ESET', proveedor: 'ESET', descripcion: 'Seguridad Endpoint' },
 ];
 
+// --- 4. EQUIPOS (INVENTARIO) ---
+let MOCK_EQUIPOS: Equipo[] = [
+  // 1. Asignado a Juan Pérez (Activo, Nuevo)
+  { 
+    id: 1, codigo_activo: 'ECGYELAP001', numero_serie: '8H29FK2', marca: 'Dell', modelo: 'Latitude 5420', 
+    tipo_equipo_id: 1, tipo_nombre: 'Laptop', estado: EstadoEquipo.ACTIVO, 
+    ubicacion_id: 2, ubicacion_nombre: 'Oficina RRHH',
+    responsable_id: 2, responsable_nombre: 'Juan Pérez',
+    fecha_compra: getDate(-180), valor_compra: 1250.00, anos_garantia: 3, 
+    serie_cargador: 'CN-0K', observaciones: 'Equipo asignado recientemente.'
+  },
+  // 2. Candidato a Reemplazo (Antiguo, Asignado a Carlos)
+  { 
+    id: 2, codigo_activo: 'ECGYEDES005', numero_serie: 'MXL8902', marca: 'HP', modelo: 'ProDesk 600 G3', 
+    tipo_equipo_id: 2, tipo_nombre: 'Desktop', estado: EstadoEquipo.ACTIVO, 
+    ubicacion_id: 3, ubicacion_nombre: 'Oficina Finanzas',
+    responsable_id: 4, responsable_nombre: 'Carlos García',
+    fecha_compra: getYear(-5), valor_compra: 850.00, anos_garantia: 3, 
+    observaciones: 'Equipo lento, solicita cambio.'
+  },
+  // 3. Garantía por Vencer (Disponible en Bodega)
+  { 
+    id: 3, codigo_activo: 'ECGYELAP015', numero_serie: '5CG9201', marca: 'Lenovo', modelo: 'ThinkPad T14', 
+    tipo_equipo_id: 1, tipo_nombre: 'Laptop', estado: EstadoEquipo.DISPONIBLE, 
+    ubicacion_id: 1, ubicacion_nombre: 'Tecnología (Bodega GYE)',
+    fecha_compra: getDate(-350), valor_compra: 1400.00, anos_garantia: 1, // Vence en 15 días
+    serie_cargador: 'LN-90W', observaciones: 'Reingresado de usuario inactivo. Listo para asignar.'
+  },
+  // 4. En Mantenimiento
+  { 
+    id: 4, codigo_activo: 'ECGYEPRN002', numero_serie: 'VNC3022', marca: 'Kyocera', modelo: 'Ecosys M2040', 
+    tipo_equipo_id: 4, tipo_nombre: 'Impresora', estado: EstadoEquipo.EN_MANTENIMIENTO, 
+    ubicacion_id: 1, ubicacion_nombre: 'Taller Externo',
+    fecha_compra: getDate(-400), valor_compra: 450.00, anos_garantia: 1, 
+    observaciones: 'Atasco de papel recurrente. Enviado a proveedor.'
+  },
+  // 5. Dado de Baja
+  { 
+    id: 5, codigo_activo: 'ECGYEMON099', numero_serie: 'CN4029', marca: 'Samsung', modelo: 'S24F350', 
+    tipo_equipo_id: 3, tipo_nombre: 'Monitor', estado: EstadoEquipo.BAJA, 
+    ubicacion_id: 1, ubicacion_nombre: 'Bodega de Desechos',
+    fecha_compra: getYear(-7), valor_compra: 150.00, anos_garantia: 1, 
+    observaciones: 'Pantalla rota. Costo de reparación excede valor en libros.'
+  },
+  // 6. Para Baja (Pre-Baja)
+  { 
+    id: 6, codigo_activo: 'ECGYETAB003', numero_serie: 'IPD-882', marca: 'Apple', modelo: 'iPad Air 2', 
+    tipo_equipo_id: 5, tipo_nombre: 'Tablet', estado: EstadoEquipo.PARA_BAJA, 
+    ubicacion_id: 1, ubicacion_nombre: 'Tecnología (Bodega GYE)',
+    fecha_compra: getYear(-6), valor_compra: 600.00, anos_garantia: 1, 
+    observaciones: 'Batería hinchada. Peligroso.'
+  }
+];
+
+// --- 5. HISTORIAL DE MOVIMIENTOS ---
+let MOCK_HISTORIAL: HistorialMovimiento[] = [
+  // Creaciones iniciales
+  { id: 1, equipo_id: 1, equipo_codigo: 'ECGYELAP001', tipo_accion: 'CREACION', fecha: getDate(-180), usuario_responsable: 'Admin Sys', detalle: 'Ingreso inicial por compra.' },
+  { id: 2, equipo_id: 2, equipo_codigo: 'ECGYEDES005', tipo_accion: 'CREACION', fecha: getYear(-5), usuario_responsable: 'Admin Sys', detalle: 'Ingreso inicial.' },
+  
+  // Movimientos Equipo 1 (Asignado a Juan)
+  { id: 3, equipo_id: 1, equipo_codigo: 'ECGYELAP001', tipo_accion: 'ASIGNACION', fecha: getDate(-170), usuario_responsable: 'Juan Pérez', detalle: 'Entrega de equipo nuevo.', archivo: 'acta_entrega_001.pdf' },
+  
+  // Movimientos Equipo 3 (Garantía por vencer - Rotación)
+  { id: 4, equipo_id: 3, equipo_codigo: 'ECGYELAP015', tipo_accion: 'ASIGNACION', fecha: getDate(-340), usuario_responsable: 'Lucía Rodríguez', detalle: 'Asignación inicial.', archivo: 'acta_entrega_015.pdf' },
+  { id: 5, equipo_id: 3, equipo_codigo: 'ECGYELAP015', tipo_accion: 'RECEPCION', fecha: getDate(-5), usuario_responsable: 'Lucía Rodríguez', detalle: 'Devolución por salida de personal.', archivo: 'acta_recepcion_015.pdf' },
+  
+  // Movimientos Equipo 4 (Mantenimiento)
+  { id: 6, equipo_id: 4, equipo_codigo: 'ECGYEPRN002', tipo_accion: 'MANTENIMIENTO', fecha: getDate(-2), usuario_responsable: 'Admin Sys', detalle: 'Envío a taller por atasco de papel.' },
+
+  // Movimientos Equipo 5 (Baja)
+  { id: 7, equipo_id: 5, equipo_codigo: 'ECGYEMON099', tipo_accion: 'ASIGNACION', fecha: getYear(-6), usuario_responsable: 'Carlos García', detalle: 'Entrega inicial.' },
+  { id: 8, equipo_id: 5, equipo_codigo: 'ECGYEMON099', tipo_accion: 'RECEPCION', fecha: getDate(-10), usuario_responsable: 'Carlos García', detalle: 'Pantalla fallando.', archivo: 'acta_recepcion_mon.pdf' },
+  { id: 9, equipo_id: 5, equipo_codigo: 'ECGYEMON099', tipo_accion: 'BAJA', fecha: getDate(-1), usuario_responsable: 'Admin Sys', detalle: 'Baja definitiva por daño físico irreparable.', archivo: 'informe_baja_mon.pdf' },
+];
+
+// --- 6. ASIGNACIONES (ACTUALES E HISTÓRICAS) ---
+let MOCK_ASIGNACIONES: HistorialAsignacion[] = [
+  // Activa Juan
+  { id: 1, equipo_codigo: 'ECGYELAP001', equipo_modelo: 'Dell Latitude 5420', usuario_nombre: 'Juan Pérez', usuario_departamento: 'Recursos Humanos', fecha_inicio: getDate(-170), fecha_fin: null, ubicacion: 'Oficina RRHH', archivo_pdf: 'acta_entrega_001.pdf' },
+  // Activa Carlos
+  { id: 2, equipo_codigo: 'ECGYEDES005', equipo_modelo: 'HP ProDesk 600 G3', usuario_nombre: 'Carlos García', usuario_departamento: 'Finanzas', fecha_inicio: getYear(-4), fecha_fin: null, ubicacion: 'Oficina Finanzas' },
+  // Cerrada Lucía
+  { id: 3, equipo_codigo: 'ECGYELAP015', equipo_modelo: 'Lenovo ThinkPad T14', usuario_nombre: 'Lucía Rodríguez', usuario_departamento: 'Operaciones UIO', fecha_inicio: getDate(-340), fecha_fin: getDate(-5), ubicacion: 'Quito', archivo_pdf: 'acta_entrega_015.pdf' }
+];
+
+// --- 7. MANTENIMIENTOS (HISTORIAL) ---
+let MOCK_MANTENIMIENTOS: RegistroMantenimiento[] = [
+  { id: 1, equipo_id: 2, equipo_codigo: 'ECGYEDES005', equipo_modelo: 'HP ProDesk 600 G3', fecha: getDate(-100), tipo_mantenimiento: 'Preventivo', proveedor: 'Soporte Interno', costo: 0, descripcion: 'Limpieza física y optimización de software.', archivo_orden: 'informe_prev_005.pdf' },
+  { id: 2, equipo_id: 4, equipo_codigo: 'ECGYEPRN002', equipo_modelo: 'Kyocera Ecosys', fecha: getDate(-200), tipo_mantenimiento: 'Correctivo', proveedor: 'Kyocera Services', costo: 120.50, descripcion: 'Cambio de rodillos de alimentación.', archivo_orden: 'factura_kyo_123.pdf' }
+];
+
+// --- 8. LICENCIAS ---
 let MOCK_LICENCIAS: Licencia[] = [
-  { id: 1, tipo_id: 1, tipo_nombre: 'Office 365 Business', clave: 'KEY-001-ABC', fecha_compra: '2024-01-01', fecha_vencimiento: '2025-01-01', usuario_id: 1, usuario_nombre: 'Admin Sistema', usuario_departamento: 'Tecnología (IT)' },
-  { id: 2, tipo_id: 1, tipo_nombre: 'Office 365 Business', clave: 'KEY-002-XYZ', fecha_compra: '2024-01-01', fecha_vencimiento: '2025-01-01', usuario_id: null },
-  { id: 3, tipo_id: 2, tipo_nombre: 'Adobe Creative Cloud', clave: 'ADB-999-CLD', fecha_compra: '2023-06-15', fecha_vencimiento: '2024-06-15', usuario_id: 2, usuario_nombre: 'Juan Técnico', usuario_departamento: 'Tecnología (IT)' }
+  // M365 para Juan (Asignada)
+  { id: 1, tipo_id: 1, tipo_nombre: 'Microsoft 365 Business', clave: 'XXXX-YYYY-ZZZZ-0001', fecha_compra: getDate(-200), fecha_vencimiento: getDate(165), usuario_id: 2, usuario_nombre: 'Juan Pérez', usuario_departamento: 'Recursos Humanos' },
+  // Adobe para Carlos (Asignada)
+  { id: 2, tipo_id: 2, tipo_nombre: 'Adobe Creative Cloud', clave: 'ADBE-1122-3344', fecha_compra: getDate(-100), fecha_vencimiento: getDate(265), usuario_id: 4, usuario_nombre: 'Carlos García', usuario_departamento: 'Finanzas' },
+  // M365 Disponible
+  { id: 3, tipo_id: 1, tipo_nombre: 'Microsoft 365 Business', clave: 'XXXX-YYYY-ZZZZ-0002', fecha_compra: getDate(-200), fecha_vencimiento: getDate(165), usuario_id: null },
+  // Antivirus Disponible
+  { id: 4, tipo_id: 4, tipo_nombre: 'Antivirus ESET', clave: 'ESET-9988-7766', fecha_compra: getDate(-50), fecha_vencimiento: getDate(315), usuario_id: null },
+];
+
+// --- 9. PLANIFICACIÓN DE MANTENIMIENTO ---
+const planId = 100;
+let MOCK_PLANES: PlanMantenimiento[] = [
+  { id: planId, anio: new Date().getFullYear(), nombre: 'Plan Anual GYE 2024', creado_por: 'Admin Sys', fecha_creacion: getDate(-60), estado: 'ACTIVO', ciudad_id: 1, ciudad_nombre: 'Guayaquil' }
+];
+
+let MOCK_DETALLES_PLAN: DetallePlan[] = [
+  // Equipo 1 (Laptop) - Programado en Mayo (Pendiente)
+  { id: 1, plan_id: planId, equipo_id: 1, equipo_codigo: 'ECGYELAP001', equipo_tipo: 'Laptop', equipo_modelo: 'Dell Latitude', equipo_ubicacion: 'Oficina RRHH', mes_programado: 5, estado: EstadoPlan.PENDIENTE },
+  // Equipo 2 (Desktop) - Programado en Febrero (Realizado)
+  { id: 2, plan_id: planId, equipo_id: 2, equipo_codigo: 'ECGYEDES005', equipo_tipo: 'Desktop', equipo_modelo: 'HP ProDesk', equipo_ubicacion: 'Oficina Finanzas', mes_programado: 2, estado: EstadoPlan.REALIZADO, fecha_ejecucion: getDate(-45), tecnico_responsable: 'Soporte Interno' },
+  // Equipo 4 (Impresora) - Programado en Abril (En Proceso, coincide con estado actual del equipo)
+  { id: 3, plan_id: planId, equipo_id: 4, equipo_codigo: 'ECGYEPRN002', equipo_tipo: 'Impresora', equipo_modelo: 'Kyocera', equipo_ubicacion: 'Taller Externo', mes_programado: 4, estado: EstadoPlan.EN_PROCESO },
 ];
 
 let MOCK_NOTIFICACIONES: Notificacion[] = [
-  { id: 1, titulo: 'Garantía por vencer', mensaje: 'La garantía del equipo EQ-2021-045 vence en 15 días.', fecha: '2024-03-20', leido: false, tipo: 'warning' },
-  { id: 2, titulo: 'Mantenimiento programado', mensaje: 'Mantenimiento general de servidores el 25 de Marzo.', fecha: '2024-03-18', leido: true, tipo: 'info' }
+  { id: 1, titulo: 'Garantía por Vencer', mensaje: 'El equipo ECGYELAP015 vence garantía en 15 días.', leido: false, fecha: getDate(0), tipo: 'warning' },
+  { id: 2, titulo: 'Mantenimiento Pendiente', mensaje: 'Hay 1 equipo programado para mantenimiento este mes.', leido: false, fecha: getDate(-1), tipo: 'info' }
 ];
 
-// --- Mock Planning Data ---
-let MOCK_PLANES: PlanMantenimiento[] = [];
-let MOCK_DETALLES_PLAN: DetallePlan[] = [];
-let MOCK_EVIDENCIAS: EvidenciaMantenimiento[] = [];
-
-// --- Email Configuration ---
 let MOCK_EMAIL_CONFIG: EmailConfig = {
-    remitente: 'Sistema InvenTory <notificaciones@empresa.com>',
-    correos_copia: ['soporte@empresa.com'],
-    notificar_asignacion: true,
-    notificar_mantenimiento: true,
-    dias_anticipacion_alerta: 15,
-    smtp_host: 'smtp.office365.com',
-    smtp_port: '587'
+  remitente: 'Sistema Inventario',
+  correos_copia: ['soporte@empresa.com'],
+  notificar_asignacion: true,
+  notificar_mantenimiento: true,
+  dias_anticipacion_alerta: 15
 };
 
-const simulateDelay = () => new Promise(resolve => setTimeout(resolve, 500));
-
-// Helper: Send Notification Email (Simulated)
-const sendNotificationEmail = async (
-    targetUserId: number | undefined, 
-    subject: string, 
-    message: string,
-    eventType: 'asignacion' | 'mantenimiento',
-    attachmentName?: string
-) => {
-    // Check global switches
-    if (eventType === 'asignacion' && !MOCK_EMAIL_CONFIG.notificar_asignacion) return;
-    if (eventType === 'mantenimiento' && !MOCK_EMAIL_CONFIG.notificar_mantenimiento) return;
-
-    const recipients: string[] = [];
-    
-    // 1. Add Target User if exists
-    if (targetUserId) {
-        const user = MOCK_USERS.find(u => u.id === targetUserId);
-        if (user && user.correo) {
-            recipients.push(user.correo);
-        }
-    }
-
-    // 2. Add CCs
-    if (MOCK_EMAIL_CONFIG.correos_copia && MOCK_EMAIL_CONFIG.correos_copia.length > 0) {
-        recipients.push(...MOCK_EMAIL_CONFIG.correos_copia);
-    }
-    
-    // Filter empty
-    const uniqueRecipients = [...new Set(recipients.filter(r => r && r.trim() !== ''))];
-
-    if (uniqueRecipients.length > 0) {
-        console.log(`[EMAIL SIMULADO]
-        De: ${MOCK_EMAIL_CONFIG.remitente}
-        Para: ${uniqueRecipients.join(', ')}
-        Asunto: ${subject}
-        Mensaje: ${message}
-        Adjunto: ${attachmentName || 'Ninguno'}
-        -----------------------------------`);
-    } else {
-        console.warn("[EMAIL SIMULADO] No hay destinatarios configurados para enviar el correo.");
-    }
-};
-
-const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-
-// --- API Implementation ---
+const simulateDelay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const api = {
   // Auth
-  login: async (email: string, password?: string) => {
+  login: async (email: string, password?: string): Promise<Usuario> => {
     await simulateDelay();
-    const user = MOCK_USERS.find(u => u.correo === email && (u.password === password || password === '123'));
+    const user = MOCK_USUARIOS.find(u => u.correo === email && u.password === password);
     if (!user) throw new Error('Credenciales inválidas');
     if (!user.activo) throw new Error('Usuario inactivo');
     return user;
   },
   changePassword: async (userId: number, newPass: string) => {
     await simulateDelay();
-    const u = MOCK_USERS.find(x => x.id === userId);
-    if (u) u.password = newPass;
+    const idx = MOCK_USUARIOS.findIndex(u => u.id === userId);
+    if (idx >= 0) MOCK_USUARIOS[idx].password = newPass;
   },
 
   // Organization
-  
-  // --- PAISES (NEW) ---
-  getPaises: async () => { await simulateDelay(); return [...MOCK_PAISES]; },
-  createPais: async (data: any) => {
-      await simulateDelay();
-      const newId = MOCK_PAISES.length + 1;
-      const newItem = { ...data, id: newId };
-      MOCK_PAISES.push(newItem);
-      return newItem;
-  },
-  updatePais: async (id: number, data: any) => {
-      await simulateDelay();
-      const idx = MOCK_PAISES.findIndex(p => p.id === id);
-      if (idx >= 0) {
-          MOCK_PAISES[idx] = { ...MOCK_PAISES[idx], ...data };
-          return MOCK_PAISES[idx];
-      }
-  },
-  deletePais: async (id: number) => {
-      await simulateDelay();
-      // Validación: No borrar si tiene ciudades
-      const hasCities = MOCK_CIUDADES.some(c => c.pais_id === id);
-      if (hasCities) throw new Error("No se puede eliminar el país, tiene ciudades asignadas.");
-      const idx = MOCK_PAISES.findIndex(p => p.id === id);
-      if (idx >= 0) MOCK_PAISES.splice(idx, 1);
-  },
-
-  // --- CIUDADES ---
-  getCiudades: async () => { await simulateDelay(); return [...MOCK_CIUDADES]; },
-  createCiudad: async (data: any) => {
-      await simulateDelay();
-      const newId = MOCK_CIUDADES.length + 1;
-      const pais = MOCK_PAISES.find(p => p.id === Number(data.pais_id));
-      const newItem = { 
-          ...data, 
-          id: newId,
-          pais_nombre: pais?.nombre
-      };
-      MOCK_CIUDADES.push(newItem);
-      return newItem;
-  },
-  updateCiudad: async (id: number, data: any) => {
-      await simulateDelay();
-      const idx = MOCK_CIUDADES.findIndex(c => c.id === id);
-      if (idx >= 0) {
-          const pais = data.pais_id ? MOCK_PAISES.find(p => p.id === Number(data.pais_id)) : null;
-          MOCK_CIUDADES[idx] = { 
-              ...MOCK_CIUDADES[idx], 
-              ...data,
-              ...(pais ? { pais_nombre: pais.nombre } : {})
-          };
-          return MOCK_CIUDADES[idx];
-      }
-  },
-  deleteCiudad: async (id: number) => {
-      await simulateDelay();
-      const hasDepts = MOCK_DEPARTAMENTOS.some(d => d.ciudad_id === id);
-      if (hasDepts) throw new Error("No se puede eliminar, tiene departamentos asignados.");
-      const idx = MOCK_CIUDADES.findIndex(c => c.id === id);
-      if (idx >= 0) MOCK_CIUDADES.splice(idx, 1);
-  },
-
-  // --- DEPARTAMENTOS ---
   getDepartamentos: async () => { await simulateDelay(); return [...MOCK_DEPARTAMENTOS]; },
-  createDepartamento: async (data: any) => {
-    await simulateDelay();
-    const newId = MOCK_DEPARTAMENTOS.length + 1;
-    const ciudad = MOCK_CIUDADES.find(c => c.id === Number(data.ciudad_id));
-    const newItem = { 
-        ...data, 
-        id: newId,
-        ciudad_nombre: ciudad?.nombre
-    };
-    MOCK_DEPARTAMENTOS.push(newItem);
-    return newItem;
+  createDepartamento: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_DEPARTAMENTOS.push(newItem); return newItem; },
+  updateDepartamento: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_DEPARTAMENTOS.findIndex(d => d.id === id); 
+    if (idx >= 0) MOCK_DEPARTAMENTOS[idx] = { ...MOCK_DEPARTAMENTOS[idx], ...data }; 
+    return MOCK_DEPARTAMENTOS[idx]; 
   },
-  updateDepartamento: async (id: number, data: any) => {
-    await simulateDelay();
-    const idx = MOCK_DEPARTAMENTOS.findIndex(d => d.id === id);
-    if (idx >= 0) {
-        const ciudad = data.ciudad_id ? MOCK_CIUDADES.find(c => c.id === Number(data.ciudad_id)) : null;
-        MOCK_DEPARTAMENTOS[idx] = { 
-            ...MOCK_DEPARTAMENTOS[idx], 
-            ...data,
-            ...(ciudad ? { ciudad_nombre: ciudad.nombre } : {}) 
-        };
-        return MOCK_DEPARTAMENTOS[idx];
-    }
-  },
-  deleteDepartamento: async (id: number) => {
-    await simulateDelay();
-    // VALIDACIÓN: Verificar si hay usuarios asignados a este departamento
-    const hasUsers = MOCK_USERS.some(u => u.departamento_id === id);
-    if (hasUsers) {
-      throw new Error("No se puede eliminar este departamento porque tiene usuarios asignados.");
-    }
-    const idx = MOCK_DEPARTAMENTOS.findIndex(d => d.id === id);
-    if (idx >= 0) {
-      MOCK_DEPARTAMENTOS.splice(idx, 1);
-    }
-  },
-  
-  // --- PUESTOS ---
+  deleteDepartamento: async (id: number) => { await simulateDelay(); MOCK_DEPARTAMENTOS = MOCK_DEPARTAMENTOS.filter(d => d.id !== id); },
+
   getPuestos: async () => { await simulateDelay(); return [...MOCK_PUESTOS]; },
-  createPuesto: async (data: any) => {
-    await simulateDelay();
-    const newId = MOCK_PUESTOS.length + 1;
-    const newItem = { ...data, id: newId };
-    MOCK_PUESTOS.push(newItem);
-    return newItem;
+  createPuesto: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_PUESTOS.push(newItem); return newItem; },
+  updatePuesto: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_PUESTOS.findIndex(p => p.id === id); 
+    if (idx >= 0) MOCK_PUESTOS[idx] = { ...MOCK_PUESTOS[idx], ...data }; 
+    return MOCK_PUESTOS[idx]; 
   },
-  updatePuesto: async (id: number, data: any) => {
-    await simulateDelay();
-    const idx = MOCK_PUESTOS.findIndex(p => p.id === id);
-    if (idx >= 0) {
-        MOCK_PUESTOS[idx] = { ...MOCK_PUESTOS[idx], ...data };
-        return MOCK_PUESTOS[idx];
-    }
+  deletePuesto: async (id: number) => { await simulateDelay(); MOCK_PUESTOS = MOCK_PUESTOS.filter(p => p.id !== id); },
+
+  getCiudades: async () => { await simulateDelay(); return [...MOCK_CIUDADES]; },
+  createCiudad: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_CIUDADES.push(newItem); return newItem; },
+  updateCiudad: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_CIUDADES.findIndex(c => c.id === id); 
+    if (idx >= 0) MOCK_CIUDADES[idx] = { ...MOCK_CIUDADES[idx], ...data }; 
+    return MOCK_CIUDADES[idx]; 
   },
-  deletePuesto: async (id: number) => {
-    await simulateDelay();
-    // VALIDACIÓN
-    const hasUsers = MOCK_USERS.some(u => u.puesto_id === id);
-    if (hasUsers) {
-      throw new Error("No se puede eliminar este puesto porque tiene usuarios asignados.");
-    }
-    const idx = MOCK_PUESTOS.findIndex(p => p.id === id);
-    if (idx >= 0) {
-        MOCK_PUESTOS.splice(idx, 1);
-    }
+  deleteCiudad: async (id: number) => { await simulateDelay(); MOCK_CIUDADES = MOCK_CIUDADES.filter(c => c.id !== id); },
+
+  getPaises: async () => { await simulateDelay(); return [...MOCK_PAISES]; },
+  createPais: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_PAISES.push(newItem); return newItem; },
+  updatePais: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_PAISES.findIndex(p => p.id === id); 
+    if (idx >= 0) MOCK_PAISES[idx] = { ...MOCK_PAISES[idx], ...data }; 
+    return MOCK_PAISES[idx]; 
   },
+  deletePais: async (id: number) => { await simulateDelay(); MOCK_PAISES = MOCK_PAISES.filter(p => p.id !== id); },
 
   // Users
-  getUsuarios: async () => { await simulateDelay(); return [...MOCK_USERS]; },
-  createUsuario: async (data: any) => {
-    await simulateDelay();
-    const newId = MOCK_USERS.length + 1;
-    const dept = MOCK_DEPARTAMENTOS.find(d => d.id === Number(data.departamento_id));
-    const puesto = MOCK_PUESTOS.find(p => p.id === Number(data.puesto_id));
-    
-    const newUser = {
-      ...data,
-      id: newId,
-      nombre_completo: `${data.nombres} ${data.apellidos}`,
-      departamento_nombre: dept?.nombre,
-      puesto_nombre: puesto?.nombre
-    };
-    MOCK_USERS.push(newUser);
-    return newUser;
-  },
-  updateUsuario: async (id: number, data: any) => {
-    await simulateDelay();
-    const idx = MOCK_USERS.findIndex(u => u.id === id);
-    if (idx >= 0) {
-      const dept = data.departamento_id ? MOCK_DEPARTAMENTOS.find(d => d.id === Number(data.departamento_id)) : null;
-      const puesto = data.puesto_id ? MOCK_PUESTOS.find(p => p.id === Number(data.puesto_id)) : null;
-      
-      MOCK_USERS[idx] = {
-        ...MOCK_USERS[idx],
-        ...data,
-        ...(data.nombres || data.apellidos ? { nombre_completo: `${data.nombres || MOCK_USERS[idx].nombres} ${data.apellidos || MOCK_USERS[idx].apellidos}` } : {}),
-        ...(dept ? { departamento_nombre: dept.nombre } : {}),
-        ...(puesto ? { puesto_nombre: puesto.nombre } : {})
-      };
-      return MOCK_USERS[idx];
-    }
-  },
-  deleteUsuario: async (id: number) => {
-      await simulateDelay();
-      const idx = MOCK_USERS.findIndex(u => u.id === id);
-      if (idx >= 0) MOCK_USERS.splice(idx, 1);
+  getUsuarios: async () => { await simulateDelay(); return [...MOCK_USUARIOS]; },
+  createUsuario: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_USUARIOS.push(newItem); return newItem; },
+  updateUsuario: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_USUARIOS.findIndex(u => u.id === id); 
+    if (idx >= 0) MOCK_USUARIOS[idx] = { ...MOCK_USUARIOS[idx], ...data }; 
+    return MOCK_USUARIOS[idx]; 
   },
 
   // Equipment Types
-  getTiposEquipo: async () => { await simulateDelay(); return [...MOCK_TIPOS]; },
-  createTipoEquipo: async (data: any) => {
-    await simulateDelay();
-    const newId = MOCK_TIPOS.length + 1;
-    const newItem = { ...data, id: newId };
-    MOCK_TIPOS.push(newItem);
-    return newItem;
+  getTiposEquipo: async () => { await simulateDelay(); return [...MOCK_TIPOS_EQUIPO]; },
+  createTipoEquipo: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_TIPOS_EQUIPO.push(newItem); return newItem; },
+  updateTipoEquipo: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_TIPOS_EQUIPO.findIndex(t => t.id === id); 
+    if (idx >= 0) MOCK_TIPOS_EQUIPO[idx] = { ...MOCK_TIPOS_EQUIPO[idx], ...data }; 
+    return MOCK_TIPOS_EQUIPO[idx]; 
   },
-  updateTipoEquipo: async (id: number, data: any) => {
-    await simulateDelay();
-    const idx = MOCK_TIPOS.findIndex(t => t.id === id);
-    if (idx >= 0) {
-      MOCK_TIPOS[idx] = { ...MOCK_TIPOS[idx], ...data };
-      return MOCK_TIPOS[idx];
-    }
-  },
-  deleteTipoEquipo: async (id: number) => {
-    await simulateDelay();
-    const idx = MOCK_TIPOS.findIndex(t => t.id === id);
-    if (idx >= 0) MOCK_TIPOS.splice(idx, 1);
-  },
+  deleteTipoEquipo: async (id: number) => { await simulateDelay(); MOCK_TIPOS_EQUIPO = MOCK_TIPOS_EQUIPO.filter(t => t.id !== id); },
 
   // Equipment
   getEquipos: async () => { await simulateDelay(); return [...MOCK_EQUIPOS]; },
-  createEquipo: async (data: any) => {
-    await simulateDelay();
-    const newId = MOCK_EQUIPOS.length + 1;
-    const tipo = MOCK_TIPOS.find(t => t.id === Number(data.tipo_equipo_id));
-    
-    const newItem = {
-      ...data,
-      id: newId,
-      tipo_nombre: tipo?.nombre,
-      estado: EstadoEquipo.DISPONIBLE
-    };
-    MOCK_EQUIPOS.push(newItem);
-    // Log Creation
+  createEquipo: async (data: any) => { 
+    await simulateDelay(); 
+    // Fill calculated fields
+    const tipo = MOCK_TIPOS_EQUIPO.find(t => t.id === data.tipo_equipo_id);
+    const newItem = { 
+        id: Date.now(), 
+        ...data, 
+        tipo_nombre: tipo?.nombre, 
+        estado: EstadoEquipo.DISPONIBLE 
+    }; 
+    MOCK_EQUIPOS.push(newItem); 
+    // Log creation
     MOCK_HISTORIAL.push({
-      id: MOCK_HISTORIAL.length + 1,
-      equipo_id: newId,
-      equipo_codigo: newItem.codigo_activo,
-      tipo_accion: 'CREACION',
-      fecha: new Date().toISOString().split('T')[0],
-      usuario_responsable: 'Sistema',
-      detalle: 'Ingreso al inventario'
+      id: Date.now() + 1, equipo_id: newItem.id, equipo_codigo: newItem.codigo_activo,
+      tipo_accion: 'CREACION', fecha: new Date().toISOString().split('T')[0],
+      usuario_responsable: 'Admin Sys', detalle: 'Ingreso inicial manual.'
     });
-    return newItem;
+    return newItem; 
   },
-  updateEquipo: async (id: number, data: any) => {
-    await simulateDelay();
-    const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
+  updateEquipo: async (id: number, data: any) => { 
+    await simulateDelay(); 
+    const idx = MOCK_EQUIPOS.findIndex(e => e.id === id); 
     if (idx >= 0) {
-      const oldData = MOCK_EQUIPOS[idx];
-      const tipo = data.tipo_equipo_id ? MOCK_TIPOS.find(t => t.id === Number(data.tipo_equipo_id)) : null;
-      
-      MOCK_EQUIPOS[idx] = {
-        ...MOCK_EQUIPOS[idx],
-        ...data,
-        ...(tipo ? { tipo_nombre: tipo.nombre } : {})
-      };
-      
-      // Log Update (Optional, maybe specific fields)
-      return MOCK_EQUIPOS[idx];
-    }
-  },
-
-  // BULK OPERATIONS
-  bulkCreateEquipos: async (data: any[]) => {
-    await simulateDelay();
-    let count = 0;
-    
-    // Find default warehouse
-    const defaultBodega = MOCK_DEPARTAMENTOS.find(d => d.es_bodega) || MOCK_DEPARTAMENTOS[0];
-
-    data.forEach(row => {
-        // Find Type ID by name (insensitive)
-        const type = MOCK_TIPOS.find(t => t.nombre.toLowerCase() === row['Tipo Equipo']?.toLowerCase());
-        if (!type) return; // Skip invalid types
-
-        const newId = MOCK_EQUIPOS.length + 1 + count;
-        
-        MOCK_EQUIPOS.push({
-            id: newId,
-            codigo_activo: row['Codigo Activo'],
-            numero_serie: row['Serie'],
-            marca: row['Marca'],
-            modelo: row['Modelo'],
-            tipo_equipo_id: type.id,
-            tipo_nombre: type.nombre,
-            fecha_compra: row['Fecha Compra'] || new Date().toISOString().split('T')[0],
-            valor_compra: parseFloat(row['Valor'] || '0'),
-            anos_garantia: 1,
-            estado: EstadoEquipo.DISPONIBLE,
-            ubicacion_id: defaultBodega.id,
-            ubicacion_nombre: defaultBodega.nombre,
-            observaciones: 'Migración Masiva'
-        });
-        
-        // Log
-        MOCK_HISTORIAL.push({
-            id: MOCK_HISTORIAL.length + 1,
-            equipo_id: newId,
-            equipo_codigo: row['Codigo Activo'],
-            tipo_accion: 'CREACION',
-            fecha: new Date().toISOString().split('T')[0],
-            usuario_responsable: 'Admin',
-            detalle: 'Carga Masiva'
-        });
-        count++;
-    });
-    return count;
-  },
-
-  bulkCreateUsuarios: async (data: any[]) => {
-      await simulateDelay();
-      let count = 0;
-      data.forEach(row => {
-          if (MOCK_USERS.some(u => u.correo === row['Email'])) return; // Skip duplicates
-
-          const newId = MOCK_USERS.length + 1 + count;
-          MOCK_USERS.push({
-              id: newId,
-              nombres: row['Nombres'],
-              apellidos: row['Apellidos'],
-              nombre_completo: `${row['Nombres']} ${row['Apellidos']}`,
-              nombre_usuario: row['Usuario'],
-              numero_empleado: row['Numero Empleado'],
-              correo: row['Email'],
-              password: '123', // Default
-              rol: (row['Rol'] as RolUsuario) || RolUsuario.USUARIO,
-              activo: true
-          });
-          count++;
-      });
-      return count;
-  },
-
-  bulkCreateLicencias: async (data: any[]) => {
-      await simulateDelay();
-      let count = 0;
-      data.forEach(row => {
-          // Find Type or Create
-          let type = MOCK_TIPOS_LICENCIA.find(t => t.nombre.toLowerCase() === row['Tipo Software']?.toLowerCase());
-          if (!type && row['Tipo Software']) {
-              type = {
-                  id: MOCK_TIPOS_LICENCIA.length + 1,
-                  nombre: row['Tipo Software'],
-                  proveedor: row['Proveedor'] || 'Desconocido',
-                  descripcion: 'Creado por migración'
-              };
-              MOCK_TIPOS_LICENCIA.push(type);
-          }
-
-          if (type) {
-              const newId = MOCK_LICENCIAS.length + 1 + count;
-              MOCK_LICENCIAS.push({
-                  id: newId,
-                  tipo_id: type.id,
-                  tipo_nombre: type.nombre,
-                  clave: row['Clave'],
-                  fecha_compra: row['Fecha Compra'] || new Date().toISOString().split('T')[0],
-                  fecha_vencimiento: row['Fecha Vencimiento'] || new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-                  usuario_id: null
-              });
-              count++;
-          }
-      });
-      return count;
-  },
-
-  bulkCreateDepartamentos: async (data: any[]) => {
-      await simulateDelay();
-      let count = 0;
-      data.forEach(row => {
-          if (MOCK_DEPARTAMENTOS.some(d => d.nombre.toLowerCase() === row['Nombre Departamento']?.toLowerCase())) return;
-
-          const ciudad = MOCK_CIUDADES.find(c => c.nombre.toLowerCase() === row['Ciudad']?.toLowerCase());
-          
-          const newId = MOCK_DEPARTAMENTOS.length + 1 + count;
-          MOCK_DEPARTAMENTOS.push({
-              id: newId,
-              nombre: row['Nombre Departamento'],
-              es_bodega: row['Es Bodega (SI/NO)']?.toUpperCase() === 'SI',
-              ciudad_id: ciudad?.id,
-              ciudad_nombre: ciudad?.nombre
-          });
-          count++;
-      });
-      return count;
-  },
-
-  bulkCreatePuestos: async (data: any[]) => {
-      await simulateDelay();
-      let count = 0;
-      data.forEach(row => {
-          if (MOCK_PUESTOS.some(p => p.nombre.toLowerCase() === row['Nombre Cargo']?.toLowerCase())) return;
-
-          const newId = MOCK_PUESTOS.length + 1 + count;
-          MOCK_PUESTOS.push({
-              id: newId,
-              nombre: row['Nombre Cargo']
-          });
-          count++;
-      });
-      return count;
-  },
-
-  bulkCreateAsignaciones: async (data: any[]) => {
-      await simulateDelay();
-      let count = 0;
-      
-      data.forEach(row => {
-          // Find User by Email
-          const user = MOCK_USERS.find(u => u.correo === row['Correo Usuario']);
-          // Find Equipment by Code
-          const equipoIndex = MOCK_EQUIPOS.findIndex(e => e.codigo_activo === row['Codigo Activo']);
-          
-          if (user && equipoIndex >= 0) {
-              const equipo = MOCK_EQUIPOS[equipoIndex];
-              
-              // Only assign if currently available
-              if (equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.ACTIVO) {
-                  // Update Equipment
-                  MOCK_EQUIPOS[equipoIndex] = {
-                      ...equipo,
-                      estado: EstadoEquipo.ACTIVO,
-                      responsable_id: user.id,
-                      responsable_nombre: user.nombre_completo,
-                      ubicacion_nombre: row['Ubicacion Fisica'] || 'Oficina',
-                      observaciones: row['Observaciones'] || 'Migración Masiva'
-                  };
-
-                  // Log History
-                  MOCK_HISTORIAL.push({
-                      id: MOCK_HISTORIAL.length + 1,
-                      equipo_id: equipo.id,
-                      equipo_codigo: equipo.codigo_activo,
-                      tipo_accion: 'ASIGNACION',
-                      fecha: row['Fecha Asignacion'] || new Date().toISOString().split('T')[0],
-                      usuario_responsable: 'Admin',
-                      detalle: `Asignado por migración a ${user.nombre_completo}`
-                  });
-
-                  // Add Assignment Record
-                  MOCK_ASIGNACIONES.push({
-                      id: MOCK_ASIGNACIONES.length + 1,
-                      equipo_codigo: equipo.codigo_activo,
-                      equipo_modelo: equipo.modelo,
-                      usuario_nombre: user.nombre_completo,
-                      usuario_departamento: user.departamento_nombre || '',
-                      fecha_inicio: row['Fecha Asignacion'] || new Date().toISOString().split('T')[0],
-                      fecha_fin: null,
-                      ubicacion: row['Ubicacion Fisica'] || 'Oficina',
-                      archivo_pdf: undefined 
-                  });
-                  
-                  count++;
-              }
-          }
-      });
-      return count;
+        MOCK_EQUIPOS[idx] = { ...MOCK_EQUIPOS[idx], ...data };
+        // Sync names if IDs changed
+        if (data.tipo_equipo_id) {
+            const tipo = MOCK_TIPOS_EQUIPO.find(t => t.id === data.tipo_equipo_id);
+            MOCK_EQUIPOS[idx].tipo_nombre = tipo?.nombre;
+        }
+    } 
+    return MOCK_EQUIPOS[idx]; 
   },
 
   // Actions
-  asignarEquipo: async (id: number, usuarioId: number, ubicacion: string, observaciones: string, reporteHtml?: string) => {
-    await simulateDelay();
-    const equipoIdx = MOCK_EQUIPOS.findIndex(e => e.id === id);
-    const usuario = MOCK_USERS.find(u => u.id === Number(usuarioId));
-    
-    if (equipoIdx >= 0 && usuario) {
-      const equipo = MOCK_EQUIPOS[equipoIdx];
-      
-      // Update Equipment
-      MOCK_EQUIPOS[equipoIdx] = {
-        ...equipo,
-        estado: EstadoEquipo.ACTIVO,
-        responsable_id: usuario.id,
-        responsable_nombre: usuario.nombre_completo,
-        ubicacion_nombre: ubicacion, // Physical location desk/office
-        observaciones: observaciones || equipo.observaciones
-      };
-
-      // Add History
-      MOCK_HISTORIAL.push({
-        id: MOCK_HISTORIAL.length + 1,
-        equipo_id: id,
-        equipo_codigo: equipo.codigo_activo,
-        tipo_accion: 'ASIGNACION',
-        fecha: new Date().toISOString().split('T')[0],
-        usuario_responsable: 'Admin',
-        detalle: `Asignado a ${usuario.nombre_completo}`
-      });
-
-      // Add Assignment History Record
-      // IMPORTANT: archivo_pdf inicial en undefined. No se marca como cargado hasta que se suba.
-      MOCK_ASIGNACIONES.push({
-        id: MOCK_ASIGNACIONES.length + 1,
-        equipo_codigo: equipo.codigo_activo,
-        equipo_modelo: equipo.modelo,
-        usuario_nombre: usuario.nombre_completo,
-        usuario_departamento: usuario.departamento_nombre || '',
-        fecha_inicio: new Date().toISOString().split('T')[0],
-        fecha_fin: null,
-        ubicacion: ubicacion,
-        archivo_pdf: undefined 
-      });
-      
-      // EMAIL TRIGGER
-      // Si se pasa HTML, se simula que es el adjunto, pero no afecta al archivo_pdf de la base de datos
-      let attachmentName = undefined;
-      if (reporteHtml && MOCK_EMAIL_CONFIG.notificar_asignacion) {
-          attachmentName = `acta_${equipo.codigo_activo}.pdf`;
-      }
-
-      await sendNotificationEmail(
-          usuario.id,
-          'Asignación de Equipo',
-          `Se le ha asignado el equipo ${equipo.tipo_nombre} ${equipo.marca} ${equipo.modelo} (Código: ${equipo.codigo_activo}).\nObservaciones: ${observaciones}.\n\nSe adjunta el acta de entrega.`,
-          'asignacion',
-          attachmentName
-      );
-    }
-  },
-
-  recepcionarEquipo: async (id: number, observaciones: string, ubicacionId?: number, ubicacionNombre?: string) => {
+  asignarEquipo: async (id: number, usuarioId: number, ubicacion: string, observaciones: string, archivo?: File) => {
     await simulateDelay();
     const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
     if (idx >= 0) {
-      const prevUser = MOCK_EQUIPOS[idx].responsable_nombre;
-      
-      MOCK_EQUIPOS[idx] = {
-        ...MOCK_EQUIPOS[idx],
-        estado: EstadoEquipo.DISPONIBLE,
-        responsable_id: undefined,
-        responsable_nombre: undefined,
-        ubicacion_id: ubicacionId || MOCK_EQUIPOS[idx].ubicacion_id,
-        ubicacion_nombre: ubicacionNombre || 'Bodega IT',
-        observaciones: observaciones
-      };
+        // VALIDACIÓN: Verificar si el usuario ya tiene un equipo del mismo tipo
+        const equipoAAsignar = MOCK_EQUIPOS[idx];
+        const asignacionExistente = MOCK_EQUIPOS.find(e => 
+            e.responsable_id === usuarioId && 
+            e.tipo_equipo_id === equipoAAsignar.tipo_equipo_id &&
+            e.id !== id // No contar el mismo equipo si fuera una re-asignación
+        );
 
-      // Close Assignment History
-      const lastAssign = MOCK_ASIGNACIONES.find(a => a.equipo_codigo === MOCK_EQUIPOS[idx].codigo_activo && a.fecha_fin === null);
-      if (lastAssign) {
-        lastAssign.fecha_fin = new Date().toISOString().split('T')[0];
-      }
+        if (asignacionExistente) {
+            throw new Error(`El usuario ya tiene asignado un equipo de tipo "${equipoAAsignar.tipo_nombre}". Debe realizar la devolución del equipo actual antes de asignar uno nuevo.`);
+        }
 
-      MOCK_HISTORIAL.push({
-        id: MOCK_HISTORIAL.length + 1,
-        equipo_id: id,
-        equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
-        tipo_accion: 'RECEPCION',
-        fecha: new Date().toISOString().split('T')[0],
-        usuario_responsable: 'Admin',
-        detalle: `Devuelto por ${prevUser}`
-      });
+        const usuario = MOCK_USUARIOS.find(u => u.id === usuarioId);
+        MOCK_EQUIPOS[idx].estado = EstadoEquipo.ACTIVO;
+        MOCK_EQUIPOS[idx].responsable_id = usuarioId;
+        MOCK_EQUIPOS[idx].responsable_nombre = usuario?.nombre_completo;
+        MOCK_EQUIPOS[idx].ubicacion_nombre = ubicacion; // Physical location
+        MOCK_EQUIPOS[idx].observaciones = observaciones;
+
+        // Log Movement
+        MOCK_HISTORIAL.push({
+            id: Date.now(), equipo_id: id, equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            tipo_accion: 'ASIGNACION', fecha: new Date().toISOString().split('T')[0],
+            usuario_responsable: usuario?.nombre_completo || '', detalle: observaciones, archivo: archivo?.name
+        });
+
+        // Log Assignment
+        MOCK_ASIGNACIONES.push({
+            id: Date.now(), equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo, equipo_modelo: MOCK_EQUIPOS[idx].modelo,
+            usuario_nombre: usuario?.nombre_completo || '', usuario_departamento: usuario?.departamento_nombre || '',
+            fecha_inicio: new Date().toISOString().split('T')[0], fecha_fin: null, ubicacion: ubicacion, archivo_pdf: archivo?.name
+        });
     }
+    return MOCK_EQUIPOS[idx];
   },
+  recepcionarEquipo: async (id: number, observaciones: string, ubicacionId?: number, ubicacionNombre?: string, liberarLicencias?: boolean, archivo?: File) => {
+    await simulateDelay();
+    const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
+    if (idx >= 0) {
+        const responsablePrevio = MOCK_EQUIPOS[idx].responsable_nombre;
+        const responsableIdPrevio = MOCK_EQUIPOS[idx].responsable_id;
 
+        MOCK_EQUIPOS[idx].estado = EstadoEquipo.DISPONIBLE;
+        MOCK_EQUIPOS[idx].responsable_id = undefined;
+        MOCK_EQUIPOS[idx].responsable_nombre = undefined;
+        MOCK_EQUIPOS[idx].ubicacion_id = ubicacionId!;
+        MOCK_EQUIPOS[idx].ubicacion_nombre = ubicacionNombre;
+        MOCK_EQUIPOS[idx].observaciones = observaciones;
+
+        // Log Movement
+        MOCK_HISTORIAL.push({
+            id: Date.now(), equipo_id: id, equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            tipo_accion: 'RECEPCION', fecha: new Date().toISOString().split('T')[0],
+            usuario_responsable: responsablePrevio || '', detalle: observaciones, archivo: archivo?.name
+        });
+
+        // Update Assignment History (Close it)
+        const lastAsign = MOCK_ASIGNACIONES.find(a => a.equipo_codigo === MOCK_EQUIPOS[idx].codigo_activo && !a.fecha_fin);
+        if (lastAsign) {
+            lastAsign.fecha_fin = new Date().toISOString().split('T')[0];
+        }
+
+        // Release licenses if requested
+        if (liberarLicencias && responsableIdPrevio) {
+            MOCK_LICENCIAS.forEach(l => {
+                if (l.usuario_id === responsableIdPrevio) {
+                    l.usuario_id = undefined;
+                    l.usuario_nombre = undefined;
+                    l.usuario_departamento = undefined;
+                }
+            });
+        }
+    }
+    return MOCK_EQUIPOS[idx];
+  },
   bajaEquipo: async (id: number, motivo: string, archivo?: File) => {
     await simulateDelay();
     const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
     if (idx >= 0) {
-      MOCK_EQUIPOS[idx].estado = EstadoEquipo.BAJA;
-      
-      let detalleHistorial = `Motivo: ${motivo}`;
-      if (archivo) {
-          detalleHistorial += ` | Evidencia: ${archivo.name}`;
-      }
+        // VALIDACIÓN: No se puede dar de baja un equipo asignado (Activo o con Responsable)
+        if (MOCK_EQUIPOS[idx].estado === EstadoEquipo.ACTIVO || MOCK_EQUIPOS[idx].responsable_id) {
+            throw new Error("No es posible dar de baja un equipo que se encuentra asignado. Por favor, realice la recepción del equipo antes de proceder con la baja.");
+        }
 
-      MOCK_HISTORIAL.push({
-        id: MOCK_HISTORIAL.length + 1,
-        equipo_id: id,
-        equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
-        tipo_accion: 'BAJA',
-        fecha: new Date().toISOString().split('T')[0],
-        usuario_responsable: 'Admin',
-        detalle: detalleHistorial,
-        archivo: archivo ? archivo.name : undefined // Guardar referencia al archivo
-      });
+        MOCK_EQUIPOS[idx].estado = EstadoEquipo.BAJA;
+        MOCK_EQUIPOS[idx].observaciones = motivo;
+        MOCK_HISTORIAL.push({
+            id: Date.now(), equipo_id: id, equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            tipo_accion: 'BAJA', fecha: new Date().toISOString().split('T')[0],
+            usuario_responsable: 'Admin', detalle: motivo, archivo: archivo?.name
+        });
+    }
+    return MOCK_EQUIPOS[idx];
+  },
+  enviarAMantenimiento: async (id: number, motivo: string) => {
+    await simulateDelay();
+    const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
+    if (idx >= 0) {
+        MOCK_EQUIPOS[idx].estado = EstadoEquipo.EN_MANTENIMIENTO;
+        MOCK_EQUIPOS[idx].observaciones = motivo;
+        MOCK_HISTORIAL.push({
+            id: Date.now(), equipo_id: id, equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            tipo_accion: 'MANTENIMIENTO', fecha: new Date().toISOString().split('T')[0],
+            usuario_responsable: 'Admin', detalle: motivo
+        });
+        
+        // Si hay una tarea en el plan que corresponda, marcarla EN_PROCESO
+        const currentMonth = new Date().getMonth() + 1;
+        const task = MOCK_DETALLES_PLAN.find(t => t.equipo_id === id && t.mes_programado === currentMonth && t.estado === EstadoPlan.PENDIENTE);
+        if(task) task.estado = EstadoPlan.EN_PROCESO;
+    }
+    return MOCK_EQUIPOS[idx];
+  },
+  finalizarMantenimiento: async (equipoId: number, data: any, nuevoEstado: string, archivo?: File) => {
+    await simulateDelay();
+    const idx = MOCK_EQUIPOS.findIndex(e => e.id === equipoId);
+    if (idx >= 0) {
+        MOCK_EQUIPOS[idx].estado = nuevoEstado as EstadoEquipo;
+        if (data.ubicacionId) {
+            MOCK_EQUIPOS[idx].ubicacion_id = data.ubicacionId;
+            MOCK_EQUIPOS[idx].ubicacion_nombre = data.ubicacionNombre;
+        }
+        if (data.serie_cargador) {
+            MOCK_EQUIPOS[idx].serie_cargador = data.serie_cargador;
+        }
+        MOCK_EQUIPOS[idx].ultimo_mantenimiento = new Date().toISOString().split('T')[0];
+
+        MOCK_MANTENIMIENTOS.push({
+            id: Date.now(),
+            equipo_id: equipoId,
+            equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            equipo_modelo: MOCK_EQUIPOS[idx].modelo,
+            fecha: new Date().toISOString().split('T')[0],
+            tipo_mantenimiento: data.tipo,
+            proveedor: data.proveedor,
+            costo: data.costo,
+            descripcion: data.descripcion,
+            archivo_orden: archivo?.name
+        });
+
+        // Registrar en Bitácora de Movimientos
+        MOCK_HISTORIAL.push({
+            id: Date.now() + 10,
+            equipo_id: equipoId,
+            equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            tipo_accion: 'MANTENIMIENTO',
+            fecha: new Date().toISOString().split('T')[0],
+            usuario_responsable: data.proveedor || 'Servicio Técnico',
+            detalle: `Mantenimiento Finalizado (${data.tipo}): ${data.descripcion}`,
+            archivo: archivo?.name
+        });
+
+        const detallePlan = MOCK_DETALLES_PLAN.find(d => 
+            d.equipo_id === equipoId && 
+            (d.estado === EstadoPlan.EN_PROCESO || d.estado === EstadoPlan.PENDIENTE)
+        );
+
+        if (detallePlan) {
+            detallePlan.estado = EstadoPlan.REALIZADO;
+            detallePlan.fecha_ejecucion = new Date().toISOString().split('T')[0];
+            detallePlan.tecnico_responsable = data.proveedor;
+        }
     }
   },
-
   marcarParaBaja: async (id: number, observaciones: string, ubicacionId: number, ubicacionNombre: string) => {
     await simulateDelay();
     const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
@@ -733,464 +515,165 @@ export const api = {
         MOCK_EQUIPOS[idx].observaciones = observaciones;
         MOCK_EQUIPOS[idx].ubicacion_id = ubicacionId;
         MOCK_EQUIPOS[idx].ubicacion_nombre = ubicacionNombre;
-        
+        // Reset responsible
+        MOCK_EQUIPOS[idx].responsable_id = undefined;
+        MOCK_EQUIPOS[idx].responsable_nombre = undefined;
+
         MOCK_HISTORIAL.push({
-            id: MOCK_HISTORIAL.length + 1,
-            equipo_id: id,
-            equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
-            tipo_accion: 'PRE_BAJA',
-            fecha: new Date().toISOString().split('T')[0],
-            usuario_responsable: 'Admin',
-            detalle: `Enviado a pre-baja: ${observaciones}`
+            id: Date.now(), equipo_id: id, equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
+            tipo_accion: 'PRE_BAJA', fecha: new Date().toISOString().split('T')[0],
+            usuario_responsable: 'Admin', detalle: observaciones
         });
     }
+    return MOCK_EQUIPOS[idx];
   },
-
-  enviarAMantenimiento: async (id: number, motivo: string) => {
-    await simulateDelay();
-    const idx = MOCK_EQUIPOS.findIndex(e => e.id === id);
-    if (idx >= 0) {
-      MOCK_EQUIPOS[idx].estado = EstadoEquipo.EN_MANTENIMIENTO;
-      MOCK_EQUIPOS[idx].observaciones = motivo; // Actualizar razón para que se vea en el módulo de mantenimiento
-
-      MOCK_HISTORIAL.push({
-        id: MOCK_HISTORIAL.length + 1,
-        equipo_id: id,
-        equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
-        tipo_accion: 'MANTENIMIENTO',
-        fecha: new Date().toISOString().split('T')[0],
-        usuario_responsable: 'Admin',
-        detalle: `Enviado a taller: ${motivo}`
-      });
-    }
-  },
-
-  finalizarMantenimiento: async (equipoId: number, data: any, nuevoEstado: string, archivo?: File) => {
-    await simulateDelay();
-    const idx = MOCK_EQUIPOS.findIndex(e => e.id === equipoId);
-    if (idx >= 0) {
-      // 1. Crear registro de mantenimiento
-      MOCK_MANTENIMIENTOS.push({
-        id: MOCK_MANTENIMIENTOS.length + 1,
-        equipo_id: equipoId,
-        equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
-        equipo_modelo: MOCK_EQUIPOS[idx].modelo,
-        fecha: new Date().toISOString().split('T')[0],
-        tipo_mantenimiento: data.tipo,
-        proveedor: data.proveedor,
-        costo: data.costo,
-        descripcion: data.descripcion,
-        archivo_orden: archivo ? archivo.name : undefined // Mock storage
-      });
-
-      // 2. Actualizar equipo
-      MOCK_EQUIPOS[idx].estado = nuevoEstado as EstadoEquipo;
-      MOCK_EQUIPOS[idx].ultimo_mantenimiento = new Date().toISOString().split('T')[0];
-      // IMPORTANT: Limpiar observaciones para que el equipo quede "limpio" tras el mantenimiento
-      MOCK_EQUIPOS[idx].observaciones = ''; 
-      
-      if (data.ubicacionId) {
-          MOCK_EQUIPOS[idx].ubicacion_id = data.ubicacionId;
-          MOCK_EQUIPOS[idx].ubicacion_nombre = data.ubicacionNombre;
-      }
-      if (data.serie_cargador) {
-        MOCK_EQUIPOS[idx].serie_cargador = data.serie_cargador;
-      }
-
-      // 3. Log Historial
-      MOCK_HISTORIAL.push({
-        id: MOCK_HISTORIAL.length + 1,
-        equipo_id: equipoId,
-        equipo_codigo: MOCK_EQUIPOS[idx].codigo_activo,
-        tipo_accion: 'MANTENIMIENTO',
-        fecha: new Date().toISOString().split('T')[0],
-        usuario_responsable: 'Admin',
-        detalle: `Mantenimiento finalizado (${data.tipo})`
-      });
-
-      // 4. (Integration) Check if this equipment was in a Maintenance Plan and update task status
-      MOCK_DETALLES_PLAN.forEach(task => {
-        if (task.equipo_id === equipoId && task.estado === EstadoPlan.EN_PROCESO) {
-            task.estado = EstadoPlan.REALIZADO;
-            task.fecha_ejecucion = new Date().toISOString().split('T')[0];
-            task.tecnico_responsable = data.proveedor;
-        }
-      });
-      
-      // EMAIL TRIGGER
-      // Determine target user (only if returning to ACTIVE state and has a responsible user)
-      const targetUserId = (nuevoEstado === EstadoEquipo.ACTIVO) ? MOCK_EQUIPOS[idx].responsable_id : undefined;
-      
-      // Get attachment name
-      const attachmentName = archivo ? archivo.name : undefined;
-
-      const equipStr = `${MOCK_EQUIPOS[idx].tipo_nombre} ${MOCK_EQUIPOS[idx].marca} ${MOCK_EQUIPOS[idx].modelo}`;
-
-      await sendNotificationEmail(
-        targetUserId,
-        'Reporte de Mantenimiento Finalizado',
-        `El proceso de mantenimiento para el equipo ${equipStr} (Código: ${MOCK_EQUIPOS[idx].codigo_activo}) ha concluido.
-        \n\nDetalles del Servicio:
-        \n- Tipo: ${data.tipo}
-        \n- Proveedor: ${data.proveedor}
-        \n- Descripción: ${data.descripcion}
-        \n\nSe adjunta el informe técnico/orden de servicio.`,
-        'mantenimiento',
-        attachmentName
-      );
-    }
-  },
-
-  iniciarMantenimientoDesdePlan: async (planDetailId: number, motivo: string) => {
-    await simulateDelay();
-    // 1. Update Plan Detail
-    const detail = MOCK_DETALLES_PLAN.find(d => d.id === planDetailId);
-    if (detail) {
-        detail.estado = EstadoPlan.EN_PROCESO;
-        
-        // 2. Update Equipment Status
-        const eqIdx = MOCK_EQUIPOS.findIndex(e => e.id === detail.equipo_id);
-        if (eqIdx >= 0) {
-            MOCK_EQUIPOS[eqIdx].estado = EstadoEquipo.EN_MANTENIMIENTO;
-            MOCK_EQUIPOS[eqIdx].observaciones = motivo; // Actualizar razón para que se vea en el módulo de mantenimiento
-            
-            // 3. Add History
-            MOCK_HISTORIAL.push({
-                id: MOCK_HISTORIAL.length + 1,
-                equipo_id: detail.equipo_id,
-                equipo_codigo: MOCK_EQUIPOS[eqIdx].codigo_activo,
-                tipo_accion: 'MANTENIMIENTO',
-                fecha: new Date().toISOString().split('T')[0],
-                usuario_responsable: 'Admin',
-                detalle: `Iniciado desde Planificación: ${motivo}`
-            });
-        }
-    }
-  },
-
   subirArchivoAsignacion: async (id: number, file: File) => {
-      // Mock upload
       await simulateDelay();
-      const idx = MOCK_ASIGNACIONES.findIndex(a => a.id === id);
-      if (idx >= 0) {
-          MOCK_ASIGNACIONES[idx].archivo_pdf = file.name;
-          return MOCK_ASIGNACIONES[idx];
-      }
-      throw new Error("Asignación no encontrada");
+      const assign = MOCK_ASIGNACIONES.find(a => a.id === id);
+      if (assign) assign.archivo_pdf = file.name;
+      return assign;
   },
 
-  // --- Licenses ---
+  // Licenses
   getTipoLicencias: async () => { await simulateDelay(); return [...MOCK_TIPOS_LICENCIA]; },
-  createTipoLicencia: async (data: any) => {
-    await simulateDelay();
-    const newId = MOCK_TIPOS_LICENCIA.length + 1;
-    const newItem = { ...data, id: newId };
-    MOCK_TIPOS_LICENCIA.push(newItem);
-    return newItem;
+  createTipoLicencia: async (data: any) => { 
+      await simulateDelay(); 
+      const newItem = { id: Date.now(), ...data }; 
+      MOCK_TIPOS_LICENCIA.push(newItem); 
+      return newItem; 
   },
-  updateTipoLicencia: async (id: number, data: any) => {
-    await simulateDelay();
-    const idx = MOCK_TIPOS_LICENCIA.findIndex(t => t.id === id);
-    if (idx >= 0) {
-        MOCK_TIPOS_LICENCIA[idx] = { ...MOCK_TIPOS_LICENCIA[idx], ...data };
-        return MOCK_TIPOS_LICENCIA[idx];
-    }
-  },
-  deleteTipoLicencia: async (id: number) => {
-      await simulateDelay();
-      const idx = MOCK_TIPOS_LICENCIA.findIndex(t => t.id === id);
-      if (idx >= 0) MOCK_TIPOS_LICENCIA.splice(idx, 1);
-  },
-  
   getLicencias: async () => { await simulateDelay(); return [...MOCK_LICENCIAS]; },
   agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento: string) => {
       await simulateDelay();
-      const tipo = MOCK_TIPOS_LICENCIA.find(t => t.id === Number(tipoId));
-      if (!tipo) throw new Error("Tipo no encontrado");
-
-      for(let i=0; i<cantidad; i++) {
-          const newId = MOCK_LICENCIAS.length + 1 + i;
+      const tipo = MOCK_TIPOS_LICENCIA.find(t => t.id === tipoId);
+      for (let i = 0; i < cantidad; i++) {
           MOCK_LICENCIAS.push({
-              id: newId,
-              tipo_id: tipo.id,
-              tipo_nombre: tipo.nombre,
-              clave: `${tipo.nombre.substring(0,3).toUpperCase()}-${Math.floor(Math.random()*1000)}-${new Date().getFullYear()}`,
+              id: Date.now() + i,
+              tipo_id: tipoId,
+              tipo_nombre: tipo?.nombre || '',
+              clave: 'KEY-' + Math.random().toString(36).substring(7).toUpperCase(),
               fecha_compra: new Date().toISOString().split('T')[0],
               fecha_vencimiento: fechaVencimiento,
-              usuario_id: null,
-              usuario_nombre: undefined
+              usuario_id: null
           });
       }
-      return true;
   },
   asignarLicencia: async (licenciaId: number, usuarioId: number) => {
       await simulateDelay();
-      const licIdx = MOCK_LICENCIAS.findIndex(l => l.id === licenciaId);
-      const user = MOCK_USERS.find(u => u.id === Number(usuarioId));
-      
-      if (licIdx >= 0 && user) {
-          MOCK_LICENCIAS[licIdx].usuario_id = user.id;
-          MOCK_LICENCIAS[licIdx].usuario_nombre = user.nombre_completo;
-          MOCK_LICENCIAS[licIdx].usuario_departamento = user.departamento_nombre;
-          return MOCK_LICENCIAS[licIdx];
+      const lic = MOCK_LICENCIAS.find(l => l.id === licenciaId);
+      const user = MOCK_USUARIOS.find(u => u.id === usuarioId);
+      if (lic && user) {
+          lic.usuario_id = usuarioId;
+          lic.usuario_nombre = user.nombre_completo;
+          lic.usuario_departamento = user.departamento_nombre;
       }
-      throw new Error("Error al asignar licencia");
   },
   liberarLicencia: async (licenciaId: number) => {
       await simulateDelay();
-      const licIdx = MOCK_LICENCIAS.findIndex(l => l.id === licenciaId);
-      if (licIdx >= 0) {
-          MOCK_LICENCIAS[licIdx].usuario_id = null;
-          MOCK_LICENCIAS[licIdx].usuario_nombre = undefined;
-          MOCK_LICENCIAS[licIdx].usuario_departamento = undefined;
-          return MOCK_LICENCIAS[licIdx];
+      const lic = MOCK_LICENCIAS.find(l => l.id === licenciaId);
+      if (lic) {
+          lic.usuario_id = undefined;
+          lic.usuario_nombre = undefined;
+          lic.usuario_departamento = undefined;
       }
-      throw new Error("Licencia no encontrada");
   },
 
-  // --- Maintenance Planning ---
-  getMaintenancePlans: async () => {
-    await simulateDelay();
-    return [...MOCK_PLANES];
-  },
-
+  // Planning
+  getMaintenancePlans: async () => { await simulateDelay(); return [...MOCK_PLANES]; },
   getPlanDetails: async (planId: number) => {
       await simulateDelay();
       const plan = MOCK_PLANES.find(p => p.id === planId);
-      if (!plan) throw new Error("Plan no encontrado");
       const details = MOCK_DETALLES_PLAN.filter(d => d.plan_id === planId);
       return { plan, details };
   },
-
-  getPendingMaintenanceCurrentMonth: async () => {
-    await simulateDelay();
-    const today = new Date();
-    const currentMonth = today.getMonth() + 1; // 1-12
-    const currentYear = today.getFullYear();
-    
-    // Get Active Plans for this year
-    const activePlanIds = MOCK_PLANES
-        .filter(p => p.anio === currentYear && p.estado === 'ACTIVO')
-        .map(p => p.id);
-        
-    // Filter pending/in-process details for this month
-    return MOCK_DETALLES_PLAN.filter(d => 
-        activePlanIds.includes(d.plan_id) && 
-        d.mes_programado === currentMonth &&
-        d.estado !== EstadoPlan.REALIZADO
-    );
-  },
-
   createMaintenancePlan: async (plan: PlanMantenimiento, details: DetallePlan[]) => {
       await simulateDelay();
       MOCK_PLANES.push(plan);
       MOCK_DETALLES_PLAN.push(...details);
-      return plan;
   },
-
-  updatePlanDetailMonth: async (detailId: number, newMonth: number) => {
+  updatePlanDetailMonth: async (itemId: number, newMonth: number) => {
       await simulateDelay();
-      const idx = MOCK_DETALLES_PLAN.findIndex(d => d.id === detailId);
-      if (idx >= 0) {
-          MOCK_DETALLES_PLAN[idx].mes_programado = newMonth;
-          return MOCK_DETALLES_PLAN[idx];
+      const item = MOCK_DETALLES_PLAN.find(d => d.id === itemId);
+      if (item) item.mes_programado = newMonth;
+  },
+  registerMaintenanceExecution: async (detailId: number, data: any) => {
+      await simulateDelay();
+      const item = MOCK_DETALLES_PLAN.find(d => d.id === detailId);
+      if (item) {
+          item.estado = EstadoPlan.REALIZADO;
+          item.fecha_ejecucion = data.fecha;
+          item.tecnico_responsable = data.tecnico;
       }
   },
-  
-  registerMaintenanceExecution: async (detailId: number, data: { fecha: string, tecnico: string, observaciones: string, archivo?: File }) => {
-      await simulateDelay();
-      const idx = MOCK_DETALLES_PLAN.findIndex(d => d.id === detailId);
-      if (idx >= 0) {
-          MOCK_DETALLES_PLAN[idx].estado = EstadoPlan.REALIZADO;
-          MOCK_DETALLES_PLAN[idx].fecha_ejecucion = data.fecha;
-          MOCK_DETALLES_PLAN[idx].tecnico_responsable = data.tecnico;
-          
-          if (data.archivo) {
-              MOCK_EVIDENCIAS.push({
-                  id: MOCK_EVIDENCIAS.length + 1,
-                  detalle_plan_id: detailId,
-                  plan_id: MOCK_DETALLES_PLAN[idx].plan_id,
-                  equipo_id: MOCK_DETALLES_PLAN[idx].equipo_id,
-                  fecha_subida: new Date().toISOString(),
-                  archivo_url: URL.createObjectURL(data.archivo), // Mock URL
-                  tipo_archivo: data.archivo.type.includes('pdf') ? 'pdf' : 'imagen',
-                  observaciones: data.observaciones
-              });
-          }
-      }
-  },
-
   getEvidence: async (detailId: number) => {
       await simulateDelay();
-      return MOCK_EVIDENCIAS.find(e => e.detalle_plan_id === detailId);
+      return []; // Mock
+  },
+  iniciarMantenimientoDesdePlan: async (detailId: number, motivo: string) => {
+      await simulateDelay();
+      const detail = MOCK_DETALLES_PLAN.find(d => d.id === detailId);
+      if (detail) {
+          detail.estado = EstadoPlan.EN_PROCESO;
+          // Also trigger maintenance on equipment
+          await api.enviarAMantenimiento(detail.equipo_id, motivo);
+      }
+  },
+  getPendingMaintenanceCurrentMonth: async () => {
+      await simulateDelay();
+      const currentMonth = new Date().getMonth() + 1;
+      return MOCK_DETALLES_PLAN.filter(d => 
+          d.mes_programado === currentMonth && 
+          (d.estado === EstadoPlan.PENDIENTE || d.estado === EstadoPlan.EN_PROCESO)
+      );
   },
 
-  // --- Stats & Reports ---
-  getStats: async () => {
-    // This is handled by useDashboardData mostly, but if we need a raw call:
-    return {}; 
-  },
-  getWarrantyReport: async () => {
-    // Filter active equipment
-    const activeEq = MOCK_EQUIPOS.filter(e => e.estado !== EstadoEquipo.BAJA);
-    const report: ReporteGarantia[] = [];
-    
-    activeEq.forEach(eq => {
-        const purchaseDate = new Date(eq.fecha_compra);
-        const warrantyEnd = new Date(purchaseDate);
-        warrantyEnd.setFullYear(purchaseDate.getFullYear() + eq.anos_garantia);
-        
-        const today = new Date();
-        const diffTime = warrantyEnd.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        if (diffDays <= 90) { // Next 3 months or expired
-            report.push({
-                equipo: eq,
-                dias_restantes: diffDays,
-                fecha_vencimiento: warrantyEnd.toISOString().split('T')[0]
-            });
-        }
-    });
-    return report;
+  // Email Config
+  getEmailConfig: async () => { await simulateDelay(); return { ...MOCK_EMAIL_CONFIG }; },
+  saveEmailConfig: async (config: EmailConfig) => { await simulateDelay(); MOCK_EMAIL_CONFIG = config; },
+
+  // Stats
+  getWarrantyReport: async (): Promise<ReporteGarantia[]> => {
+      await simulateDelay();
+      return MOCK_EQUIPOS.map(e => {
+          const expiration = new Date(e.fecha_compra);
+          expiration.setFullYear(expiration.getFullYear() + e.anos_garantia);
+          const diff = Math.ceil((expiration.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+          return {
+              equipo: e,
+              fecha_vencimiento: expiration.toISOString().split('T')[0],
+              dias_restantes: diff
+          };
+      }).filter(r => r.dias_restantes > 0 && r.dias_restantes < 365);
   },
   getReplacementCandidates: async () => {
-    // Logic: Equipment older than 4 years
-    const activeEq = MOCK_EQUIPOS.filter(e => e.estado !== EstadoEquipo.BAJA);
-    const today = new Date();
-    return activeEq.filter(eq => {
-        const purchaseDate = new Date(eq.fecha_compra);
-        const ageYears = (today.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-        return ageYears >= 4;
-    });
-  },
-  getHistorial: async (tipoId?: number) => {
-    await simulateDelay();
-    if (tipoId) {
-        // Filter history by equipment that matches the type
-        const eqsOfType = MOCK_EQUIPOS.filter(e => e.tipo_equipo_id === tipoId).map(e => e.id);
-        return MOCK_HISTORIAL.filter(h => eqsOfType.includes(h.equipo_id)).sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-    }
-    return MOCK_HISTORIAL.sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-  },
-  getHistorialAsignaciones: async () => { await simulateDelay(); return [...MOCK_ASIGNACIONES]; },
-  getHistorialMantenimiento: async (tipoId?: number) => { 
-      await simulateDelay(); 
-      if (tipoId) {
-         const eqsOfType = MOCK_EQUIPOS.filter(e => e.tipo_equipo_id === tipoId).map(e => e.id);
-         return MOCK_MANTENIMIENTOS.filter(m => eqsOfType.includes(m.equipo_id)).sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
-      }
-      return [...MOCK_MANTENIMIENTOS].sort((a,b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()); 
-  },
-  getNotifications: async () => { await simulateDelay(); return [...MOCK_NOTIFICACIONES]; },
-  
-  // --- Email Settings ---
-  getEmailConfig: async () => {
-    await simulateDelay();
-    return { ...MOCK_EMAIL_CONFIG };
-  },
-  saveEmailConfig: async (config: EmailConfig) => {
       await simulateDelay();
-      MOCK_EMAIL_CONFIG = { ...config };
-      return MOCK_EMAIL_CONFIG;
+      const fourYearsAgo = new Date();
+      fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+      return MOCK_EQUIPOS.filter(e => new Date(e.fecha_compra) <= fourYearsAgo);
+  },
+  getHistorial: async (tipoId?: number) => { 
+      await simulateDelay(); 
+      // Opcionalmente filtrar por tipo si el backend real lo soporta en query
+      return [...MOCK_HISTORIAL]; 
+  },
+  getHistorialMantenimiento: async (tipoId?: number) => { await simulateDelay(); return [...MOCK_MANTENIMIENTOS]; },
+  getHistorialAsignaciones: async () => { await simulateDelay(); return [...MOCK_ASIGNACIONES]; },
+  
+  // Notifications
+  getNotifications: async () => {
+      await simulateDelay();
+      return [...MOCK_NOTIFICACIONES];
+  },
+  verificarAlertasMantenimiento: async () => {
+      await simulateDelay();
+      // Logic to generate notifications based on plan
   },
 
-  // --- Automatic Alerts ---
-  verificarAlertasMantenimiento: async () => {
-    await simulateDelay();
-    const config = MOCK_EMAIL_CONFIG;
-    const diasAnticipacion = config.dias_anticipacion_alerta || 15;
-    
-    const today = new Date();
-    // Logic to determine next month
-    const currentMonth = today.getMonth(); // 0-11
-    const currentYear = today.getFullYear();
-    
-    // Determine the "Next Scheduling Month"
-    let nextMonthIndex = currentMonth + 1; // 1-12 (Jan is 0 in JS date, but plans use 1-12)
-    let yearOfPlan = currentYear;
-    
-    if (nextMonthIndex > 11) {
-        nextMonthIndex = 0;
-        yearOfPlan++;
-    }
-    
-    // Target: 1st of next month
-    const startOfNextMonth = new Date(yearOfPlan, nextMonthIndex, 1);
-    
-    // Threshold date: startOfNextMonth - diasAnticipacion
-    const thresholdDate = new Date(startOfNextMonth);
-    thresholdDate.setDate(startOfNextMonth.getDate() - diasAnticipacion);
-    
-    // Check if we are past the threshold
-    if (today >= thresholdDate) {
-        const alertKey = `maintenance_alert_sent_${yearOfPlan}_${nextMonthIndex + 1}`; // 1-12
-        const alreadySent = localStorage.getItem(alertKey);
-        
-        if (!alreadySent) {
-            // Logic to find users and send emails
-            
-            // 1. Find Active Plans for that year
-            const activePlans = MOCK_PLANES.filter(p => p.anio === yearOfPlan && p.estado === 'ACTIVO');
-            const planIds = activePlans.map(p => p.id);
-            
-            if (planIds.length === 0) return; // No plans
-            
-            // 2. Find details for next month (nextMonthIndex + 1 because plan uses 1-based months)
-            const targetMonth = nextMonthIndex + 1;
-            const tasks = MOCK_DETALLES_PLAN.filter(d => 
-                planIds.includes(d.plan_id) && 
-                d.mes_programado === targetMonth && 
-                d.estado === EstadoPlan.PENDIENTE
-            );
-            
-            if (tasks.length === 0) return;
-            
-            // 3. Get Equipos to find owners
-            const equipIds = tasks.map(t => t.equipo_id);
-            const equipos = MOCK_EQUIPOS.filter(e => equipIds.includes(e.id) && e.responsable_id);
-            
-            // 4. Group by User
-            const userTasks: Record<number, string[]> = {}; // userId -> [equipo codes]
-            
-            equipos.forEach(eq => {
-                if (eq.responsable_id) {
-                    if (!userTasks[eq.responsable_id]) userTasks[eq.responsable_id] = [];
-                    userTasks[eq.responsable_id].push(`${eq.marca} ${eq.modelo} (${eq.codigo_activo})`);
-                }
-            });
-            
-            // 5. Send Emails
-            let emailsSentCount = 0;
-            for (const [userId, eqList] of Object.entries(userTasks)) {
-                await sendNotificationEmail(
-                    Number(userId),
-                    `Recordatorio: Mantenimiento Programado para ${MONTH_NAMES[targetMonth-1]}`,
-                    `Estimado usuario,\n\nSe le informa que los siguientes equipos bajo su responsabilidad tienen un mantenimiento programado para el próximo mes:\n\n${eqList.map(s => `- ${s}`).join('\n')}\n\nPor favor estar atento a las indicaciones del departamento técnico.`,
-                    'mantenimiento' 
-                );
-                emailsSentCount++;
-            }
-            
-            if (emailsSentCount > 0) {
-                // 6. Add System Notification
-                MOCK_NOTIFICACIONES.unshift({
-                    id: Date.now(),
-                    titulo: 'Alertas de Mantenimiento Enviadas',
-                    mensaje: `Se han enviado ${emailsSentCount} correos de recordatorio para el mantenimiento de ${MONTH_NAMES[targetMonth-1]} ${yearOfPlan}.`,
-                    fecha: new Date().toISOString().split('T')[0],
-                    leido: false,
-                    tipo: 'info'
-                });
-                
-                // Mark as sent
-                localStorage.setItem(alertKey, 'true');
-            }
-        }
-    }
-  }
+  // Bulk Operations
+  bulkCreateEquipos: async (data: any[]) => { await simulateDelay(); return data.length; },
+  bulkCreateUsuarios: async (data: any[]) => { await simulateDelay(); return data.length; },
+  bulkCreateLicencias: async (data: any[]) => { await simulateDelay(); return data.length; },
+  bulkCreateDepartamentos: async (data: any[]) => { await simulateDelay(); return data.length; },
+  bulkCreatePuestos: async (data: any[]) => { await simulateDelay(); return data.length; },
+  bulkCreateAsignaciones: async (data: any[]) => { await simulateDelay(); return data.length; }
 };
-
-if (USE_LIVE_API) {
-    Object.assign(api, liveApi);
-}

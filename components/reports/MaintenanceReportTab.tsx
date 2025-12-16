@@ -6,14 +6,19 @@ import { formatCurrency } from '../../utils/formatters';
 import { Wrench, Download, Printer, Eye, FileText, Search } from 'lucide-react';
 import { generateExcelFromData } from '../../utils/excelHelper';
 import { printCustomHTML } from '../../utils/documentGenerator';
-import { Modal } from '../common/Modal';
+import { Pagination } from '../common/Pagination';
+import { FileViewerModal } from '../common/FileViewerModal';
 
 export const MaintenanceReportTab: React.FC = () => {
   const [registros, setRegistros] = useState<RegistroMantenimiento[]>([]);
   const [loading, setLoading] = useState(true);
   const [fileToView, setFileToView] = useState<string | null>(null);
-    const objectUrlRef = useRef<string | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const [filterText, setFilterText] = useState('');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     reportService.getMaintenance().then((data) => {
@@ -21,6 +26,10 @@ export const MaintenanceReportTab: React.FC = () => {
         setLoading(false);
     });
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterText]);
 
   const filteredRegistros = registros.filter(reg => {
       if (!filterText) return true;
@@ -38,89 +47,109 @@ export const MaintenanceReportTab: React.FC = () => {
     return filteredRegistros.map(reg => ({
       'Fecha': reg.fecha,
       'Equipo': `${reg.equipo_codigo} - ${reg.equipo_modelo}`,
-      'Tipo': reg.tipo_mantenimiento, // Alineado con UI
+      'Tipo': reg.tipo_mantenimiento,
       'Proveedor': reg.proveedor,
       'Costo': formatCurrency(reg.costo),
-      'Trabajo Realizado': reg.descripcion, // Alineado con UI
-      'Doc': reg.archivo_orden ? 'Adjunto' : 'Pendiente' // Alineado con UI
+      'Trabajo Realizado': reg.descripcion,
+      'Doc': reg.archivo_orden ? 'Adjunto' : 'Pendiente'
     }));
   };
 
   const handlePrintPDF = () => {
-    let htmlContent = `
+      let htmlContent = `
       <style>
-        .summary-row { display: flex; gap: 15px; margin-bottom: 25px; }
-        .summary-card { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .bg-blue { background-color: #eff6ff; border-color: #dbeafe; }
-        .bg-amber { background-color: #fffbeb; border-color: #fde68a; }
-        .card-title { font-size: 11px; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.05em; }
-        .text-blue { color: #1e40af; }
-        .text-amber { color: #b45309; }
-        .card-value { font-size: 24px; font-weight: 700; margin: 0; line-height: 1; }
+        body { font-family: 'Segoe UI', sans-serif; color: #334155; font-size: 10px; }
+        .header-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; color: #1e293b; }
+        .header-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }
         
-        table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
-        th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 10px; text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
-        td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 11px; color: #334155; vertical-align: top; }
+        .summary-container { display: flex; gap: 15px; margin-bottom: 25px; }
+        .summary-card { flex: 1; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #fff; }
+        .summary-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 5px; }
+        .summary-value { font-size: 18px; font-weight: 700; color: #0f172a; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background-color: #f8fafc; color: #64748b; font-weight: 600; text-transform: uppercase; text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+        td { padding: 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
         tr:last-child td { border-bottom: none; }
         
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; border: 1px solid transparent; }
-        .badge-correctivo { background-color: #fee2e2; color: #991b1b; border-color: #fecaca; }
-        .badge-preventivo { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 99px; font-size: 8px; font-weight: 700; border: 1px solid transparent; text-transform: uppercase; }
+        .badge-correctivo { background-color: #fef2f2; color: #dc2626; border-color: #fecaca; }
+        .badge-preventivo { background-color: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
         
-        .font-bold { font-weight: 700; }
+        .font-medium { font-weight: 700; color: #0f172a; }
+        .text-dim { color: #64748b; }
+        .money { font-family: monospace; font-weight: 700; }
       </style>
       
-      <div class="summary-row">
-          <div class="summary-card bg-blue">
-              <div class="card-title text-blue">Total Mantenimientos</div>
-              <div class="card-value text-blue">${filteredRegistros.length}</div>
-          </div>
-          <div class="summary-card bg-amber">
-              <div class="card-title text-amber">Costo Total Acumulado</div>
-              <div class="card-value text-amber">${formatCurrency(totalCost)}</div>
-          </div>
-      </div>
-    `;
+      <div class="header-title">Historial de Mantenimientos</div>
+      <div class="header-meta">Generado el: ${new Date().toLocaleDateString()}</div>
 
-    if (filteredRegistros.length === 0) {
-       htmlContent += `<div style="text-align:center; padding: 30px; color: #94a3b8; font-style: italic;">No hay registros de mantenimiento con los filtros actuales.</div>`;
-    } else {
-       htmlContent += `
-        <table>
+      <div class="summary-container">
+         <div class="summary-card" style="border-left: 4px solid #3b82f6;">
+            <div class="summary-label">Total Registros</div>
+            <div class="summary-value">${filteredRegistros.length}</div>
+         </div>
+         <div class="summary-card" style="border-left: 4px solid #f59e0b;">
+            <div class="summary-label">Costo Acumulado</div>
+            <div class="summary-value">${formatCurrency(totalCost)}</div>
+         </div>
+      </div>
+      `;
+
+      if (filteredRegistros.length === 0) {
+          htmlContent += `<div style="text-align:center; padding: 20px; color: #94a3b8; font-style: italic;">No hay registros para mostrar.</div>`;
+      } else {
+          htmlContent += `
+          <table>
             <thead>
                 <tr>
-                    <th style="width: 12%">Fecha</th>
+                    <th style="width: 10%">Fecha</th>
                     <th style="width: 20%">Equipo</th>
-                    <th style="width: 12%">Tipo</th>
-                    <th style="width: 18%">Proveedor</th>
-                    <th style="width: 13%">Costo</th>
-                    <th style="width: 25%">Trabajo Realizado</th>
+                    <th style="width: 10%">Tipo</th>
+                    <th style="width: 15%">Proveedor</th>
+                    <th style="width: 10%">Costo</th>
+                    <th style="width: 35%">Trabajo Realizado</th>
                 </tr>
             </thead>
             <tbody>
-       `;
+          `;
 
-       filteredRegistros.forEach(reg => {
-           const badgeClass = reg.tipo_mantenimiento === 'Correctivo' ? 'badge-correctivo' : 'badge-preventivo';
-           htmlContent += `
-            <tr>
-                <td>${reg.fecha}</td>
-                <td>
-                    <div class="font-bold">${reg.equipo_codigo}</div>
-                    <div style="font-size: 10px; color: #64748b;">${reg.equipo_modelo}</div>
-                </td>
-                <td><span class="badge ${badgeClass}">${reg.tipo_mantenimiento}</span></td>
-                <td>${reg.proveedor}</td>
-                <td class="font-bold">${formatCurrency(reg.costo)}</td>
-                <td>${reg.descripcion}</td>
-            </tr>
-           `;
-       });
+          filteredRegistros.forEach(r => {
+              const badgeClass = r.tipo_mantenimiento === 'Correctivo' ? 'badge-correctivo' : 'badge-preventivo';
+              htmlContent += `
+                <tr>
+                    <td>${r.fecha}</td>
+                    <td>
+                        <div class="font-medium">${r.equipo_codigo}</div>
+                        <div class="text-dim" style="font-size: 8px;">${r.equipo_modelo}</div>
+                    </td>
+                    <td><span class="badge ${badgeClass}">${r.tipo_mantenimiento}</span></td>
+                    <td>${r.proveedor}</td>
+                    <td class="money">${formatCurrency(r.costo)}</td>
+                    <td class="text-dim">${r.descripcion}</td>
+                </tr>
+              `;
+          });
 
-       htmlContent += `</tbody></table>`;
+          htmlContent += `</tbody></table>`;
+      }
+
+      printCustomHTML(htmlContent, 'Historial de Mantenimientos');
+  };
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredRegistros.length / ITEMS_PER_PAGE);
+  const paginatedRegistros = filteredRegistros.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const handleCloseViewer = () => {
+    if (objectUrlRef.current) {
+        try { URL.revokeObjectURL(objectUrlRef.current); } catch(e) {}
+        objectUrlRef.current = null;
     }
-
-    printCustomHTML(htmlContent, 'Historial de Mantenimientos');
+    setFileToView(null);
   };
 
   return (
@@ -143,13 +172,13 @@ export const MaintenanceReportTab: React.FC = () => {
             <div className="flex gap-2">
                 <button 
                     onClick={() => generateExcelFromData(prepareExportData(), 'Reporte_Mantenimiento')}
-                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm transition-colors"
+                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     <Download className="w-4 h-4" /> Excel
                 </button>
                 <button 
                     onClick={handlePrintPDF}
-                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm px-4 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium text-sm transition-colors"
+                    className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     <Printer className="w-4 h-4" /> PDF
                 </button>
@@ -157,6 +186,7 @@ export const MaintenanceReportTab: React.FC = () => {
         </div>
 
         {/* Summary Cards */}
+        {/* ... rest of the component ... */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-900/30 flex justify-between items-center transition-colors">
                 <div>
@@ -178,127 +208,108 @@ export const MaintenanceReportTab: React.FC = () => {
             </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm transition-colors">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                <thead className="bg-slate-50 dark:bg-slate-900/50">
-                    <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Fecha</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Equipo</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Tipo</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Proveedor</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Costo</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Trabajo Realizado</th>
-                        <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Doc</th>
-                    </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
-                    {loading ? (
-                        <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando...</td></tr>
-                    ) : filteredRegistros.map(reg => (
-                        <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{reg.fecha}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm font-medium text-slate-900 dark:text-slate-200">{reg.equipo_codigo}</div>
-                                <div className="text-xs text-slate-500 dark:text-slate-400">{reg.equipo_modelo}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${reg.tipo_mantenimiento === 'Correctivo' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'}`}>
-                                    {reg.tipo_mantenimiento}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{reg.proveedor}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-200">{formatCurrency(reg.costo)}</td>
-                            <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate" title={reg.descripcion}>{reg.descripcion}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                {reg.archivo_orden ? (
-                                    <button 
-                                        onClick={() => {
-                                            (async () => {
-                                                    const raw = reg.archivo_orden as string;
-                                                    // If frontend dev server runs on 3000, assume backend at same host port 8000
-                                                    const isFrontDev3000 = window.location.port === '3000';
-                                                    const backendOrigin = isFrontDev3000
-                                                        ? `${window.location.protocol}//${window.location.hostname}:8000`
-                                                        : window.location.origin;
-                                                    let url = raw;
-                                                    if (!raw.startsWith('http')) {
-                                                        if (raw.startsWith('/')) {
-                                                            url = backendOrigin + raw;
-                                                        } else if (raw.startsWith('storage/')) {
-                                                            url = backendOrigin + '/' + raw;
-                                                        } else {
-                                                            url = backendOrigin + '/storage/' + raw;
-                                                        }
-                                                    }
-                                                try {
-                                                    const res = await fetch(url, { cache: 'no-store' });
-                                                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                                                    const blob = await res.blob();
-                                                    const objUrl = URL.createObjectURL(blob);
-                                                    // revoke previous
-                                                    if (objectUrlRef.current) {
-                                                        try { URL.revokeObjectURL(objectUrlRef.current); } catch(e) {}
-                                                    }
-                                                    objectUrlRef.current = objUrl;
-                                                    setFileToView(objUrl);
-                                                } catch (e) {
-                                                    console.error('Previsualización fallida, abriendo ruta cruda', e);
-                                                    // fallback: try raw URL (may load SPA if misrouted)
-                                                    setFileToView(url);
-                                                }
-                                            })();
-                                        }}
-                                        className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1 rounded transition-colors"
-                                        title="Ver Orden de Servicio"
-                                    >
-                                        <Eye className="w-4 h-4" />
-                                    </button>
-                                ) : (
-                                    <span className="text-slate-300 dark:text-slate-600 cursor-not-allowed inline-block p-1" title="Sin archivo adjunto">
-                                        <FileText className="w-4 h-4" />
-                                    </span>
-                                )}
-                            </td>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden shadow-sm transition-colors flex flex-col">
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50">
+                        <tr>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Fecha</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Equipo</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Tipo</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Proveedor</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Costo</th>
+                            <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Trabajo Realizado</th>
+                            <th className="px-6 py-3 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Doc</th>
                         </tr>
-                    ))}
-                    {!loading && filteredRegistros.length === 0 && (
-                        <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">No hay registros que coincidan con la búsqueda.</td></tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
+                        {loading ? (
+                            <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">Cargando...</td></tr>
+                        ) : paginatedRegistros.map(reg => (
+                            <tr key={reg.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{reg.fecha}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm font-medium text-slate-900 dark:text-slate-200">{reg.equipo_codigo}</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400">{reg.equipo_modelo}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${reg.tipo_mantenimiento === 'Correctivo' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'}`}>
+                                        {reg.tipo_mantenimiento}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">{reg.proveedor}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-700 dark:text-slate-200">{formatCurrency(reg.costo)}</td>
+                                <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate" title={reg.descripcion}>{reg.descripcion}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                    {reg.archivo_orden ? (
+                                        <button 
+                                            onClick={() => {
+                                                (async () => {
+                                                        const raw = reg.archivo_orden as string;
+                                                        const isFrontDev3000 = window.location.port === '3000';
+                                                        const backendOrigin = isFrontDev3000
+                                                            ? `${window.location.protocol}//${window.location.hostname}:8000`
+                                                            : window.location.origin;
+                                                        let url = raw;
+                                                        if (!raw.startsWith('http')) {
+                                                            if (raw.startsWith('/')) {
+                                                                url = backendOrigin + raw;
+                                                            } else if (raw.startsWith('storage/')) {
+                                                                url = backendOrigin + '/' + raw;
+                                                            } else {
+                                                                url = backendOrigin + '/storage/' + raw;
+                                                            }
+                                                        }
+                                                    try {
+                                                        const res = await fetch(url, { cache: 'no-store' });
+                                                        if (!res.ok) throw new Error('HTTP ' + res.status);
+                                                        const blob = await res.blob();
+                                                        const objUrl = URL.createObjectURL(blob);
+                                                        if (objectUrlRef.current) {
+                                                            try { URL.revokeObjectURL(objectUrlRef.current); } catch(e) {}
+                                                        }
+                                                        objectUrlRef.current = objUrl;
+                                                        setFileToView(objUrl);
+                                                    } catch (e) {
+                                                        setFileToView(url);
+                                                    }
+                                                })();
+                                            }}
+                                            className="text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 p-1 rounded transition-colors"
+                                            title="Ver Orden de Servicio"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                    ) : (
+                                        <span className="text-slate-300 dark:text-slate-600 cursor-not-allowed inline-block p-1" title="Sin archivo adjunto">
+                                            <FileText className="w-4 h-4" />
+                                        </span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                        {!loading && filteredRegistros.length === 0 && (
+                            <tr><td colSpan={7} className="p-8 text-center text-slate-500 dark:text-slate-400">No hay registros que coincidan con la búsqueda.</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            
+            <Pagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                totalItems={filteredRegistros.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+            />
         </div>
 
-        {/* Modal para ver archivo */}
-        <Modal isOpen={!!fileToView} onClose={() => {
-            if (objectUrlRef.current) {
-                try { URL.revokeObjectURL(objectUrlRef.current); } catch(e) {}
-                objectUrlRef.current = null;
-            }
-            setFileToView(null);
-        }} title="Orden de Servicio Firmada">
-             <div className="p-4">
-                 {fileToView ? (
-                     fileToView.toLowerCase().endsWith('.pdf') ? (
-                         <div className="w-full h-[70vh] bg-white dark:bg-slate-800 rounded">
-                             <iframe src={fileToView} title="Orden de Servicio" className="w-full h-full border-0 rounded" />
-                         </div>
-                     ) : (
-                         <div className="w-full flex justify-center items-start">
-                             <img src={fileToView} alt="Orden de Servicio" className="max-h-[70vh] object-contain rounded shadow" />
-                         </div>
-                     )
-                 ) : (
-                     <div className="p-8 text-center bg-slate-50 dark:bg-slate-700/50 rounded-lg">
-                         <div className="mb-4 text-slate-400">No hay archivo para mostrar</div>
-                     </div>
-                 )}
-                 <div className="mt-4 flex justify-center">
-                    <button onClick={() => setFileToView(null)} className="px-4 py-2 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors">
-                        Cerrar Visor
-                    </button>
-                 </div>
-             </div>
-        </Modal>
+        <FileViewerModal 
+            isOpen={!!fileToView} 
+            onClose={handleCloseViewer} 
+            fileUrl={fileToView}
+            title="Orden de Servicio Firmada"
+        />
     </div>
   );
 };

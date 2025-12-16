@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Licencia, TipoLicencia, Usuario } from '../../types';
-import { Filter, Users, Layers, Box, User, UserCheck, Unplug, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, Users, Layers, Box, User, UserCheck, Unplug } from 'lucide-react';
+import { Pagination } from '../common/Pagination';
 
 interface LicenseAssignmentsTabProps {
   licencias: Licencia[];
@@ -19,7 +20,7 @@ export const LicenseAssignmentsTab: React.FC<LicenseAssignmentsTabProps> = ({
   const [filterUserId, setFilterUserId] = useState<string>('');
   const [grouping, setGrouping] = useState<'NONE' | 'TYPE' | 'USER'>('TYPE');
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const ITEMS_PER_PAGE = 20;
 
   // Reset pagination when filters change
   useEffect(() => {
@@ -59,9 +60,9 @@ export const LicenseAssignmentsTab: React.FC<LicenseAssignmentsTabProps> = ({
   const groupedData = getGroupedLicencias(paginatedLicencias);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
       {/* Filters & Grouping Toolbar */}
-      <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row md:items-end gap-4 transition-colors">
+      <div className="p-4 bg-slate-50 dark:bg-slate-700/30 flex flex-col md:flex-row md:items-end gap-4 transition-colors border-b border-slate-200 dark:border-slate-700">
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-1">Filtrar Tipo</label>
@@ -117,13 +118,13 @@ export const LicenseAssignmentsTab: React.FC<LicenseAssignmentsTabProps> = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto flex-1">
         {Object.entries(groupedData).length === 0 && (
           <div className="p-8 text-center text-slate-500 dark:text-slate-400">No se encontraron licencias con los filtros actuales.</div>
         )}
 
         {Object.entries(groupedData).map(([groupName, groupItems]) => (
-          <div key={groupName} className="mb-6 last:mb-0">
+          <div key={groupName} className="mb-0 last:mb-0">
             {grouping !== 'NONE' && (
               <div className="px-4 py-2 bg-slate-100 dark:bg-slate-700/50 font-semibold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
                 {grouping === 'TYPE' ? <Box className="w-4 h-4 text-purple-600 dark:text-purple-400" /> : <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />}
@@ -187,46 +188,14 @@ export const LicenseAssignmentsTab: React.FC<LicenseAssignmentsTabProps> = ({
         ))}
       </div>
 
-      {/* Pagination Controls */}
       {filteredLicencias.length > 0 && (
-        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-          <div className="text-sm text-slate-500 dark:text-slate-400">
-            Mostrando <span className="font-medium text-slate-700 dark:text-white">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> a <span className="font-medium text-slate-700 dark:text-white">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLicencias.length)}</span> de <span className="font-medium text-slate-700 dark:text-white">{filteredLicencias.length}</span> licencias
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            <div className="hidden sm:flex gap-1">
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(idx + 1)}
-                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${currentPage === idx + 1
-                      ? 'bg-purple-600 text-white'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                    }`}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={filteredLicencias.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+        />
       )}
     </div>
   );
