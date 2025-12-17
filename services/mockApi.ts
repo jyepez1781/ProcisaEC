@@ -334,6 +334,10 @@ export const api = {
             const tipo = MOCK_TIPOS_EQUIPO.find(t => t.id === data.tipo_equipo_id);
             MOCK_EQUIPOS[idx].tipo_nombre = tipo?.nombre;
         }
+        if (data.ubicacion_id) {
+            const bodega = MOCK_DEPARTAMENTOS.find(d => d.id === data.ubicacion_id);
+            MOCK_EQUIPOS[idx].ubicacion_nombre = bodega?.nombre;
+        }
     } 
     return MOCK_EQUIPOS[idx]; 
   },
@@ -463,7 +467,8 @@ export const api = {
         MOCK_EQUIPOS[idx].estado = nuevoEstado as EstadoEquipo;
         if (data.ubicacionId) {
             MOCK_EQUIPOS[idx].ubicacion_id = data.ubicacionId;
-            MOCK_EQUIPOS[idx].ubicacion_nombre = data.ubicacionNombre;
+            const bodega = MOCK_DEPARTAMENTOS.find(d => d.id === data.ubicacionId);
+            MOCK_EQUIPOS[idx].ubicacion_nombre = bodega?.nombre;
         }
         if (data.serie_cargador) {
             MOCK_EQUIPOS[idx].serie_cargador = data.serie_cargador;

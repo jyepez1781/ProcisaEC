@@ -47,9 +47,11 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [userLicenses, setUserLicenses] = useState<string[]>([]);
   const [hasGeneratedDoc, setHasGeneratedDoc] = useState(false); // State to track document generation
 
+  const canEditLocation = action === 'EDIT' && equipo?.estado === EstadoEquipo.DISPONIBLE;
+
   // Auto-generate Asset Code Logic
   useEffect(() => {
-    if (action === 'CREATE') {
+    if (action === 'CREATE' || canEditLocation) {
       // 1. Encontrar Bodega seleccionada
       const selectedBodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
       if (!selectedBodega) return;
@@ -66,10 +68,14 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       if (serie && selectedCountry && selectedCity) {
         // Formato: PAISCIUDADSERIE (ej: ECGYESN123456) - Sin guiones
         const newCode = `${selectedCountry.abreviatura}${selectedCity.abreviatura}${serie}`.toUpperCase();
-        setFormData((prev: any) => ({ ...prev, codigo_activo: newCode }));
+        
+        // Evitamos bucle infinito: solo actualizamos si el código es realmente diferente
+        if (formData.codigo_activo !== newCode) {
+            setFormData((prev: any) => ({ ...prev, codigo_activo: newCode }));
+        }
       }
     }
-  }, [formData.ubicacion_id, formData.numero_serie, action, bodegas, cities, countries]);
+  }, [formData.ubicacion_id, formData.numero_serie, action, bodegas, cities, countries, canEditLocation]);
 
   // Fetch licenses for the responsible user if action is RETURN
   useEffect(() => {
@@ -248,20 +254,23 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         <>
           {/* Fila 1: Ubicación y Tipo (Definen el contexto) */}
           <div className="grid grid-cols-2 gap-4">
-            {action === 'CREATE' ? (
+            {(action === 'CREATE' || canEditLocation) ? (
                 <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación Inicial</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                        {action === 'CREATE' ? 'Ubicación Inicial' : 'Cambiar Bodega'}
+                    </label>
                     <select required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
                         value={formData.ubicacion_id} onChange={e => setFormData({...formData, ubicacion_id: Number(e.target.value)})}>
                         {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
                     </select>
+                    {canEditLocation && <p className="text-[10px] text-blue-500 mt-1">Ubicación y código editables por estar en bodega.</p>}
                 </div>
             ) : (
-                // En edición la ubicación suele ser informativa o se maneja por movimientos
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación Actual</label>
-                    <input type="text" disabled className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400"
+                    <input type="text" disabled className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed"
                         value={formData.ubicacion_nombre || ''} />
+                    <p className="text-[10px] text-slate-400 mt-1">Ubicación fija mientras esté asignado.</p>
                 </div>
             )}
             <div>
@@ -284,15 +293,14 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             <div>
               <label className="block text-sm font-medium text-blue-800 dark:text-blue-400 mb-1 flex items-center gap-1">
                  Código Activo 
-                 {action === 'CREATE' && <RefreshCw className="w-3 h-3 text-blue-500 animate-pulse" />}
+                 {(action === 'CREATE' || canEditLocation) && <RefreshCw className="w-3 h-3 text-blue-500 animate-pulse" />}
               </label>
               <input required type="text" className="w-full px-3 py-2 border border-blue-300 dark:border-blue-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-bold text-slate-700 dark:text-white bg-white dark:bg-slate-700" 
                 placeholder="Autogenerado..."
                 value={formData.codigo_activo} 
                 onChange={e => setFormData({...formData, codigo_activo: e.target.value})} 
-                // En CREATE es semi-automático (se puede editar pero se sugiere), en EDIT es editable
               />
-              {action === 'CREATE' && <p className="text-[10px] text-blue-500 mt-1">Formato: PAISCIUDADSERIE</p>}
+              {(action === 'CREATE' || canEditLocation) && <p className="text-[10px] text-blue-500 mt-1">Se actualiza según país y ciudad de la bodega.</p>}
             </div>
           </div>
 
@@ -426,7 +434,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                            onChange={e => setFormData({...formData, releaseLicenses: e.target.checked})}
                        />
                        <div className="flex-1">
-                           <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-200">
+                           <div className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-white">
                                <Unplug className="w-4 h-4 text-red-600 dark:text-red-400" />
                                Liberar Licencias Asignadas
                            </div>

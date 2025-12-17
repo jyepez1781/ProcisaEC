@@ -312,11 +312,12 @@ export const getReceptionDocumentHTML = (usuario: Usuario, equipo: Equipo, fecha
 };
 
 /**
- * Genera el string HTML del Acta de Baja
+ * Genera el string HTML del Acta de Baja con colores institucionales
  */
 export const getDisposalDocumentHTML = (equipo: Equipo, motivo: string): string => {
-  const fechaCorta = new Date().toLocaleDateString('es-ES');
   const fechaCompleta = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const brandBlue = '#1e3a8a';
+  const brandOrange = '#ea580c';
 
   return `
     <!DOCTYPE html>
@@ -325,82 +326,189 @@ export const getDisposalDocumentHTML = (equipo: Equipo, motivo: string): string 
         <title>Acta de Baja Técnica</title>
         <style>
           @page { size: A4 portrait; margin: 2cm; }
-          body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; margin: 0; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-          .title { font-weight: bold; font-size: 16pt; text-transform: uppercase; margin-bottom: 5px; }
-          .subtitle { font-size: 11pt; font-weight: bold; color: #444; }
+          body { font-family: 'Inter', Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #334155; margin: 0; }
           
-          .section-box { border: 1px solid #000; padding: 10px; margin-bottom: 15px; }
-          .box-title { background: #eee; padding: 5px; border-bottom: 1px solid #000; font-weight: bold; margin: -10px -10px 10px -10px; text-align:center; font-size:10pt;}
+          .header { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              border-bottom: 3px solid ${brandBlue}; 
+              padding-bottom: 15px; 
+              position: relative;
+          }
+          .title { 
+              font-weight: 800; 
+              font-size: 18pt; 
+              text-transform: uppercase; 
+              margin: 0;
+              color: ${brandBlue};
+              letter-spacing: 1px;
+          }
+          .subtitle { 
+              font-size: 10pt; 
+              font-weight: 600; 
+              color: ${brandOrange}; 
+              text-transform: uppercase;
+              margin-top: 5px;
+          }
           
-          table { width: 100%; border-collapse: collapse; }
-          td { padding: 5px; vertical-align: top; }
-          .label { font-weight: bold; width: 140px; display:inline-block; }
+          .meta-info { text-align: right; font-size: 9pt; color: #64748b; margin-bottom: 20px; }
           
-          .reason-box { border: 1px solid #000; padding: 15px; min-height: 100px; margin: 10px 0; background-color: #fafafa; }
+          .section-box { 
+              border: 1.5px solid ${brandBlue}; 
+              border-radius: 8px;
+              overflow: hidden;
+              margin-bottom: 25px; 
+          }
+          .box-title { 
+              background: ${brandBlue}; 
+              padding: 8px 15px; 
+              font-weight: 700; 
+              color: white; 
+              font-size: 10pt;
+              text-transform: uppercase;
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 3px solid ${brandOrange};
+          }
           
-          .signatures { margin-top: 80px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          table.data-table { width: 100%; border-collapse: collapse; background-color: #fff; }
+          table.data-table td { padding: 12px 15px; vertical-align: top; border-bottom: 1px solid #f1f5f9; }
+          table.data-table tr:last-child td { border-bottom: none; }
+          
+          .label { font-weight: 700; color: ${brandBlue}; width: 130px; display: inline-block; font-size: 9pt; text-transform: uppercase; }
+          .value { color: #1e293b; font-weight: 500; }
+          
+          .reason-section-title { 
+              font-weight: 800; 
+              margin-bottom: 8px; 
+              color: ${brandBlue}; 
+              font-size: 10pt;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+          }
+          .reason-section-title::after {
+              content: "";
+              flex: 1;
+              height: 1px;
+              background-color: #e2e8f0;
+          }
+          
+          .reason-box { 
+              border: 1px solid #e2e8f0; 
+              border-left: 5px solid ${brandOrange};
+              padding: 20px; 
+              min-height: 120px; 
+              margin: 10px 0 25px 0; 
+              background-color: #f8fafc; 
+              border-radius: 0 6px 6px 0;
+              font-style: italic;
+              color: #475569;
+          }
+          
+          .declaration { 
+              text-align: justify; 
+              font-size: 10pt; 
+              color: #334155; 
+              background: #fffbeb; 
+              padding: 15px; 
+              border-radius: 8px; 
+              border: 1px solid #fef3c7;
+              line-height: 1.6;
+          }
+          
+          .signatures { 
+              margin-top: 80px; 
+              display: flex; 
+              justify-content: space-between; 
+              page-break-inside: avoid; 
+          }
           .sig-box { width: 45%; text-align: center; }
-          .sig-line { border-top: 1px solid #000; margin-bottom: 5px; margin-top: 50px; }
-          .sig-role { font-size: 9pt; font-weight: bold; margin-bottom: 2px; }
+          .sig-line { border-top: 2.5px solid ${brandBlue}; margin-bottom: 10px; margin-top: 60px; width: 80%; margin-left: auto; margin-right: auto; }
+          .sig-role { font-size: 8.5pt; font-weight: 800; color: ${brandBlue}; text-transform: uppercase; }
+          .sig-subtitle { font-size: 8pt; color: #64748b; margin-top: 4px; }
           
-          .footer-note { font-size: 8pt; text-align: center; margin-top: 50px; color: #666; border-top: 1px solid #ddd; padding-top:10px;}
+          .footer-note { 
+              font-size: 8pt; 
+              text-align: center; 
+              margin-top: 60px; 
+              color: #94a3b8; 
+              border-top: 1px solid #f1f5f9; 
+              padding-top: 15px;
+              font-weight: 500;
+          }
+          .logo-top { max-height: 50px; position: absolute; left: 0; top: 0; }
         </style>
       </head>
       <body>
         <div class="header">
-           <img src="/logoAnexoCarso.png" style="max-height: 50px; float:left;" alt="Logo" onerror="this.style.display='none';"/>
-           <div class="title">INFORME TÉCNICO DE BAJA</div>
-           <div class="subtitle">DEPARTAMENTO DE SISTEMAS</div>
-           <div style="clear:both;"></div>
+           <img src="/logoAnexoCarso.png" class="logo-top" alt="Logo" onerror="this.style.display='none';"/>
+           <div class="title">Informe Técnico de Baja</div>
+           <div class="subtitle">Gestión de Activos Tecnológicos</div>
         </div>
 
-        <p style="text-align: right; font-size: 10pt;">
-           <strong>Fecha:</strong> ${fechaCompleta}
-        </p>
+        <div class="meta-info">
+           <strong>Emitido el:</strong> ${fechaCompleta}
+        </div>
 
         <div class="section-box">
-           <div class="box-title">DATOS DEL EQUIPO</div>
-           <table>
+           <div class="box-title">
+              <span>Especificaciones del Activo</span>
+              <span style="font-size: 8pt; opacity: 0.9;">Ref: ${equipo.codigo_activo}</span>
+           </div>
+           <table class="data-table">
               <tr>
-                 <td><span class="label">Código Activo:</span> ${equipo.codigo_activo}</td>
-                 <td><span class="label">Fecha Compra:</span> ${equipo.fecha_compra}</td>
+                 <td style="width: 50%; border-right: 1px solid #f1f5f9;">
+                    <span class="label">Código Activo:</span> <span class="value">${equipo.codigo_activo}</span>
+                 </td>
+                 <td>
+                    <span class="label">Fecha Compra:</span> <span class="value">${equipo.fecha_compra}</span>
+                 </td>
               </tr>
               <tr>
-                 <td><span class="label">Tipo:</span> ${equipo.tipo_nombre}</td>
-                 <td><span class="label">Marca:</span> ${equipo.marca}</td>
+                 <td style="border-right: 1px solid #f1f5f9;">
+                    <span class="label">Tipo Equipo:</span> <span class="value">${equipo.tipo_nombre}</span>
+                 </td>
+                 <td>
+                    <span class="label">Marca:</span> <span class="value">${equipo.marca}</span>
+                 </td>
               </tr>
               <tr>
-                 <td><span class="label">Modelo:</span> ${equipo.modelo}</td>
-                 <td><span class="label">Serie:</span> ${equipo.numero_serie}</td>
+                 <td style="border-right: 1px solid #f1f5f9;">
+                    <span class="label">Modelo:</span> <span class="value">${equipo.modelo}</span>
+                 </td>
+                 <td>
+                    <span class="label">Serie:</span> <span class="value">${equipo.numero_serie}</span>
+                 </td>
               </tr>
            </table>
         </div>
 
-        <div style="margin-bottom: 5px; font-weight: bold;">DIAGNÓSTICO TÉCNICO / MOTIVO DE BAJA:</div>
+        <div class="reason-section-title">DIAGNÓSTICO TÉCNICO Y JUSTIFICACIÓN</div>
         <div class="reason-box">
            ${motivo}
         </div>
 
-        <p style="text-align: justify; font-size: 10pt; margin-top: 20px;">
-           Tras la revisión técnica realizada, se determina que el equipo detallado anteriormente ya no cumple con las condiciones operativas necesarias para su funcionamiento dentro de la organización, o su reparación resulta económicamente inviable. Por lo tanto, se recomienda su <strong>BAJA DEFINITIVA</strong> del inventario de activos fijos.
-        </p>
+        <div class="declaration">
+           <strong>DIRECCIÓN TÉCNICA:</strong> Tras la inspección exhaustiva realizada por el departamento de soporte, se concluye que el equipo descrito presenta un estado de obsolescencia o daños que imposibilitan su operatividad eficiente. El costo de restauración supera el valor residual en libros o no garantiza la estabilidad requerida para los procesos del negocio. Se autoriza proceder con la <strong>DESVINCULACIÓN DEFINITIVA</strong> del inventario activo de la compañía.
+        </div>
 
         <div class="signatures">
            <div class="sig-box">
               <div class="sig-line"></div>
-              <div class="sig-role">ELABORADO POR (SOPORTE TÉCNICO)</div>
-              <div style="font-size: 9pt;">Firma y Sello</div>
+              <div class="sig-role">Elaborado por</div>
+              <div class="sig-subtitle">Especialista de Soporte Técnico IT</div>
            </div>
            <div class="sig-box">
               <div class="sig-line"></div>
-              <div class="sig-role">APROBADO POR (JEFATURA)</div>
-              <div style="font-size: 9pt;">Firma y Sello</div>
+              <div class="sig-role">Autorizado por</div>
+              <div class="sig-subtitle">Jefatura / Gerencia de Tecnología</div>
            </div>
         </div>
         
         <div class="footer-note">
-           Documento generado por el Sistema InvenTory - Control de Activos
+           Documento oficial generado por el Sistema InvenTory - Registro de Activos Fijos IT<br>
+           &copy; ${new Date().getFullYear()} - Gestión de Infraestructura
         </div>
       </body>
     </html>
