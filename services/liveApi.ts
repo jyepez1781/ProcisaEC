@@ -1,5 +1,10 @@
 
-import { Equipo, Usuario, Departamento, Puesto, TipoEquipo, HistorialMovimiento, HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia, ReporteGarantia, Notificacion, Ciudad } from '../types';
+import { 
+  Equipo, Usuario, Departamento, Puesto, TipoEquipo, HistorialMovimiento, 
+  HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia, 
+  ReporteGarantia, Notificacion, Ciudad, PlanMantenimiento, DetallePlan, 
+  EmailConfig, EvidenciaMantenimiento 
+} from '../types';
 
 // URL base de tu API Laravel (ajusta el puerto si es necesario)
 const API_URL = 'http://localhost:8000/api';
@@ -350,8 +355,75 @@ agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento
   getNotifications: async (): Promise<Notificacion[]> => {
     const response = await fetch(`${API_URL}/notificaciones`, { headers: getHeaders() });
     return handleResponse(response);
-  }
-  ,
+  },
+
+  // Fix: Added missing methods for parity with internalMockApi
+  // --- Planning ---
+  getMaintenancePlans: async (): Promise<PlanMantenimiento[]> => {
+    const response = await fetch(`${API_URL}/maintenance-plans`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+  getPlanDetails: async (planId: number): Promise<{ plan: PlanMantenimiento, details: DetallePlan[] }> => {
+    const response = await fetch(`${API_URL}/maintenance-plans/${planId}`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+  createMaintenancePlan: async (plan: PlanMantenimiento, details: DetallePlan[]): Promise<any> => {
+    const response = await fetch(`${API_URL}/maintenance-plans`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ plan, details })
+    });
+    return handleResponse(response);
+  },
+  updatePlanDetailMonth: async (itemId: number, newMonth: number): Promise<any> => {
+    const response = await fetch(`${API_URL}/maintenance-plans/details/${itemId}`, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ mes_programado: newMonth })
+    });
+    return handleResponse(response);
+  },
+  registerMaintenanceExecution: async (detailId: number, data: any): Promise<any> => {
+    const formData = new FormData();
+    formData.append('fecha_ejecucion', data.fecha);
+    formData.append('tecnico_responsable', data.tecnico);
+    formData.append('observaciones', data.observaciones);
+    if (data.archivo) formData.append('archivo', data.archivo);
+
+    const response = await fetch(`${API_URL}/maintenance-plans/details/${detailId}/execute`, {
+      method: 'POST',
+      headers: { ...(localStorage.getItem('auth_token') ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
+      body: formData
+    });
+    return handleResponse(response);
+  },
+  getEvidence: async (detailId: number): Promise<EvidenciaMantenimiento[]> => {
+    const response = await fetch(`${API_URL}/maintenance-plans/details/${detailId}/evidence`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+  iniciarMantenimientoDesdePlan: async (detailId: number, motivo: string): Promise<any> => {
+    const response = await fetch(`${API_URL}/maintenance-plans/details/${detailId}/start-maintenance`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ motivo })
+    });
+    return handleResponse(response);
+  },
+  getPendingMaintenanceCurrentMonth: async (): Promise<DetallePlan[]> => {
+    const response = await fetch(`${API_URL}/maintenance-plans/pending-current-month`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+
+  // --- Email Config ---
+  getEmailConfig: async (): Promise<EmailConfig> => {
+    const response = await fetch(`${API_URL}/settings/email`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+  saveEmailConfig: async (config: EmailConfig): Promise<void> => {
+    await fetch(`${API_URL}/settings/email`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(config)
+    });
+  },
+
+  // --- Alerts ---
+  verificarAlertasMantenimiento: async (): Promise<void> => {
+    await fetch(`${API_URL}/stats/verify-alerts`, { method: 'POST', headers: getHeaders() });
+  },
+
   // --- Bulk migrations ---
   bulkCreateEquipos: async (rows: any[]): Promise<any> => {
     const response = await fetch(`${API_URL}/migrations/equipos`, {
