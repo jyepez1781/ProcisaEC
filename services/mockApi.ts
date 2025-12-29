@@ -70,16 +70,6 @@ let MOCK_USUARIOS: Usuario[] = [
     correo: 'mlopez@sys.com', password: '123', rol: RolUsuario.TECNICO, activo: true, 
     departamento_id: 1, departamento_nombre: 'Tecnología (Bodega GYE)', puesto_id: 2, puesto_nombre: 'Analista de Soporte', numero_empleado: 'TEC002' 
   },
-  { 
-    id: 4, nombre_usuario: 'cgarcia', nombre_completo: 'Carlos García', nombres: 'Carlos', apellidos: 'García', 
-    correo: 'cgarcia@sys.com', password: '123', rol: RolUsuario.USUARIO, activo: true, 
-    departamento_id: 3, departamento_nombre: 'Finanzas', puesto_id: 4, puesto_nombre: 'Contador Senior', numero_empleado: 'EMP088' 
-  },
-  { 
-    id: 5, nombre_usuario: 'lrodriguez', nombre_completo: 'Lucía Rodríguez', nombres: 'Lucía', apellidos: 'Rodríguez', 
-    correo: 'lrodriguez@sys.com', password: '123', rol: RolUsuario.USUARIO, activo: false, 
-    departamento_id: 4, departamento_nombre: 'Operaciones UIO', puesto_id: 5, puesto_nombre: 'Desarrollador Fullstack', numero_empleado: 'EMP099' 
-  },
 ];
 
 // --- 3. CATÁLOGOS EQUIPOS Y LICENCIAS ---
@@ -87,18 +77,9 @@ let MOCK_TIPOS_EQUIPO: TipoEquipo[] = [
   { id: 1, nombre: 'Laptop', descripcion: 'Computadora portátil estándar', frecuencia_anual: 2 },
   { id: 2, nombre: 'Desktop', descripcion: 'Computadora de escritorio', frecuencia_anual: 1 },
   { id: 3, nombre: 'Monitor', descripcion: 'Monitor externo', frecuencia_anual: 0 },
-  { id: 4, nombre: 'Impresora', descripcion: 'Impresora láser de red', frecuencia_anual: 4 },
-  { id: 5, nombre: 'Tablet', descripcion: 'Dispositivo móvil', frecuencia_anual: 1 },
+  { id: 4, nombre: 'Impresora', frecuencia_anual: 4, descripcion: 'Impresora láser de red' }
 ];
 
-let MOCK_TIPOS_LICENCIA: TipoLicencia[] = [
-  { id: 1, nombre: 'Microsoft 365 Business', proveedor: 'Microsoft', descripcion: 'Suite de oficina y correo' },
-  { id: 2, nombre: 'Adobe Creative Cloud', proveedor: 'Adobe', descripcion: 'Suite de diseño gráfico' },
-  { id: 3, nombre: 'AutoCAD 2024', proveedor: 'Autodesk', descripcion: 'Diseño asistido por computadora' },
-  { id: 4, nombre: 'Antivirus ESET', proveedor: 'ESET', descripcion: 'Seguridad Endpoint' },
-];
-
-// Fix: Added missing MOCK variables for equipment, licenses, and email configuration
 let MOCK_EQUIPOS: Equipo[] = [
   { 
     id: 1, codigo_activo: 'ECGYELAP1001', numero_serie: 'SN1001', marca: 'Dell', modelo: 'Latitude 5420', 
@@ -114,9 +95,13 @@ let MOCK_EQUIPOS: Equipo[] = [
   }
 ];
 
+let MOCK_TIPOS_LICENCIA: TipoLicencia[] = [
+  { id: 1, nombre: 'Microsoft 365 Business', proveedor: 'Microsoft', descripcion: 'Suscripción anual de Office 365' },
+  { id: 2, nombre: 'Adobe Creative Cloud', proveedor: 'Adobe', descripcion: 'Suite de diseño gráfico' }
+];
+
 let MOCK_LICENCIAS: Licencia[] = [
   { id: 1, tipo_id: 1, tipo_nombre: 'Microsoft 365 Business', clave: 'W269N-WFGWX-YVC9B-4J6C9-T83GX', fecha_compra: '2023-01-01', fecha_vencimiento: '2024-01-01', usuario_id: 2, usuario_nombre: 'Juan Pérez', usuario_departamento: 'Recursos Humanos' },
-  { id: 2, tipo_id: 1, tipo_nombre: 'Microsoft 365 Business', clave: 'MH37W-N47XK-V7XM9-C7227-GCQG9', fecha_compra: '2023-01-01', fecha_vencimiento: '2024-01-01', usuario_id: null },
 ];
 
 let MOCK_EMAIL_CONFIG: EmailConfig = {
@@ -124,10 +109,50 @@ let MOCK_EMAIL_CONFIG: EmailConfig = {
   correos_copia: ['it-admin@sys.com'],
   notificar_asignacion: true,
   notificar_mantenimiento: true,
-  dias_anticipacion_alerta: 15,
-  smtp_host: 'smtp.gmail.com',
-  smtp_port: '587'
+  dias_anticipacion_alerta: 15
 };
+
+// --- 4. PLANIFICACIÓN (MOCK DATA ACTUALIZADA DINÁMICAMENTE) ---
+const currentYear = new Date().getFullYear();
+const currentMonth = new Date().getMonth() + 1;
+
+let MOCK_PLANES: PlanMantenimiento[] = [
+    { 
+        id: 101, 
+        anio: currentYear, 
+        nombre: `Plan Maestro ${currentYear} - Guayaquil`, 
+        creado_por: 'Admin', 
+        fecha_creacion: getDate(-30), 
+        estado: 'ACTIVO', 
+        ciudad_id: 1, 
+        ciudad_nombre: 'Guayaquil' 
+    }
+];
+
+let MOCK_DETALLES_PLAN: DetallePlan[] = [
+    { 
+        id: 1, 
+        plan_id: 101, 
+        equipo_id: 1, 
+        equipo_codigo: 'ECGYELAP1001', 
+        equipo_tipo: 'Laptop', 
+        equipo_modelo: 'Dell Latitude', 
+        equipo_ubicacion: 'Tecnología', 
+        mes_programado: currentMonth, 
+        estado: EstadoPlan.PENDIENTE 
+    },
+    { 
+        id: 2, 
+        plan_id: 101, 
+        equipo_id: 2, 
+        equipo_codigo: 'ECGYEDESK1002', 
+        equipo_tipo: 'Desktop', 
+        equipo_modelo: 'HP ProTower', 
+        equipo_ubicacion: 'Tecnología', 
+        mes_programado: currentMonth === 1 ? 1 : currentMonth - 1, // Ejemplo de backlog
+        estado: EstadoPlan.PENDIENTE 
+    }
+];
 
 // --- FUNCIONES DE UTILIDAD PARA SINCRONIZACIÓN (SOLO PARA MOCK) ---
 
@@ -138,7 +163,6 @@ const regenerateAssetCode = (numeroSerie: string, ubicacionId: number): string |
     if (!city) return null;
     const country = MOCK_PAISES.find(p => p.id === city.pais_id);
     if (!country) return null;
-    
     return `${country.abreviatura}${city.abreviatura}${numeroSerie.trim().toUpperCase()}`.toUpperCase();
 };
 
@@ -151,7 +175,7 @@ const syncEquipoMetadata = (equipo: Equipo) => {
     if (newCode) equipo.codigo_activo = newCode;
 };
 
-// --- 4. IMPLEMENTACIÓN INTERNA MOCK ---
+// --- IMPLEMENTACIÓN INTERNA MOCK ---
 
 const internalMockApi = {
   // Auth
@@ -327,29 +351,82 @@ const internalMockApi = {
 
   // Licenses
   getTipoLicencias: async () => { await simulateDelay(); return [...MOCK_TIPOS_LICENCIA]; },
-  createTipoLicencia: async (data: any) => { await simulateDelay(); return { id: Date.now(), ...data }; },
+  createTipoLicencia: async (data: any) => { await simulateDelay(); const newItem = { id: Date.now(), ...data }; MOCK_TIPOS_LICENCIA.push(newItem); return newItem; },
   getLicencias: async () => { await simulateDelay(); return [...MOCK_LICENCIAS]; },
   agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento: string) => { await simulateDelay(); },
   asignarLicencia: async (licenciaId: number, usuarioId: number) => { await simulateDelay(); },
   liberarLicencia: async (licenciaId: number) => { await simulateDelay(); },
 
   // Planning
-  getMaintenancePlans: async () => { await simulateDelay(); return []; },
-  getPlanDetails: async (planId: number) => { await simulateDelay(); return { plan: {} as any, details: [] }; },
-  createMaintenancePlan: async (plan: PlanMantenimiento, details: DetallePlan[]) => { await simulateDelay(); },
-  updatePlanDetailMonth: async (itemId: number, newMonth: number) => { await simulateDelay(); },
-  registerMaintenanceExecution: async (detailId: number, data: any) => { await simulateDelay(); },
+  getMaintenancePlans: async () => { 
+      await simulateDelay(); 
+      return [...MOCK_PLANES]; 
+  },
+  getPlanDetails: async (planId: number) => { 
+      await simulateDelay(); 
+      const plan = MOCK_PLANES.find(p => p.id === planId);
+      const details = MOCK_DETALLES_PLAN.filter(d => d.plan_id === planId);
+      return { plan: plan || {} as any, details }; 
+  },
+  createMaintenancePlan: async (plan: PlanMantenimiento, details: DetallePlan[]) => { 
+      await simulateDelay(); 
+      MOCK_PLANES.push(plan);
+      MOCK_DETALLES_PLAN.push(...details);
+      return true;
+  },
+  updatePlanDetailMonth: async (itemId: number, newMonth: number) => { 
+      await simulateDelay(); 
+      const idx = MOCK_DETALLES_PLAN.findIndex(d => d.id === itemId);
+      if (idx >= 0) MOCK_DETALLES_PLAN[idx].mes_programado = newMonth;
+  },
+  registerMaintenanceExecution: async (detailId: number, data: any) => { 
+      await simulateDelay(); 
+      const idx = MOCK_DETALLES_PLAN.findIndex(d => d.id === detailId);
+      if (idx >= 0) {
+          MOCK_DETALLES_PLAN[idx].estado = EstadoPlan.REALIZADO;
+          MOCK_DETALLES_PLAN[idx].fecha_ejecucion = data.fecha;
+          MOCK_DETALLES_PLAN[idx].tecnico_responsable = data.tecnico;
+      }
+  },
   getEvidence: async (detailId: number) => { await simulateDelay(); return []; },
-  iniciarMantenimientoDesdePlan: async (detailId: number, motivo: string) => { await simulateDelay(); },
-  getPendingMaintenanceCurrentMonth: async () => { await simulateDelay(); return []; },
+  iniciarMantenimientoDesdePlan: async (detailId: number, motivo: string) => { 
+      await simulateDelay(); 
+      const detail = MOCK_DETALLES_PLAN.find(d => d.id === detailId);
+      if (detail) {
+          detail.estado = EstadoPlan.EN_PROCESO;
+          await internalMockApi.enviarAMantenimiento(detail.equipo_id, motivo);
+      }
+  },
+  // UPDATED: Include backlog (previous months) and sort by month ascending
+  getPendingMaintenanceCurrentMonth: async () => { 
+      await simulateDelay(); 
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+
+      const activeYearPlanIds = MOCK_PLANES
+        .filter(p => p.anio === year)
+        .map(p => p.id);
+
+      return MOCK_DETALLES_PLAN
+        .filter(d => 
+            activeYearPlanIds.includes(d.plan_id) && 
+            d.mes_programado <= month && 
+            d.estado !== EstadoPlan.REALIZADO
+        )
+        .sort((a, b) => a.mes_programado - b.mes_programado);
+  },
 
   // Email Config
   getEmailConfig: async () => { await simulateDelay(); return { ...MOCK_EMAIL_CONFIG }; },
-  saveEmailConfig: async (config: EmailConfig) => { await simulateDelay(); },
+  saveEmailConfig: async (config: EmailConfig) => { await simulateDelay(); MOCK_EMAIL_CONFIG = config; },
 
   // Stats
   getStats: async () => { await simulateDelay(); return {}; },
-  getWarrantyReport: async () => { await simulateDelay(); return []; },
+  getWarrantyReport: async () => { 
+      await simulateDelay(); 
+      return MOCK_EQUIPOS.map(e => ({ equipo: e, dias_restantes: 15, fecha_vencimiento: '2024-05-20' })); 
+  },
   getReplacementCandidates: async () => { await simulateDelay(); return []; },
   getHistorial: async () => { await simulateDelay(); return []; },
   getHistorialMantenimiento: async () => { await simulateDelay(); return []; },
@@ -370,10 +447,6 @@ const internalMockApi = {
 const simulateDelay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms));
 
 // --- EXPORTACIÓN CONDICIONAL ---
-
-/**
- * El objeto 'api' que se consume en toda la app ahora depende de USE_LIVE_API.
- */
 export const api = USE_LIVE_API ? liveApi : internalMockApi;
 
 // También exportamos MOCK_EQUIPOS y otros para compatibilidad si algún componente lo requiere
