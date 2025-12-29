@@ -330,6 +330,30 @@ const internalMockApi = {
             syncEquipoMetadata(MOCK_EQUIPOS[idx]);
         }
         MOCK_EQUIPOS[idx].ultimo_mantenimiento = new Date().toISOString().split('T')[0];
+        
+        if (isLaptop()) {
+            MOCK_EQUIPOS[idx].serie_cargador = data.serie_cargador;
+        }
+
+        // FIXED: Actualizar automáticamente el Plan de Mantenimiento si este equipo estaba en taller desde un plan
+        const planItemIdx = MOCK_DETALLES_PLAN.findIndex(d => 
+            d.equipo_id === equipoId && 
+            (d.estado === EstadoPlan.EN_PROCESO || d.estado === EstadoPlan.PENDIENTE) &&
+            d.mes_programado <= (new Date().getMonth() + 1)
+        );
+
+        if (planItemIdx >= 0) {
+            MOCK_DETALLES_PLAN[planItemIdx].estado = EstadoPlan.REALIZADO;
+            MOCK_DETALLES_PLAN[planItemIdx].fecha_ejecucion = new Date().toISOString().split('T')[0];
+            MOCK_DETALLES_PLAN[planItemIdx].tecnico_responsable = data.proveedor;
+        }
+    }
+
+    function isLaptop() {
+        const eq = MOCK_EQUIPOS.find(e => e.id === equipoId);
+        if (!eq) return false;
+        const type = MOCK_TIPOS_EQUIPO.find(t => t.id === eq.tipo_equipo_id);
+        return type?.nombre.toLowerCase().includes('laptop');
     }
   },
   marcarParaBaja: async (id: number, observaciones: string, ubicacionId: number, ubicacionNombre: string) => {
@@ -397,7 +421,6 @@ const internalMockApi = {
           await internalMockApi.enviarAMantenimiento(detail.equipo_id, motivo);
       }
   },
-  // UPDATED: Include backlog (previous months) and sort by month ascending
   getPendingMaintenanceCurrentMonth: async () => { 
       await simulateDelay(); 
       const now = new Date();
