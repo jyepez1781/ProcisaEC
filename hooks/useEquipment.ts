@@ -107,10 +107,34 @@ export const useEquipment = () => {
 
   const handleAction = async (action: ModalAction, equipo: Equipo | null, formData: any) => {
     try {
+      // Helper: map a selected departamento/bodega id to the actual ubicacion id
+      const mapUbicacionIdFromBodega = (ubicacionId: any) => {
+        const idNum = (ubicacionId === null || ubicacionId === undefined) ? ubicacionId : Number(ubicacionId);
+        const bodegaObj = bodegas.find(b => b.id === idNum);
+        if (!bodegaObj) return idNum;
+        // Try multiple common property names that may contain the real ubicacion id
+        const candidates = [
+          'bodega_ubicacion_id', 'bodegaUbicacionId', 'bodegaUbicacion',
+          'ubicacion_id', 'ubicacionId', 'ubicacion',
+        ];
+        for (const key of candidates) {
+          if (Object.prototype.hasOwnProperty.call(bodegaObj, key) && bodegaObj[key]) {
+            return Number(bodegaObj[key]);
+          }
+        }
+        // Fallback to department id (may be invalid for update endpoints)
+        return Number(bodegaObj.id);
+      };
       if (action === 'CREATE') {
-        await equipmentService.create(formData);
+        const payload = { ...formData };
+        if (payload.ubicacion_id) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion_id);
+        else if (payload.ubicacion) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion);
+        await equipmentService.create(payload);
       } else if (action === 'EDIT' && equipo) {
-        await equipmentService.update(equipo.id, formData);
+        const payload = { ...formData };
+        if (payload.ubicacion_id) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion_id);
+        else if (payload.ubicacion) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion);
+        await equipmentService.update(equipo.id, payload);
       } else if (action === 'ASSIGN' && equipo) {
         await equipmentService.assign(
             equipo.id, 
@@ -121,10 +145,11 @@ export const useEquipment = () => {
         );
       } else if (action === 'RETURN' && equipo) {
         const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
+        const ubicacionToSend = mapUbicacionIdFromBodega(formData.ubicacion_id);
         await equipmentService.return(
             equipo.id, 
             formData.observaciones, 
-            Number(formData.ubicacion_id), 
+            Number(ubicacionToSend), 
             bodega?.nombre || 'Bodega',
             formData.releaseLicenses,
             formData.evidenceFile
@@ -135,10 +160,11 @@ export const useEquipment = () => {
         await equipmentService.sendToMaintenance(equipo.id, formData.observaciones);
       } else if (action === 'MARK_DISPOSAL' && equipo) {
         const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
+        const ubicacionToSend = mapUbicacionIdFromBodega(formData.ubicacion_id);
         await equipmentService.markForDisposal(
             equipo.id, 
             formData.observaciones,
-            Number(formData.ubicacion_id),
+            Number(ubicacionToSend),
             bodega?.nombre || 'Bodega'
         );
       }

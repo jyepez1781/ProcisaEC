@@ -13,9 +13,31 @@ const MaintenancePlanning: React.FC = () => {
   const [planDetails, setPlanDetails] = useState<DetallePlan[]>([]);
   const [isNewPlan, setIsNewPlan] = useState(false);
 
-  const handleGeneratePlan = async (year: number, cityId: number, cityName: string) => {
+  const handleGeneratePlan = async (year: number, cityId: number, cityName: string, detalles?: DetallePlan[]) => {
     try {
-        // 1. Fetch data
+        // If details were provided by the PlanningConfig (backend proposal), use them directly
+        if (detalles && detalles.length > 0) {
+            const header: PlanMantenimiento = {
+                id: Date.now(),
+                anio: year,
+                nombre: `Plan Maestro ${year} - ${cityName}`,
+                creado_por: '',
+                fecha_creacion: new Date().toISOString(),
+                estado: 'ACTIVO',
+                ciudad_id: cityId,
+                ciudad_nombre: cityName
+            };
+            // Ensure each detalle in a new (draft) plan has a unique temporary id
+            const base = Date.now();
+            const detallesWithUniqueIds = detalles.map((d, idx) => ({ ...d, id: (d.id ?? (base + idx)) }));
+            setCurrentPlan(header);
+            setPlanDetails(detallesWithUniqueIds);
+            setIsNewPlan(true);
+            setView('CALENDAR');
+            return;
+        }
+
+        // Fallback: previous local-generation behavior (keeps offline/mock flow)
         const [allEquipos, departamentos] = await Promise.all([
           api.getEquipos(),
           api.getDepartamentos()
@@ -23,19 +45,21 @@ const MaintenancePlanning: React.FC = () => {
         
         // 2. Filter Equipment by City
         // First, find which departments belong to the selected city
-        const cityDeptIds = departamentos
-            .filter(d => d.ciudad_id === cityId)
-            .map(d => d.id);
+        const departamentosEnCiudad = departamentos.filter(d => d.ciudad_id === cityId);
+        // Map departamentos a ubicaciones (preferir bodega_ubicacion_id si existe)
+        const cityUbicacionIds = departamentosEnCiudad
+            .map(d => (d.bodega_ubicacion_id !== undefined && d.bodega_ubicacion_id !== null) ? d.bodega_ubicacion_id : d.id)
+            .filter(Boolean);
 
-        if (cityDeptIds.length === 0) {
+        if (cityUbicacionIds.length === 0) {
             Swal.fire('Atención', `No hay departamentos registrados en ${cityName}.`, 'warning');
             return;
         }
 
-        // Then filter equipment that are located in those departments
+        // Then filter equipment that are located in those ubicaciones (ubicacion_id)
         const filteredEquipos = allEquipos.filter(e => {
             const isActive = e.estado !== 'Baja' && e.estado !== 'Para Baja';
-            const isInCity = cityDeptIds.includes(e.ubicacion_id);
+            const isInCity = cityUbicacionIds.includes(e.ubicacion_id);
             return isActive && isInCity;
         });
 
@@ -46,9 +70,13 @@ const MaintenancePlanning: React.FC = () => {
 
         // 3. Generate Plan
         const generated = await maintenancePlanningService.generatePlan(year, filteredEquipos, cityId, cityName);
-        
+
+        // Generated details from algorithm may reuse ids; ensure temporary unique ids for draft
+        const baseGen = Date.now();
+        const genDetailsUnique = generated.details.map((d, idx) => ({ ...d, id: (d.id ?? (baseGen + idx)) }));
+
         setCurrentPlan(generated.header);
-        setPlanDetails(generated.details);
+        setPlanDetails(genDetailsUnique);
         setIsNewPlan(true);
         setView('CALENDAR');
     } catch (e: any) {

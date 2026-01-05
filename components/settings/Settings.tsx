@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, Mail, Info, Plus, X } from 'lucide-react';
+import { Save, Mail, Info, Plus, X, Server, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { api } from '../../services/mockApi';
 import { EmailConfig } from '../../types';
 import Swal from 'sweetalert2';
@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [config, setConfig] = useState<EmailConfig>({
     remitente: '',
     correos_copia: [],
@@ -15,7 +16,10 @@ const Settings: React.FC = () => {
     notificar_mantenimiento: true,
     dias_anticipacion_alerta: 15,
     smtp_host: '',
-    smtp_port: ''
+    smtp_port: '',
+    smtp_user: '',
+    smtp_pass: '',
+    smtp_encryption: 'TLS'
   });
 
   const [newEmail, setNewEmail] = useState('');
@@ -96,50 +100,125 @@ const Settings: React.FC = () => {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Configuración de Correo</h2>
-          <p className="text-slate-500 dark:text-slate-400">Administra las notificaciones y copias de seguridad de los envíos.</p>
+          <p className="text-slate-500 dark:text-slate-400">Administra las notificaciones y las credenciales del servidor de salida.</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors">
+        {/* Sección: Identidad del Remitente */}
         <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
           <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-500" />
-            Información General
+            Identidad del Remitente
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Estos correos se enviarán automáticamente a los usuarios responsables cuando ocurran eventos importantes.
-          </p>
         </div>
         
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del Remitente</label>
+               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre a Mostrar</label>
                <input 
                   type="text" 
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
-                  placeholder="Ej. Sistema InvenTory"
+                  placeholder="Ej. Soporte IT InvenTory"
                   value={config.remitente}
                   onChange={e => setConfig({...config, remitente: e.target.value})}
                />
-               <p className="text-xs text-slate-400 mt-1">Nombre que aparecerá en la bandeja de entrada.</p>
-             </div>
-             <div>
-               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Servidor SMTP (Host)</label>
-               <input 
-                  type="text" 
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
-                  value={config.smtp_host || ''}
-                  onChange={e => setConfig({...config, smtp_host: e.target.value})}
-                  placeholder="Ej. smtp.office365.com"
-               />
+               <p className="text-xs text-slate-400 mt-1">Nombre que verán los usuarios al recibir la notificación.</p>
              </div>
           </div>
 
+          {/* Sección: Servidor de Salida (SMTP) */}
+          <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
+            <h3 className="font-semibold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+              <Server className="w-4 h-4 text-blue-500" />
+              Servidor de Salida (SMTP)
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Host del Servidor</label>
+                <div className="relative">
+                  <Server className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
+                    value={config.smtp_host || ''}
+                    onChange={e => setConfig({...config, smtp_host: e.target.value})}
+                    placeholder="Ej. smtp.office365.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Puerto</label>
+                <input 
+                  type="text" 
+                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
+                  value={config.smtp_port || ''}
+                  onChange={e => setConfig({...config, smtp_port: e.target.value})}
+                  placeholder="Ej. 587"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Usuario / Email</label>
+                <div className="relative">
+                  <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
+                    value={config.smtp_user || ''}
+                    onChange={e => setConfig({...config, smtp_user: e.target.value})}
+                    placeholder="usuario@dominio.com"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Contraseña</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    className="w-full pl-10 pr-10 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
+                    value={config.smtp_pass || ''}
+                    onChange={e => setConfig({...config, smtp_pass: e.target.value})}
+                    placeholder="********"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Cifrado</label>
+              <div className="relative">
+                <ShieldCheck className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                <select 
+                  className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white appearance-none"
+                  value={config.smtp_encryption || 'TLS'}
+                  onChange={e => setConfig({...config, smtp_encryption: e.target.value as any})}
+                >
+                  <option value="TLS">STARTTLS (Recomendado - 587)</option>
+                  <option value="SSL">SSL/TLS (465)</option>
+                  <option value="NONE">Sin cifrado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección: Destinatarios en Copia */}
           <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Destinatarios en Copia (CC)</label>
              <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-               Estas direcciones recibirán una copia de <strong>todos</strong> los correos enviados. Si un equipo no tiene usuario asignado, el correo se enviará únicamente a estas direcciones.
+               Estas direcciones recibirán una copia oculta de todas las notificaciones automáticas del sistema.
              </p>
              
              <div className="flex gap-2 mb-3">
@@ -174,6 +253,7 @@ const Settings: React.FC = () => {
              </div>
           </div>
 
+          {/* Sección: Alertas Programadas */}
           <div className="border-t border-slate-100 dark:border-slate-700 pt-6">
              <h4 className="font-medium text-slate-800 dark:text-white mb-4">Eventos de Notificación</h4>
              <div className="space-y-4">
@@ -217,7 +297,7 @@ const Settings: React.FC = () => {
                        <span className="text-sm text-slate-600 dark:text-slate-400">días antes del inicio del mes.</span>
                    </div>
                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                      El sistema enviará un correo automático a los usuarios que tengan equipos en el plan de mantenimiento del mes siguiente.
+                      El sistema enviará un recordatorio automático a los usuarios que tengan mantenimientos programados para el mes siguiente.
                    </p>
                 </div>
              </div>

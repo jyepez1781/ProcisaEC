@@ -1,14 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Play, List, CalendarRange, Eye, MapPin } from 'lucide-react';
-import { PlanMantenimiento, Equipo, Ciudad } from '../../types';
+import { PlanMantenimiento, Equipo, Ciudad, DetallePlan } from '../../types';
 import { maintenancePlanningService } from '../../services/maintenancePlanningService';
+import { liveApi } from '../../services/liveApi';
 import { api } from '../../services/mockApi';
 import Swal from 'sweetalert2';
 
 interface PlanningConfigProps {
-  onGenerate: (year: number, cityId: number, cityName: string) => void;
-  onViewPlan: (planId: number) => void;
+    onGenerate: (year: number, cityId: number, cityName: string, detalles?: DetallePlan[]) => void;
+    onViewPlan: (planId: number) => void;
 }
 
 export const PlanningConfig: React.FC<PlanningConfigProps> = ({ onGenerate, onViewPlan }) => {
@@ -43,17 +44,26 @@ export const PlanningConfig: React.FC<PlanningConfigProps> = ({ onGenerate, onVi
     }
   };
 
-  const handleGenerate = async () => {
-    if (!selectedCityId) {
-        Swal.fire('Atención', 'Por favor seleccione una ciudad para generar el plan.', 'warning');
-        return;
-    }
-    const city = cities.find(c => c.id === Number(selectedCityId));
-    if (city) {
-        // Generación directa del borrador sin confirmación (la confirmación va al Guardar)
-        onGenerate(year, city.id, city.nombre);
-    }
-  };
+    const handleGenerate = async () => {
+        if (!selectedCityId) {
+                Swal.fire('Atención', 'Por favor seleccione una ciudad para generar el plan.', 'warning');
+                return;
+        }
+        const city = cities.find(c => c.id === Number(selectedCityId));
+        if (!city) return;
+
+        try {
+            // Llamar al backend para obtener la propuesta filtrada por ciudad
+            const resp = await liveApi.generateProposal({ ciudad_id: Number(selectedCityId), mes: 1 });
+            const detalles: DetallePlan[] = resp?.detalles || resp?.data?.detalles || [];
+
+            // Pasar al padre el año, ciudad y los detalles generados
+            onGenerate(year, city.id, city.nombre, detalles);
+        } catch (e: any) {
+            console.error('Error generando propuesta', e);
+            Swal.fire('Error', e.message || 'No se pudo generar la propuesta', 'error');
+        }
+    };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

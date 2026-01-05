@@ -41,7 +41,20 @@ export const MaintenanceReportTab: React.FC = () => {
       );
   });
 
-  const totalCost = filteredRegistros.reduce((acc, curr) => acc + curr.costo, 0);
+  const totalCost = filteredRegistros.reduce((acc, curr) => {
+      const raw = (curr as any)?.costo;
+      let cost = 0;
+      if (raw === null || raw === undefined || raw === '') {
+          cost = 0;
+      } else if (typeof raw === 'number') {
+          cost = raw;
+      } else {
+          // Try to parse numbers even if they include currency symbols or are strings
+          const cleaned = String(raw).replace(/[^0-9.\-]/g, '');
+          cost = parseFloat(cleaned || '0');
+      }
+      return acc + (isNaN(cost) ? 0 : cost);
+  }, 0);
 
   const prepareExportData = () => {
     return filteredRegistros.map(reg => ({

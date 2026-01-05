@@ -1,4 +1,5 @@
 
+
 export enum RolUsuario {
   ADMIN = 'Administrador',
   TECNICO = 'Técnico',
@@ -50,6 +51,8 @@ export interface Departamento {
   es_bodega?: boolean; 
   ciudad_id?: number; 
   ciudad_nombre?: string;
+  // Fix: Adding missing property used in planning and equipment mapping
+  bodega_ubicacion_id?: number;
 }
 
 export interface Puesto {
@@ -224,6 +227,9 @@ export interface EmailConfig {
   notificar_asignacion: boolean;
   notificar_mantenimiento: boolean;
   dias_anticipacion_alerta?: number; // Días antes del mes para avisar
-  smtp_host?: string; // Mock fields for realism
+  smtp_host?: string; 
   smtp_port?: string;
+  smtp_user?: string;
+  smtp_pass?: string;
+  smtp_encryption?: 'SSL' | 'TLS' | 'NONE';
 }

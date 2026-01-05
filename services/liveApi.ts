@@ -1,4 +1,5 @@
 
+
 import { 
   Equipo, Usuario, Departamento, Puesto, TipoEquipo, HistorialMovimiento, 
   HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia, 
@@ -198,21 +199,54 @@ export const liveApi = {
   },
 
   // --- Actions ---
-  asignarEquipo: async (id: number, usuarioId: number, ubicacion: string, observaciones: string): Promise<Equipo> => {
+  asignarEquipo: async (id: number, usuarioId: number, ubicacion: string, observaciones: string, archivo?: File): Promise<Equipo> => {
+    const token = localStorage.getItem('auth_token');
+    const fd = new FormData();
+    fd.append('usuario_id', String(usuarioId));
+    fd.append('ubicacion', ubicacion || '');
+    fd.append('observaciones', observaciones || '');
+    if (archivo) fd.append('archivo', archivo);
+
     const response = await fetch(`${API_URL}/equipos/${id}/asignar`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario_id: usuarioId, ubicacion, observaciones })
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, // no Content-Type
+      body: fd
     });
     return handleResponse(response);
   },
-  recepcionarEquipo: async (id: number, observaciones: string, ubicacionId?: number, ubicacionNombre?: string): Promise<Equipo> => {
+
+  recepcionarEquipo: async (id: number, observaciones: string, ubicacionId?: number, ubicacionNombre?: string, liberarLicencias: boolean = false, archivo?: File): Promise<Equipo> => {
+    const token = localStorage.getItem('auth_token');
+    const fd = new FormData();
+    fd.append('observaciones', observaciones || '');
+    if (ubicacionId) fd.append('ubicacion_id', String(ubicacionId));
+    if (ubicacionNombre) fd.append('ubicacion_nombre', ubicacionNombre);
+    fd.append('liberar_licencias', liberarLicencias ? '1' : '0');
+    if (archivo) fd.append('archivo', archivo);
+
     const response = await fetch(`${API_URL}/equipos/${id}/recepcionar`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify({ observaciones, ubicacion_id: ubicacionId, ubicacion_nombre: ubicacionNombre })
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, // no Content-Type
+      body: fd
     });
     return handleResponse(response);
   },
-  bajaEquipo: async (id: number, motivo: string): Promise<Equipo> => {
+  bajaEquipo: async (id: number, motivo: string, archivo?: File): Promise<Equipo> => {
+    const token = localStorage.getItem('auth_token');
+    if (archivo) {
+      const fd = new FormData();
+      fd.append('observaciones', motivo || '');
+      fd.append('archivo', archivo);
+      const response = await fetch(`${API_URL}/equipos/${id}/baja`, {
+        method: 'POST',
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: fd
+      });
+      return handleResponse(response);
+    }
+
     const response = await fetch(`${API_URL}/equipos/${id}/baja`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify({ motivo })
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ observaciones: motivo })
     });
     return handleResponse(response);
   },
@@ -358,53 +392,77 @@ agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento
   },
 
   // Fix: Added missing methods for parity with internalMockApi
-  // --- Planning ---
-  getMaintenancePlans: async (): Promise<PlanMantenimiento[]> => {
-    const response = await fetch(`${API_URL}/maintenance-plans`, { headers: getHeaders() });
+ // --- Maintenance Planning ---
+  getMaintenancePlans: async (): Promise<any[]> => {
+    const response = await fetch(`${API_URL}/planes-mantenimiento`, { headers: getHeaders() });
     return handleResponse(response);
   },
-  getPlanDetails: async (planId: number): Promise<{ plan: PlanMantenimiento, details: DetallePlan[] }> => {
-    const response = await fetch(`${API_URL}/maintenance-plans/${planId}`, { headers: getHeaders() });
+  getPlanDetails: async (planId: number): Promise<any> => {
+    const response = await fetch(`${API_URL}/planes-mantenimiento/${planId}`, { headers: getHeaders() });
     return handleResponse(response);
   },
-  createMaintenancePlan: async (plan: PlanMantenimiento, details: DetallePlan[]): Promise<any> => {
-    const response = await fetch(`${API_URL}/maintenance-plans`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify({ plan, details })
-    });
-    return handleResponse(response);
-  },
-  updatePlanDetailMonth: async (itemId: number, newMonth: number): Promise<any> => {
-    const response = await fetch(`${API_URL}/maintenance-plans/details/${itemId}`, {
-      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ mes_programado: newMonth })
-    });
-    return handleResponse(response);
-  },
-  registerMaintenanceExecution: async (detailId: number, data: any): Promise<any> => {
-    const formData = new FormData();
-    formData.append('fecha_ejecucion', data.fecha);
-    formData.append('tecnico_responsable', data.tecnico);
-    formData.append('observaciones', data.observaciones);
-    if (data.archivo) formData.append('archivo', data.archivo);
-
-    const response = await fetch(`${API_URL}/maintenance-plans/details/${detailId}/execute`, {
+  
+  generateProposal: async (payload: { ciudad_id: number, mes?: number }) => {
+    const response = await fetch(`${API_URL}/planes-mantenimiento/propuesta`, {
       method: 'POST',
-      headers: { ...(localStorage.getItem('auth_token') ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
-      body: formData
+      headers: getHeaders(),
+      body: JSON.stringify(payload)
     });
     return handleResponse(response);
   },
-  getEvidence: async (detailId: number): Promise<EvidenciaMantenimiento[]> => {
-    const response = await fetch(`${API_URL}/maintenance-plans/details/${detailId}/evidence`, { headers: getHeaders() });
+  
+  // Create a new maintenance plan
+  createMaintenancePlan: async (plan: any, details: any[]) : Promise<any> => {
+    const response = await fetch(`${API_URL}/planes-mantenimiento`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ ...plan, details })
+    });
     return handleResponse(response);
   },
+
+  // Update detail month
+  updatePlanDetailMonth: async (detailId: number, month: number): Promise<any> => {
+    const response = await fetch(`${API_URL}/detalles-planes-mantenimiento/${detailId}/mes`, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify({ month })
+    });
+    return handleResponse(response);
+  },
+
+  // Start maintenance from plan detail
   iniciarMantenimientoDesdePlan: async (detailId: number, motivo: string): Promise<any> => {
-    const response = await fetch(`${API_URL}/maintenance-plans/details/${detailId}/start-maintenance`, {
+    const response = await fetch(`${API_URL}/detalles-planes-mantenimiento/${detailId}/iniciar`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ motivo })
     });
     return handleResponse(response);
   },
-  getPendingMaintenanceCurrentMonth: async (): Promise<DetallePlan[]> => {
-    const response = await fetch(`${API_URL}/maintenance-plans/pending-current-month`, { headers: getHeaders() });
+
+  // Register execution for a detail
+  registerMaintenanceExecution: async (detailId: number, data: any): Promise<any> => {
+    const url = `${API_URL}/ejecuciones-mantenimiento/${detailId}`;
+    // handle multipart if archivo is present
+    if (data && data.archivo) {
+      const fd = new FormData();
+      if (data.fecha) fd.append('fecha', data.fecha);
+      if (data.tecnico) fd.append('tecnico', data.tecnico);
+      if (data.observaciones) fd.append('observaciones', data.observaciones || '');
+      fd.append('archivo', data.archivo);
+      const headers: any = {};
+      if (localStorage.getItem('auth_token')) headers['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
+      const response = await fetch(url, { method: 'POST', headers, body: fd });
+      return handleResponse(response);
+    }
+    const response = await fetch(url, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
+    return handleResponse(response);
+  },
+
+  // Get executions for a detail
+  getExecutions: async (detailId: number): Promise<any[]> => {
+    const response = await fetch(`${API_URL}/ejecuciones-mantenimiento/${detailId}`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+
+  // Fix: Added missing getEvidence method for parity
+  getEvidence: async (detailId: number): Promise<any[]> => {
+    const response = await fetch(`${API_URL}/evidencias-mantenimiento/${detailId}`, { headers: getHeaders() });
     return handleResponse(response);
   },
 

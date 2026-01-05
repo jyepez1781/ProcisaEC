@@ -109,7 +109,12 @@ let MOCK_EMAIL_CONFIG: EmailConfig = {
   correos_copia: ['it-admin@sys.com'],
   notificar_asignacion: true,
   notificar_mantenimiento: true,
-  dias_anticipacion_alerta: 15
+  dias_anticipacion_alerta: 15,
+  smtp_host: 'smtp.office365.com',
+  smtp_port: '587',
+  smtp_user: 'notificaciones@empresa.com',
+  smtp_pass: '********',
+  smtp_encryption: 'TLS'
 };
 
 // --- 4. PLANIFICACIÓN (MOCK DATA ACTUALIZADA DINÁMICAMENTE) ---
@@ -149,7 +154,7 @@ let MOCK_DETALLES_PLAN: DetallePlan[] = [
         equipo_tipo: 'Desktop', 
         equipo_modelo: 'HP ProTower', 
         equipo_ubicacion: 'Tecnología', 
-        mes_programado: currentMonth === 1 ? 1 : currentMonth - 1, // Ejemplo de backlog
+        mes_programado: currentMonth === 1 ? 1 : currentMonth - 1, // Ejemplo de backlog (mes anterior)
         estado: EstadoPlan.PENDIENTE 
     }
 ];
@@ -322,6 +327,10 @@ const internalMockApi = {
   },
   finalizarMantenimiento: async (equipoId: number, data: any, nuevoEstado: string, archivo?: File) => {
     await simulateDelay();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
     const idx = MOCK_EQUIPOS.findIndex(e => e.id === equipoId);
     if (idx >= 0) {
         MOCK_EQUIPOS[idx].estado = nuevoEstado as EstadoEquipo;
@@ -329,23 +338,28 @@ const internalMockApi = {
             MOCK_EQUIPOS[idx].ubicacion_id = data.ubicacionId;
             syncEquipoMetadata(MOCK_EQUIPOS[idx]);
         }
-        MOCK_EQUIPOS[idx].ultimo_mantenimiento = new Date().toISOString().split('T')[0];
+        MOCK_EQUIPOS[idx].ultimo_mantenimiento = now.toISOString().split('T')[0];
         
         if (isLaptop()) {
             MOCK_EQUIPOS[idx].serie_cargador = data.serie_cargador;
         }
 
-        // FIXED: Actualizar automáticamente el Plan de Mantenimiento si este equipo estaba en taller desde un plan
+        // --- UPDATED: Sincronizar automáticamente con el Plan de Mantenimiento Anual ---
+        const activeYearPlanIds = MOCK_PLANES
+          .filter(p => p.anio === currentYear)
+          .map(p => p.id);
+
         const planItemIdx = MOCK_DETALLES_PLAN.findIndex(d => 
+            activeYearPlanIds.includes(d.plan_id) &&
             d.equipo_id === equipoId && 
             (d.estado === EstadoPlan.EN_PROCESO || d.estado === EstadoPlan.PENDIENTE) &&
-            d.mes_programado <= (new Date().getMonth() + 1)
+            d.mes_programado <= currentMonth
         );
 
         if (planItemIdx >= 0) {
             MOCK_DETALLES_PLAN[planItemIdx].estado = EstadoPlan.REALIZADO;
-            MOCK_DETALLES_PLAN[planItemIdx].fecha_ejecucion = new Date().toISOString().split('T')[0];
-            MOCK_DETALLES_PLAN[planItemIdx].tecnico_responsable = data.proveedor;
+            MOCK_DETALLES_PLAN[planItemIdx].fecha_ejecucion = now.toISOString().split('T')[0];
+            MOCK_DETALLES_PLAN[planItemIdx].tecnico_responsable = data.proveedor || 'Taller Interno';
         }
     }
 

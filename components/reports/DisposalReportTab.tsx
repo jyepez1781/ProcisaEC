@@ -11,6 +11,7 @@ import { printCustomHTML } from '../../utils/documentGenerator';
 interface DisposalItem extends HistorialMovimiento {
     tipo_equipo_nombre?: string;
     equipo_modelo?: string;
+    archivoUrl?: string | null; // Fix: property was missing in definition but added in logic
 }
 
 export const DisposalReportTab: React.FC = () => {
@@ -34,16 +35,36 @@ export const DisposalReportTab: React.FC = () => {
             reportService.getEquipos()
         ]);
 
-        const disposalMovements = movements
-            .filter(m => m.tipo_accion === 'BAJA')
-            .map(m => {
-                const eq = equipos.find(e => e.id === m.equipo_id); 
-                return {
-                    ...m,
-                    tipo_equipo_nombre: eq?.tipo_nombre || 'Desconocido',
-                    equipo_modelo: eq ? `${eq.marca} ${eq.modelo}` : ''
-                };
-            });
+        // Build map of latest BAJA per equipo to avoid duplicates (exclude PRE_BAJA)
+        const bajasOnly = movements.filter(m => m.tipo_accion === 'BAJA');
+
+        const latestByEquipo = new Map<number, any>();
+        bajasOnly.forEach(m => {
+            const existing = latestByEquipo.get(m.equipo_id);
+            const fechaM = new Date(m.fecha).getTime() || 0;
+            const fechaE = existing ? (new Date(existing.fecha).getTime() || 0) : 0;
+            if (!existing || fechaM >= fechaE) {
+                latestByEquipo.set(m.equipo_id, m);
+            }
+        });
+
+        const disposalMovements = Array.from(latestByEquipo.values()).map(m => {
+            const eq = equipos.find(e => e.id === m.equipo_id);
+            // Resolve archivo URL for direct opening
+            let archivoUrl = null;
+            if (m.archivo) {
+                if (m.archivo.startsWith('http') || m.archivo.startsWith('blob')) archivoUrl = m.archivo;
+                else if (m.archivo.startsWith('/')) archivoUrl = `http://localhost:8000${m.archivo}`;
+                else if (m.archivo.startsWith('storage/')) archivoUrl = `http://localhost:8000/${m.archivo}`;
+                else archivoUrl = `http://localhost:8000/storage/${m.archivo}`;
+            }
+            return {
+                ...m,
+                tipo_equipo_nombre: eq?.tipo_nombre || 'Desconocido',
+                equipo_modelo: eq ? `${eq.marca} ${eq.modelo}` : '',
+                archivoUrl
+            };
+        });
 
         setBajas(disposalMovements);
         setFilteredBajas(disposalMovements);
@@ -224,7 +245,6 @@ export const DisposalReportTab: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-colors flex flex-col">
-         {/* ... (rest of the component) ... */}
          {loading ? (
              <div className="p-12 text-center text-slate-500 dark:text-slate-400">Cargando reporte de bajas...</div>
          ) : filteredBajas.length === 0 ? (
@@ -262,15 +282,27 @@ export const DisposalReportTab: React.FC = () => {
                                          <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-md truncate" title={item.detalle}>{item.detalle}</td>
                                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{item.usuario_responsable}</td>
                                          <td className="px-6 py-4 whitespace-nowrap text-center">
-                                             {item.archivo ? (
-                                                 <button 
-                                                     onClick={() => setFileToView(item.archivo!)}
-                                                     className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 p-1.5 rounded-lg transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                                                     title="Ver Evidencia Adjunta"
-                                                 >
-                                                     <Eye className="w-4 h-4" />
-                                                 </button>
-                                             ) : (
+                                            {item.archivo ? (
+                                                <button 
+                                                    onClick={() => {
+                                                        const archivo = item.archivo;
+                                                        const url = item.archivoUrl || (archivo ? (
+                                                            archivo.startsWith('http') || archivo.startsWith('blob')
+                                                            ? archivo
+                                                            : archivo.startsWith('/')
+                                                            ? `http://localhost:8000${archivo}`
+                                                            : archivo.startsWith('storage/')
+                                                            ? `http://localhost:8000/${archivo}`
+                                                            : `http://localhost:8000/storage/${archivo}`
+                                                        ) : null);
+                                                        setFileToView(url);
+                                                    }}
+                                                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 p-1.5 rounded-lg transition-colors border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                                                    title="Ver Evidencia Adjunta"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                            ) : (
                                                  <span className="text-slate-300 dark:text-slate-600 inline-block p-1.5" title="Sin archivo">
                                                      <FileText className="w-4 h-4" />
                                                  </span>
