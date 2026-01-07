@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, Mail, Info, Plus, X, Server, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { Save, Mail, Info, Plus, X, Server, Lock, User, Eye, EyeOff, ShieldCheck, CalendarRange } from 'lucide-react';
 import { api } from '../../services/mockApi';
 import { EmailConfig } from '../../types';
 import Swal from 'sweetalert2';
@@ -14,6 +14,7 @@ const Settings: React.FC = () => {
     correos_copia: [],
     notificar_asignacion: true,
     notificar_mantenimiento: true,
+    notificar_alerta_mantenimiento: true,
     dias_anticipacion_alerta: 15,
     smtp_host: '',
     smtp_port: '',
@@ -280,6 +281,23 @@ const Settings: React.FC = () => {
                   <div>
                     <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">Finalización de Mantenimiento</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">Enviar correo cuando un mantenimiento finaliza y el equipo retorna al usuario.</div>
+                  </div>
+                </label>
+
+                {/* Nuevo: Alerta de Mantenimiento Programado */}
+                <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-indigo-50/30 dark:bg-indigo-900/10">
+                  <input 
+                    type="checkbox" 
+                    className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 dark:bg-slate-700 dark:border-slate-600"
+                    checked={config.notificar_alerta_mantenimiento}
+                    onChange={e => setConfig({...config, notificar_alerta_mantenimiento: e.target.checked})}
+                  />
+                  <div>
+                    <div className="text-sm font-semibold text-indigo-800 dark:text-indigo-300 flex items-center gap-2">
+                        <CalendarRange className="w-4 h-4" />
+                        Recordatorios de Mantenimiento Anual
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">Habilitar el envío automático de alertas para equipos con mantenimiento programado según el plan anual.</div>
                   </div>
                 </label>
 

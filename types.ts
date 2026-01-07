@@ -226,6 +226,7 @@ export interface EmailConfig {
   correos_copia: string[]; // Array de emails para CC
   notificar_asignacion: boolean;
   notificar_mantenimiento: boolean;
+  notificar_alerta_mantenimiento: boolean;
   dias_anticipacion_alerta?: number; // Días antes del mes para avisar
   smtp_host?: string; 
   smtp_port?: string;

@@ -109,6 +109,7 @@ let MOCK_EMAIL_CONFIG: EmailConfig = {
   correos_copia: ['it-admin@sys.com'],
   notificar_asignacion: true,
   notificar_mantenimiento: true,
+  notificar_alerta_mantenimiento: true,
   dias_anticipacion_alerta: 15,
   smtp_host: 'smtp.office365.com',
   smtp_port: '587',
