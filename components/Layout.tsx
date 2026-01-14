@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, Menu, X, Settings as SettingsIcon, Building2, Users, Wrench, Lock, ChevronDown, Key, CalendarClock, Mail, Database, Sun, Moon, ChevronLeft, ChevronRight, Menu as MenuIcon } from 'lucide-react';
+import { LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, Menu, X, Settings as SettingsIcon, Building2, Users, Wrench, Lock, ChevronDown, Key, CalendarClock, Mail, Database, Sun, Moon, ChevronLeft, RefreshCw, Menu as MenuIcon } from 'lucide-react';
 import { api } from '../services/mockApi';
 import { Usuario, Notificacion } from '../types';
 import Swal from 'sweetalert2';
@@ -20,21 +20,15 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
   
-  // Header Menu State
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ newPass: '', confirmPass: '' });
 
   useEffect(() => {
     const initData = async () => {
-        // Load initial notifications
         const notifs = await api.getNotifications();
         setNotifications(notifs);
-
-        // Check for automatic maintenance alerts (Simulated Cron Job)
         await api.verificarAlertasMantenimiento();
-        
-        // Refresh notifications in case alerts generated new ones
         const updatedNotifs = await api.getNotifications();
         setNotifications(updatedNotifs);
     };
@@ -45,24 +39,12 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     e.preventDefault();
     if (passwordForm.newPass !== passwordForm.confirmPass) return;
     if (!user) return;
-
     try {
       await api.changePassword(user.id, passwordForm.newPass);
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Contraseña actualizada correctamente',
-        icon: 'success',
-        confirmButtonColor: '#1e3a8a'
-      });
+      Swal.fire({ title: '¡Éxito!', text: 'Contraseña actualizada', icon: 'success' });
       setIsPasswordModalOpen(false);
-      setPasswordForm({ newPass: '', confirmPass: '' });
     } catch (err: any) {
-      Swal.fire({
-        title: 'Error',
-        text: err.message,
-        icon: 'error',
-        confirmButtonColor: '#1e3a8a'
-      });
+      Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
     }
   };
 
@@ -85,16 +67,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     );
   };
 
-  const passwordsMatch = passwordForm.newPass === passwordForm.confirmPass;
-  const isFormValid = passwordForm.newPass.length > 0 && passwordsMatch;
-
-  // Sidebar width calculation for desktop
   const sidebarWidthClass = isSidebarCollapsed ? 'w-20' : 'w-64';
   const mainMarginClass = isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64';
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
-      {/* Sidebar Desktop - Azul Institucional */}
       <aside className={`hidden md:flex flex-col ${sidebarWidthClass} bg-blue-900 dark:bg-slate-950 border-r border-blue-800 dark:border-slate-800 fixed h-full z-20 shadow-lg transition-all duration-300 ease-in-out`}>
         <div className={`p-4 border-b border-blue-800 dark:border-slate-800 flex ${isSidebarCollapsed ? 'flex-col justify-center gap-4' : 'flex-row justify-between items-center'}`}>
           <div className="flex items-center gap-2 overflow-hidden">
@@ -102,20 +79,12 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <Laptop className="w-6 h-6 text-blue-900 dark:text-orange-500" />
             </div>
             {!isSidebarCollapsed && (
-              <span className="text-2xl font-bold tracking-tight text-white whitespace-nowrap opacity-100 transition-opacity duration-300">
-                <span className="text-orange-500">I</span>
-                <span>nven</span>
-                <span className="text-orange-500">T</span>
-                <span>ory</span>
+              <span className="text-2xl font-bold tracking-tight text-white whitespace-nowrap">
+                <span className="text-orange-500">I</span>nven<span className="text-orange-500">T</span>ory
               </span>
             )}
           </div>
-          
-          <button 
-              onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 dark:hover:bg-slate-800 transition-colors"
-              title={isSidebarCollapsed ? "Expandir menú" : "Colapsar menú"}
-          >
+          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="p-1.5 rounded-lg text-blue-300 hover:text-white hover:bg-blue-800 transition-colors">
               {isSidebarCollapsed ? <MenuIcon className="w-6 h-6" /> : <ChevronLeft className="w-6 h-6" />}
           </button>
         </div>
@@ -128,195 +97,49 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <NavItem to="/equipos" icon={Laptop} label="Equipos" />
           <NavItem to="/mantenimiento" icon={Wrench} label="Mantenimiento" />
           <NavItem to="/planificacion" icon={CalendarClock} label="Planificación" />
+          <NavItem to="/plan-recambio" icon={RefreshCw} label="Plan de Recambio" />
           <NavItem to="/licencias" icon={Key} label="Licencias" />
           <NavItem to="/reportes" icon={FileText} label="Reportes" />
           <div className={`pt-4 mt-4 border-t border-blue-800 dark:border-slate-800 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
-            {isSidebarCollapsed ? (
-                <div className="h-px w-8 bg-blue-800 dark:bg-slate-800 mb-2"></div>
-            ) : (
-                <p className="px-4 text-xs font-semibold text-blue-400 dark:text-slate-500 uppercase tracking-wider mb-2 whitespace-nowrap">Sistema</p>
-            )}
+            {!isSidebarCollapsed && <p className="px-4 text-xs font-semibold text-blue-400 dark:text-slate-500 uppercase tracking-wider mb-2">Sistema</p>}
             <NavItem to="/migracion" icon={Database} label="Migración" />
             <NavItem to="/configuracion" icon={Mail} label="Config. Correo" />
           </div>
         </nav>
       </aside>
 
-      {/* Mobile Menu Overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/50 z-30 md:hidden" onClick={() => setIsMobileMenuOpen(false)} />
-      )}
-
-      {/* Mobile Sidebar (Always expanded when open) */}
-      <aside className={`fixed inset-y-0 left-0 w-64 bg-blue-900 dark:bg-slate-950 z-40 transform transition-transform duration-300 md:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="p-6 flex justify-between items-center border-b border-blue-800 dark:border-slate-800">
-          <span className="text-2xl font-bold tracking-tight text-white">
-              <span className="text-orange-500">I</span>
-              <span>nven</span>
-              <span className="text-orange-500">T</span>
-              <span>ory</span>
-          </span>
-          <button onClick={() => setIsMobileMenuOpen(false)}><X className="w-6 h-6 text-blue-200" /></button>
-        </div>
-        <nav className="p-4 space-y-1 overflow-y-auto">
-          <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><LayoutDashboard className="w-5 h-5" /><span>Dashboard</span></Link>
-          <Link to="/organizacion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Building2 className="w-5 h-5" /><span>Organización</span></Link>
-          <Link to="/usuarios" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Users className="w-5 h-5" /><span>Usuarios</span></Link>
-          <Link to="/tipos" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><SettingsIcon className="w-5 h-5" /><span>Tipos de Equipo</span></Link>
-          <Link to="/equipos" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Laptop className="w-5 h-5" /><span>Equipos</span></Link>
-          <Link to="/mantenimiento" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Wrench className="w-5 h-5" /><span>Mantenimiento</span></Link>
-          <Link to="/planificacion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><CalendarClock className="w-5 h-5" /><span>Planificación</span></Link>
-          <Link to="/licencias" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Key className="w-5 h-5" /><span>Licencias</span></Link>
-          <Link to="/reportes" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><FileText className="w-5 h-5" /><span>Reportes</span></Link>
-          <div className="pt-4 mt-4 border-t border-blue-800 dark:border-slate-800">
-             <p className="px-4 text-xs font-semibold text-blue-400 uppercase tracking-wider mb-2">Sistema</p>
-             <Link to="/migracion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Database className="w-5 h-5" /><span>Migración</span></Link>
-             <Link to="/configuracion" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800"><Mail className="w-5 h-5" /><span>Config. Correo</span></Link>
-          </div>
-        </nav>
-        <div className="p-4 border-t border-blue-800 dark:border-slate-800">
-             <button onClick={onLogout} className="flex items-center gap-3 px-4 py-3 w-full text-blue-100 hover:bg-red-600 hover:text-white rounded-lg transition-colors">
-                <LogOut className="w-5 h-5" />
-                <span>Cerrar Sesión</span>
-             </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
+      {/* Main Content Area */}
       <main className={`flex-1 ${mainMarginClass} flex flex-col min-h-screen transition-all duration-300 ease-in-out`}>
-        {/* Top Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shadow-sm h-16">
           <button className="md:hidden p-2" onClick={() => setIsMobileMenuOpen(true)}>
             <Menu className="w-6 h-6 text-slate-600 dark:text-slate-300" />
           </button>
-          
-          <div className="flex-1 md:flex-none"></div>
-
-          <div className="flex items-center gap-2 md:gap-4">
-            {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme}
-              className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
-            >
+          <div className="flex-1"></div>
+          <div className="flex items-center gap-4">
+            <button onClick={toggleTheme} className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 transition-colors">
               {theme === 'dark' ? <Sun className="w-5 h-5 text-orange-400" /> : <Moon className="w-5 h-5 text-blue-900" />}
             </button>
-
             <div className="relative cursor-pointer group">
-              <div className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 relative">
+              <div className="p-2 rounded-full hover:bg-slate-100 relative">
                 <Bell className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-                {notifications.length > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white dark:border-slate-800"></span>
-                )}
-              </div>
-              {/* Dropdown Notifs */}
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 hidden group-hover:block p-2">
-                <h4 className="px-4 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Notificaciones</h4>
-                {notifications.length > 0 ? notifications.map(n => (
-                  <div key={n.id} className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg">
-                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{n.titulo}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{n.mensaje}</p>
-                  </div>
-                )) : <div className="p-4 text-sm text-slate-500 dark:text-slate-400 text-center">Sin notificaciones</div>}
+                {notifications.length > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-orange-500 rounded-full border-2 border-white dark:border-slate-800"></span>}
               </div>
             </div>
-            
-            {/* User Profile */}
             <div className="relative pl-4 border-l border-slate-200 dark:border-slate-700">
-              <button 
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 p-1.5 rounded-lg transition-colors"
-              >
+              <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center gap-3 hover:bg-slate-50 dark:hover:bg-slate-700 p-1.5 rounded-lg transition-colors">
                 <div className="text-right hidden sm:block">
                   <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{user?.nombre_completo || 'Usuario'}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{user?.rol || 'Invitado'}</p>
                 </div>
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-800 dark:text-blue-200 font-bold border border-blue-200 dark:border-blue-800">
+                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-800 dark:text-blue-200 font-bold">
                   <UserIcon className="w-5 h-5" />
                 </div>
-                <ChevronDown className="w-4 h-4 text-slate-400" />
               </button>
-
-              {isUserMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setIsUserMenuOpen(false)}></div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700 z-20 py-1">
-                    <div className="px-4 py-3 border-b border-slate-50 dark:border-slate-700 md:hidden">
-                       <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{user?.nombre_completo}</p>
-                       <p className="text-xs text-slate-500 dark:text-slate-400">{user?.rol}</p>
-                    </div>
-                    <button 
-                        onClick={() => { setIsPasswordModalOpen(true); setIsUserMenuOpen(false); }}
-                        className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2"
-                    >
-                      <Lock className="w-4 h-4" /> Cambiar Contraseña
-                    </button>
-                    <button 
-                        onClick={onLogout}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                    >
-                      <LogOut className="w-4 h-4" /> Cerrar Sesión
-                    </button>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </header>
-
-        {/* Page Content */}
-        <div className="p-4 md:p-8">
-          {children}
-        </div>
+        <div className="p-4 md:p-8">{children}</div>
       </main>
-
-      {/* Change Password Modal */}
-      {isPasswordModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setIsPasswordModalOpen(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-6 border-b dark:border-slate-700 pb-4">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Cambiar Contraseña</h3>
-                    <button onClick={() => setIsPasswordModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><X className="w-6 h-6" /></button>
-                </div>
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nueva Contraseña</label>
-                        <input 
-                            type="password" 
-                            required 
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
-                            value={passwordForm.newPass}
-                            onChange={e => setPasswordForm({...passwordForm, newPass: e.target.value})}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Confirmar Contraseña</label>
-                        <input 
-                            type="password" 
-                            required 
-                            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-slate-700 dark:text-white"
-                            value={passwordForm.confirmPass}
-                            onChange={e => setPasswordForm({...passwordForm, confirmPass: e.target.value})}
-                        />
-                    </div>
-                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t dark:border-slate-700">
-                        <button type="button" onClick={() => setIsPasswordModalOpen(false)} className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium">Cancelar</button>
-                        <button 
-                          type="submit" 
-                          disabled={!isFormValid}
-                          className={`px-4 py-2 rounded-lg font-medium text-white transition-colors ${
-                            isFormValid 
-                              ? 'bg-blue-900 hover:bg-blue-800' 
-                              : 'bg-slate-300 dark:bg-slate-600 cursor-not-allowed'
-                          }`}
-                        >
-                          Actualizar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-      )}
     </div>
   );
 };

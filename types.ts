@@ -51,7 +51,6 @@ export interface Departamento {
   es_bodega?: boolean; 
   ciudad_id?: number; 
   ciudad_nombre?: string;
-  // Fix: Adding missing property used in planning and equipment mapping
   bodega_ubicacion_id?: number;
 }
 
@@ -81,7 +80,7 @@ export interface TipoEquipo {
   id: number;
   nombre: string; 
   descripcion: string;
-  frecuencia_anual?: number; // Cantidad de mantenimientos al año (0 = excluido)
+  frecuencia_anual?: number;
 }
 
 export interface Ubicacion {
@@ -107,9 +106,68 @@ export interface Equipo {
   responsable_id?: number;
   responsable_nombre?: string;
   observaciones: string;
-  frecuencia_mantenimiento?: FrecuenciaMantenimiento; // Legacy field, now preferred to use Type frequency
-  ultimo_mantenimiento?: string; // New field
+  frecuencia_mantenimiento?: FrecuenciaMantenimiento;
+  ultimo_mantenimiento?: string;
+  procesador?: string;
+  ram?: string;
+  disco_capacidad?: string;
+  disco_tipo?: 'SSD' | 'HDD' | 'NVMe';
+  sistema_operativo?: string;
+  // --- Control de Recambio ---
+  plan_recambio_id?: number; // Referencia al plan donde fue incluido
 }
+
+// --- Planning & Replacement ---
+
+export interface PlanMantenimiento {
+  id: number;
+  anio: number;
+  nombre: string;
+  creado_por: string;
+  fecha_creacion: string;
+  estado: 'ACTIVO' | 'CERRADO';
+  ciudad_id?: number;
+  ciudad_nombre?: string;
+}
+
+export interface DetallePlan {
+  id: number;
+  plan_id: number;
+  equipo_id: number;
+  equipo_codigo: string;
+  equipo_tipo: string;
+  equipo_modelo: string;
+  equipo_ubicacion: string;
+  mes_programado: number;
+  estado: EstadoPlan;
+  fecha_ejecucion?: string;
+  tecnico_responsable?: string;
+}
+
+// --- NUEVO: Plan de Recambio ---
+export interface PlanRecambio {
+  id: number;
+  anio: number;
+  nombre: string;
+  creado_por: string;
+  fecha_creacion: string;
+  presupuesto_estimado: number;
+  total_equipos: number;
+  estado: 'ACTIVO' | 'PROYECTO' | 'CERRADO';
+}
+
+export interface DetallePlanRecambio {
+  id: number;
+  plan_id: number;
+  equipo_id: number;
+  equipo_codigo: string;
+  equipo_modelo: string;
+  equipo_marca: string;
+  equipo_antiguedad: number;
+  valor_reposicion: number;
+}
+
+// --- Extras ---
 
 export interface HistorialMovimiento {
   id: number;
@@ -119,7 +177,7 @@ export interface HistorialMovimiento {
   fecha: string;
   usuario_responsable: string; 
   detalle: string;
-  archivo?: string; // Nombre del archivo de evidencia
+  archivo?: string;
 }
 
 export interface HistorialAsignacion {
@@ -159,15 +217,26 @@ export interface RegistroMantenimiento {
   proveedor: string;
   costo: number;
   descripcion: string;
-  archivo_orden?: string; // URL or name of the signed PDF
+  archivo_orden?: string;
 }
 
-// --- New License Interfaces ---
+// --- ADDED MISSING INTERFACES ---
+/* Added TipoLicencia to resolve export errors in services and components */
 export interface TipoLicencia {
   id: number;
-  nombre: string; 
+  nombre: string;
   proveedor: string;
   descripcion: string;
+}
+
+/* Added EvidenciaMantenimiento to resolve export errors in maintenance planning */
+export interface EvidenciaMantenimiento {
+  id: number;
+  detalle_id: number;
+  fecha: string;
+  tecnico: string;
+  observaciones: string;
+  archivo?: string;
 }
 
 export interface Licencia {
@@ -182,52 +251,13 @@ export interface Licencia {
   usuario_departamento?: string; 
 }
 
-// --- New Planning Interfaces ---
-
-export interface PlanMantenimiento {
-  id: number;
-  anio: number;
-  nombre: string;
-  creado_por: string;
-  fecha_creacion: string;
-  estado: 'ACTIVO' | 'CERRADO';
-  ciudad_id?: number;     // Optional to support legacy plans or global plans
-  ciudad_nombre?: string;
-}
-
-export interface DetallePlan {
-  id: number; // Unique ID for the schedule item
-  plan_id: number;
-  equipo_id: number;
-  equipo_codigo: string;
-  equipo_tipo: string;
-  equipo_modelo: string;
-  equipo_ubicacion: string;
-  mes_programado: number; // 1-12
-  estado: EstadoPlan;
-  fecha_ejecucion?: string;
-  tecnico_responsable?: string;
-}
-
-export interface EvidenciaMantenimiento {
-  id: number;
-  detalle_plan_id: number;
-  plan_id: number;
-  equipo_id: number;
-  fecha_subida: string;
-  archivo_url: string;
-  tipo_archivo: 'imagen' | 'pdf';
-  observaciones: string;
-}
-
-// --- Email Config Interface ---
 export interface EmailConfig {
-  remitente: string; // Nombre a mostrar
-  correos_copia: string[]; // Array de emails para CC
+  remitente: string;
+  correos_copia: string[];
   notificar_asignacion: boolean;
   notificar_mantenimiento: boolean;
   notificar_alerta_mantenimiento: boolean;
-  dias_anticipacion_alerta?: number; // Días antes del mes para avisar
+  dias_anticipacion_alerta?: number;
   smtp_host?: string; 
   smtp_port?: string;
   smtp_user?: string;

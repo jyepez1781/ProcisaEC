@@ -2,9 +2,9 @@
 
 import { 
   Equipo, Usuario, Departamento, Puesto, TipoEquipo, HistorialMovimiento, 
-  HistorialAsignacion, RegistroMantenimiento, TipoLicencia, Licencia, 
+  HistorialAsignacion, RegistroMantenimiento, Licencia, 
   ReporteGarantia, Notificacion, Ciudad, PlanMantenimiento, DetallePlan, 
-  EmailConfig, EvidenciaMantenimiento 
+  EmailConfig, TipoLicencia, EvidenciaMantenimiento, PlanRecambio, DetallePlanRecambio
 } from '../types';
 
 // URL base de tu API Laravel (ajusta el puerto si es necesario)
@@ -391,8 +391,7 @@ agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento
     return handleResponse(response);
   },
 
-  // Fix: Added missing methods for parity with internalMockApi
- // --- Maintenance Planning ---
+  // --- Maintenance Planning ---
   getMaintenancePlans: async (): Promise<any[]> => {
     const response = await fetch(`${API_URL}/planes-mantenimiento`, { headers: getHeaders() });
     return handleResponse(response);
@@ -460,9 +459,29 @@ agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento
     return handleResponse(response);
   },
 
-  // Fix: Added missing getEvidence method for parity
   getEvidence: async (detailId: number): Promise<any[]> => {
     const response = await fetch(`${API_URL}/evidencias-mantenimiento/${detailId}`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+
+  // --- Replacement Planning ---
+  /* Added replacement planning methods to liveApi for type parity with internalMockApi */
+  getReplacementPlans: async (): Promise<PlanRecambio[]> => {
+    const response = await fetch(`${API_URL}/planes-recambio`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+
+  getReplacementPlanDetails: async (planId: number): Promise<{ plan: PlanRecambio, details: DetallePlanRecambio[] }> => {
+    const response = await fetch(`${API_URL}/planes-recambio/${planId}`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+
+  saveReplacementPlan: async (plan: PlanRecambio, details: DetallePlanRecambio[]): Promise<boolean> => {
+    const response = await fetch(`${API_URL}/planes-recambio`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ ...plan, details })
+    });
     return handleResponse(response);
   },
 

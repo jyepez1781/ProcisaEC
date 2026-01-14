@@ -12,6 +12,12 @@ export interface MaintenanceFormData {
   accion_final: 'DISPONIBLE' | 'BAJA';
   ubicacion_id: number | string;
   serie_cargador: string;
+  // Campos técnicos editables
+  procesador: string;
+  ram: string;
+  disco_capacidad: string;
+  disco_tipo: 'SSD' | 'HDD' | 'NVMe';
+  sistema_operativo: string;
 }
 
 const INITIAL_FORM_STATE: MaintenanceFormData = {
@@ -21,7 +27,12 @@ const INITIAL_FORM_STATE: MaintenanceFormData = {
   descripcion: '',
   accion_final: 'DISPONIBLE',
   ubicacion_id: '',
-  serie_cargador: ''
+  serie_cargador: '',
+  procesador: '',
+  ram: '',
+  disco_capacidad: '',
+  disco_tipo: 'SSD',
+  sistema_operativo: ''
 };
 
 export const useMaintenanceManager = () => {
@@ -54,7 +65,6 @@ export const useMaintenanceManager = () => {
 
   useEffect(() => {
     loadData();
-    // Hot Reload every 5 seconds
     const interval = setInterval(() => loadData(true), 5000);
     return () => clearInterval(interval);
   }, [loadData]);
@@ -63,12 +73,16 @@ export const useMaintenanceManager = () => {
     setSelectedEquipo(equipo);
     setFormData({
       ...INITIAL_FORM_STATE,
-      // Si el equipo NO tiene responsable, intentamos pre-seleccionar su ubicación actual (si es bodega) o la primera bodega.
-      // Si TIENE responsable, dejamos vacío (la UI lo ocultará).
       ubicacion_id: (!equipo.responsable_id) 
          ? (equipo.ubicacion_id || (bodegas.length > 0 ? bodegas[0].id : '')) 
          : '',
-      serie_cargador: equipo.serie_cargador || ''
+      serie_cargador: equipo.serie_cargador || '',
+      // Pre-cargar especificaciones actuales
+      procesador: equipo.procesador || '',
+      ram: equipo.ram || '',
+      disco_capacidad: equipo.disco_capacidad || '',
+      disco_tipo: equipo.disco_tipo || 'SSD',
+      sistema_operativo: equipo.sistema_operativo || ''
     });
     setReportFile(null);
   };
@@ -95,7 +109,6 @@ export const useMaintenanceManager = () => {
     }
 
     try {
-      // Determine final status and location
       let nuevoEstado = EstadoEquipo.DISPONIBLE;
       let ubicacionIdToSend = Number(formData.ubicacion_id) || undefined;
       let ubicacionNombreToSend = '';
@@ -103,16 +116,11 @@ export const useMaintenanceManager = () => {
       if (formData.accion_final === 'BAJA') {
         nuevoEstado = EstadoEquipo.BAJA;
       } else {
-        // Opción: Equipo Operativo (DISPONIBLE en el form visualmente)
-        // Logica: Si tenía responsable, vuelve a Activo (Usuario). Si no, vuelve a Disponible (Bodega).
         if (selectedEquipo.responsable_id) {
            nuevoEstado = EstadoEquipo.ACTIVO;
-           // Al volver a Activo, ignoramos la ubicación del formulario y enviamos undefined
-           // para que el backend/mock mantenga la ubicación y responsable previos.
            ubicacionIdToSend = undefined; 
         } else {
            nuevoEstado = EstadoEquipo.DISPONIBLE;
-           // Si va a bodega, buscamos el nombre de la ubicación seleccionada
            if (formData.ubicacion_id) {
              const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
              if (bodega) ubicacionNombreToSend = bodega.nombre;
@@ -129,13 +137,18 @@ export const useMaintenanceManager = () => {
           descripcion: formData.descripcion,
           ubicacionId: ubicacionIdToSend,
           ubicacionNombre: ubicacionNombreToSend || undefined,
-          serie_cargador: formData.serie_cargador
+          serie_cargador: formData.serie_cargador,
+          // Enviar nuevas especificaciones
+          procesador: formData.procesador,
+          ram: formData.ram,
+          disco_capacidad: formData.disco_capacidad,
+          disco_tipo: formData.disco_tipo,
+          sistema_operativo: formData.sistema_operativo
         },
         nuevoEstado,
         reportFile
       );
       
-      // Preparar mensaje de éxito personalizado
       const emailConfig = await api.getEmailConfig();
       let successMessage = 'Mantenimiento registrado correctamente.';
 
@@ -143,7 +156,7 @@ export const useMaintenanceManager = () => {
           if (nuevoEstado === EstadoEquipo.ACTIVO && selectedEquipo.responsable_nombre) {
               successMessage += ` Se ha enviado un correo con el detalle al usuario: ${selectedEquipo.responsable_nombre}.`;
           } else if (emailConfig.correos_copia.length > 0) {
-              successMessage += ` Se ha notificado por correo a las cuentas configuradas (Soporte/Administración).`;
+              successMessage += ` Se ha notificado por correo a las cuentas configuradas.`;
           }
       }
 

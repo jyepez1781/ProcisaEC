@@ -1,10 +1,10 @@
 
-import { Usuario, Equipo } from '../types';
+import { Usuario, Equipo, PlanRecambio, DetallePlanRecambio } from '../types';
+import { formatCurrency } from './formatters';
 import Swal from 'sweetalert2';
 
 /**
  * Genera el string HTML del documento de asignación (Carta Responsiva + Anexo 1)
- * Sin imprimir, solo retorna el texto.
  */
 export const getAssignmentDocumentHTML = (usuario: Usuario, equipo: Equipo): string => {
   const today = new Date();
@@ -516,6 +516,117 @@ export const getDisposalDocumentHTML = (equipo: Equipo, motivo: string): string 
 };
 
 /**
+ * Genera el documento HTML para un Plan de Recambio Tecnológico
+ */
+export const getReplacementPlanDocumentHTML = (plan: PlanRecambio, details: DetallePlanRecambio[]): string => {
+  const brandBlue = '#1e3a8a';
+  const brandOrange = '#ea580c';
+  const fechaHoy = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Plan de Recambio Tecnológico ${plan.anio}</title>
+        <style>
+          @page { size: A4 portrait; margin: 1.5cm; }
+          body { font-family: 'Inter', Arial, sans-serif; color: #334155; font-size: 10pt; line-height: 1.4; margin: 0; }
+          
+          .header { border-bottom: 2px solid ${brandBlue}; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+          .header-title { font-weight: 800; color: ${brandBlue}; font-size: 16pt; text-transform: uppercase; margin: 0; }
+          .header-meta { text-align: right; font-size: 8pt; color: #64748b; }
+          
+          .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+          .summary-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background: #f8fafc; border-left: 4px solid ${brandOrange}; }
+          .summary-label { font-size: 8pt; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
+          .summary-value { font-size: 14pt; font-weight: 800; color: #1e293b; }
+          
+          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+          th { background-color: #f1f5f9; color: ${brandBlue}; font-weight: 700; text-transform: uppercase; text-align: left; padding: 10px; border-bottom: 2px solid #e2e8f0; font-size: 8.5pt; }
+          td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 9pt; }
+          
+          .asset-code { font-weight: 700; color: #1e293b; }
+          .asset-model { font-size: 8pt; color: #64748b; }
+          .badge-age { background: #ffedd5; color: #9a3412; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 8pt; }
+          
+          .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 10px; text-align: center; font-size: 8pt; color: #94a3b8; }
+          .signatures { margin-top: 60px; display: flex; justify-content: space-around; }
+          .sig-box { width: 200px; text-align: center; }
+          .sig-line { border-top: 1px solid #000; margin-bottom: 5px; margin-top: 40px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="header-title">Plan de Recambio</h1>
+            <div style="color: ${brandOrange}; font-weight: 700; font-size: 10pt;">${plan.nombre}</div>
+          </div>
+          <div class="header-meta">
+            <strong>Generado:</strong> ${fechaHoy}<br>
+            <strong>Periodo:</strong> ${plan.anio}
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <div class="summary-label">Presupuesto Estimado</div>
+            <div class="summary-value">${formatCurrency(plan.presupuesto_estimado)}</div>
+          </div>
+          <div class="summary-card" style="border-left-color: ${brandBlue};">
+            <div class="summary-label">Total Activos a Renovar</div>
+            <div class="summary-value">${plan.total_equipos} unidades</div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Activo / Modelo</th>
+              <th>Antigüedad</th>
+              <th style="text-align: right;">Costo Reposición (Est)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${details.map(d => `
+              <tr>
+                <td>
+                  <div class="asset-code">${d.equipo_codigo}</div>
+                  <div class="asset-model">${d.equipo_marca} ${d.equipo_modelo}</div>
+                </td>
+                <td>
+                  <span class="badge-age">${d.equipo_antiguedad} años</span>
+                </td>
+                <td style="text-align: right; font-weight: 600;">
+                  ${formatCurrency(d.valor_reposicion)}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="signatures">
+          <div class="sig-box">
+            <div class="sig-line"></div>
+            <div style="font-weight: 700;">Área de Tecnología</div>
+            <div style="font-size: 8pt;">Gestión de Activos</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-line"></div>
+            <div style="font-weight: 700;">Área Financiera</div>
+            <div style="font-size: 8pt;">Aprobación de Presupuesto</div>
+          </div>
+        </div>
+
+        <div class="footer">
+          Este documento es una propuesta de inversión para mantenimiento de la operatividad tecnológica. <br>
+          Generado automáticamente por el Sistema InvenTory.
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
  * Genera el documento de asignación y abre la ventana de impresión
  */
 export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => {
@@ -531,11 +642,8 @@ export const generateAssignmentDocument = (usuario: Usuario, equipo: Equipo) => 
   }
 
   const htmlContent = getAssignmentDocumentHTML(usuario, equipo);
-  
-  // Agregar script de autoimpresión al HTML
   const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
   const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
-
   printWindow.document.write(fullHtml);
   printWindow.document.close();
 };
@@ -557,10 +665,8 @@ export const generateReceptionDocument = (usuario: Usuario, equipo: Equipo, obse
 
   const fechaRecepcion = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
   const htmlContent = getReceptionDocumentHTML(usuario, equipo, fechaRecepcion, observaciones, licenciasLiberadas);
-  
   const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
   const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
-
   printWindow.document.write(fullHtml);
   printWindow.document.close();
 };
@@ -583,61 +689,157 @@ export const generateDisposalDocument = (equipo: Equipo, motivo: string) => {
   const htmlContent = getDisposalDocumentHTML(equipo, motivo);
   const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
   const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
-
   printWindow.document.write(fullHtml);
   printWindow.document.close();
+};
+
+/**
+ * Genera el documento del Plan de Recambio y abre la ventana de impresión
+ */
+export const generateReplacementPlanPDF = (plan: PlanRecambio, details: DetallePlanRecambio[]) => {
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) {
+    Swal.fire({
+      title: 'Ventana Emergente Bloqueada',
+      text: 'Por favor permite las ventanas emergentes (pop-ups) para exportar el PDF.',
+      icon: 'warning',
+      confirmButtonColor: '#2563eb'
+    });
+    return;
+  }
+
+  const htmlContent = getReplacementPlanDocumentHTML(plan, details);
+  const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
+  const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
+  printWindow.document.write(fullHtml);
+  printWindow.document.close();
+};
+
+export const generateServiceOrder = (equipo: Equipo, data: any) => {
+    const brandBlue = '#1e3a8a';
+    const brandOrange = '#ea580c';
+    
+    // Calcular cambios en especificaciones técnicas
+    const changes: {label: string, old: string, new: string}[] = [];
+    if (data.procesador && data.procesador !== equipo.procesador) 
+        changes.push({ label: 'Procesador', old: equipo.procesador || 'N/A', new: data.procesador });
+    if (data.ram && data.ram !== equipo.ram) 
+        changes.push({ label: 'Memoria RAM', old: equipo.ram || 'N/A', new: data.ram });
+    if (data.disco_capacidad && data.disco_capacidad !== equipo.disco_capacidad) 
+        changes.push({ label: 'Capacidad Disco', old: equipo.disco_capacidad || 'N/A', new: data.disco_capacidad });
+    if (data.disco_tipo && data.disco_tipo !== equipo.disco_tipo) 
+        changes.push({ label: 'Tipo Disco', old: equipo.disco_tipo || 'N/A', new: data.disco_tipo });
+    if (data.sistema_operativo && data.sistema_operativo !== equipo.sistema_operativo) 
+        changes.push({ label: 'S.O.', old: equipo.sistema_operativo || 'N/A', new: data.sistema_operativo });
+
+    const html = `
+      <html>
+      <head>
+        <title>Orden de Servicio Técnico</title>
+        <style>
+          @page { size: A4 portrait; margin: 1.5cm; }
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 0; color: #334155; font-size: 10pt; line-height: 1.4; }
+          .header { border-bottom: 2px solid ${brandBlue}; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+          .title { font-size: 16pt; font-weight: 800; color: ${brandBlue}; text-transform: uppercase; margin: 0; }
+          .subtitle { color: ${brandOrange}; font-size: 9pt; font-weight: 600; text-transform: uppercase; }
+          
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+          .info-box { border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; background: #f8fafc; }
+          .info-label { font-weight: 700; color: ${brandBlue}; font-size: 8pt; text-transform: uppercase; margin-bottom: 3px; display: block; }
+          .info-value { font-size: 10pt; color: #1e293b; font-weight: 500; }
+          
+          table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+          th { background: ${brandBlue}; color: white; text-align: left; padding: 8px 12px; font-size: 9pt; text-transform: uppercase; }
+          td { border: 1px solid #e2e8f0; padding: 8px 12px; font-size: 9pt; vertical-align: top; }
+          
+          .changes-section { margin-top: 20px; border: 1px solid #dcfce7; background: #f0fdf4; border-radius: 8px; padding: 15px; }
+          .changes-title { color: #166534; font-weight: 800; font-size: 10pt; margin-bottom: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+          .change-item { display: grid; grid-template-columns: 120px 1fr; margin-bottom: 5px; border-bottom: 1px dashed #bbf7d0; padding-bottom: 3px; }
+          .change-label { font-weight: 700; color: #166534; }
+          .change-comparison { font-size: 9pt; color: #374151; }
+          .old-val { color: #9ca3af; text-decoration: line-through; margin-right: 8px; }
+          .new-val { color: #111827; font-weight: 700; }
+          
+          .signatures { display: flex; justify-content: space-between; margin-top: 60px; }
+          .sig-line { border-top: 1px solid #475569; width: 40%; text-align: center; padding-top: 5px; font-weight: 700; font-size: 9pt; color: ${brandBlue}; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">Orden de Servicio Técnico</div>
+          <div class="subtitle">Gestión de Activos Fijos - Departamento de Tecnología</div>
+        </div>
+
+        <div class="info-grid">
+           <div class="info-box">
+              <span class="info-label">Equipo</span>
+              <span class="info-value">${equipo.codigo_activo} - ${equipo.marca} ${equipo.modelo}</span>
+           </div>
+           <div class="info-box">
+              <span class="info-label">Fecha de Trabajo</span>
+              <span class="info-value">${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+           </div>
+        </div>
+
+        <table>
+          <tr>
+            <th colspan="2">Resumen del Mantenimiento</th>
+          </tr>
+          <tr>
+            <td style="width: 30%; font-weight: 700;">Tipo de Servicio:</td>
+            <td>${data.tipo}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">Proveedor / Técnico:</td>
+            <td>${data.proveedor}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">Costo del Servicio:</td>
+            <td>$ ${data.costo.toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td style="font-weight: 700;">Descripción Técnica:</td>
+            <td>${data.descripcion}</td>
+          </tr>
+        </table>
+
+        ${changes.length > 0 ? `
+          <div class="changes-section">
+             <div class="changes-title">Actualización de Especificaciones Técnicas</div>
+             ${changes.map(c => `
+                <div class="change-item">
+                   <span class="change-label">${c.label}:</span>
+                   <span class="change-comparison">
+                      <span class="old-val">${c.old}</span>
+                      <span style="margin-right:8px;">&rarr;</span>
+                      <span class="new-val">${c.new}</span>
+                   </span>
+                </div>
+             `).join('')}
+          </div>
+        ` : ''}
+
+        <div style="margin-top: 30px; font-size: 9pt; text-align: justify; color: #64748b;">
+           <strong>Nota:</strong> Se certifica que el equipo ha sido intervenido siguiendo los protocolos de seguridad de la información de la empresa. Los cambios de hardware registrados han sido verificados y actualizados en la base de datos maestra de inventario.
+        </div>
+
+        <div class="signatures">
+           <div class="sig-line">Firma Técnico / Proveedor</div>
+           <div class="sig-line">Responsable IT / Supervisor</div>
+        </div>
+      </body>
+      </html>
+    `;
+    printCustomHTML(html, 'Orden de Servicio Técnico');
 };
 
 export const printCustomHTML = (htmlContent: string, title: string) => {
   const printWindow = window.open('', '_blank', 'width=900,height=800');
   if (!printWindow) return;
-  printWindow.document.write(`<html><head><title>${title}</title></head><body>${htmlContent}<script>window.onload=function(){window.print();}</script></body></html>`);
+  printWindow.document.write(`<html><head><title>${title}</title></head><body>${htmlContent}<script>window.onload=function(){setTimeout(function(){window.print();},500);}</script></body></html>`);
   printWindow.document.close();
 };
 
 export const openPrintPreview = (html: string) => {
     printCustomHTML(html, 'Vista Previa');
 };
-
-export const generateServiceOrder = (equipo: Equipo, data: any) => {
-    const html = `
-      <html>
-      <head>
-        <title>Orden de Servicio</title>
-        <style>
-          body { font-family: sans-serif; padding: 20px; }
-          .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-          .title { font-size: 20px; font-weight: bold; }
-          .info { margin-bottom: 15px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-          th { background: #f0f0f0; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="title">ORDEN DE SERVICIO TÉCNICO</div>
-          <div>Departamento de Tecnología</div>
-        </div>
-        <div class="info">
-          <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
-          <p><strong>Equipo:</strong> ${equipo.tipo_nombre} - ${equipo.marca} ${equipo.modelo}</p>
-          <p><strong>Código:</strong> ${equipo.codigo_activo}</p>
-          <p><strong>Serie:</strong> ${equipo.numero_serie}</p>
-        </div>
-        <table>
-          <tr><th>Tipo de Servicio</th><td>${data.tipo}</td></tr>
-          <tr><th>Proveedor / Técnico</th><td>${data.proveedor}</td></tr>
-          <tr><th>Costo Estimado</th><td>$${data.costo}</td></tr>
-          <tr><th>Descripción del Trabajo</th><td>${data.descripcion}</td></tr>
-        </table>
-        <br><br>
-        <div style="display:flex; justify-content:space-between; margin-top:50px;">
-           <div style="border-top:1px solid #000; width:40%; text-align:center;">Firma Técnico / Proveedor</div>
-           <div style="border-top:1px solid #000; width:40%; text-align:center;">Firma Supervisor IT</div>
-        </div>
-      </body>
-      </html>
-    `;
-    printCustomHTML(html, 'Orden de Servicio');
-}

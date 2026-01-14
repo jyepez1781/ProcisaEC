@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Equipo, TipoEquipo, Usuario, Departamento, EstadoEquipo, Ciudad, Pais } from '../../types';
-import { Save, Upload, X, FileText, RefreshCw, Sparkles, Loader2, Unplug, Printer, Download, AlertCircle, Lock } from 'lucide-react';
+import { Save, Upload, X, FileText, RefreshCw, Sparkles, Loader2, Unplug, Printer, AlertCircle, Lock, Cpu, Database, HardDrive, Layout } from 'lucide-react';
 import { ModalAction } from '../../hooks/useEquipment';
 import { GoogleGenAI } from "@google/genai";
 import { generateReceptionDocument, generateDisposalDocument, generateAssignmentDocument } from '../../utils/documentGenerator';
@@ -31,10 +30,18 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         tipo_equipo_id: tipos[0]?.id || '', serie_cargador: '', 
         fecha_compra: new Date().toISOString().split('T')[0], 
         valor_compra: 0, anos_garantia: 1, estado: EstadoEquipo.DISPONIBLE, observaciones: '',
-        ubicacion_id: bodegas.length > 0 ? bodegas[0].id : ''
+        ubicacion_id: bodegas.length > 0 ? bodegas[0].id : '',
+        procesador: '', ram: '', disco_capacidad: '', disco_tipo: 'SSD', sistema_operativo: ''
       };
     }
-    if (action === 'EDIT' && equipo) return { ...equipo };
+    if (action === 'EDIT' && equipo) return { 
+        ...equipo, 
+        disco_tipo: equipo.disco_tipo || 'SSD',
+        procesador: equipo.procesador || '',
+        ram: equipo.ram || '',
+        disco_capacidad: equipo.disco_capacidad || '',
+        sistema_operativo: equipo.sistema_operativo || ''
+    };
     if (action === 'ASSIGN') return { usuario_id: '', ubicacion: '', observaciones: '' };
     if (action === 'RETURN') return { observaciones: '', ubicacion_id: bodegas[0]?.id || '', releaseLicenses: false };
     if (['MARK_DISPOSAL'].includes(action || '')) return { observaciones: '', ubicacion_id: bodegas[0]?.id || '' };
@@ -48,6 +55,14 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [hasGeneratedDoc, setHasGeneratedDoc] = useState(false); // State to track document generation
 
   const canEditLocation = action === 'EDIT' && equipo?.estado === EstadoEquipo.DISPONIBLE;
+
+  // Detectar si el equipo es de computo (Laptop, Desktop, Servidor)
+  const isComputingEquipment = () => {
+    const selected = tipos.find(t => t.id === Number(formData.tipo_equipo_id));
+    if (!selected) return false;
+    const name = selected.nombre.toLowerCase();
+    return name.includes('laptop') || name.includes('desktop') || name.includes('servidor') || name.includes('notebook') || name.includes('portatil');
+  };
 
   // Auto-generate Asset Code Logic
   useEffect(() => {
@@ -205,6 +220,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       setHasGeneratedDoc(true);
   };
 
+  /* Fix: Use gemini-3-flash-preview for text improvement tasks */
   const handleAIAssist = async () => {
     if (!formData.observaciones.trim()) return;
     setIsAiLoading(true);
@@ -212,7 +228,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const promptContext = action === 'BAJA' ? 'justificación técnica de baja de activo' : 'motivo de envío a mantenimiento técnico o recepción';
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: `Actúa como un técnico de IT. Mejora la redacción de esta ${promptContext} de un equipo informático. Hazla formal, clara y técnica. Corrige errores. Texto: "${formData.observaciones}"`,
         });
         const text = response.text;
@@ -224,11 +240,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
     } finally {
         setIsAiLoading(false);
     }
-  };
-
-  const isLaptop = () => {
-    const selected = tipos.find(t => t.id === Number(formData.tipo_equipo_id));
-    return selected?.nombre.toLowerCase().includes('laptop');
   };
 
   const isRestrictedAction = action === 'RETURN' || action === 'BAJA' || action === 'ASSIGN';
@@ -263,14 +274,12 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                         value={formData.ubicacion_id} onChange={e => setFormData({...formData, ubicacion_id: Number(e.target.value)})}>
                         {bodegas.map(b => <option key={b.id} value={b.id}>{b.nombre}</option>)}
                     </select>
-                    {canEditLocation && <p className="text-[10px] text-blue-500 mt-1">Ubicación y código editables por estar en bodega.</p>}
                 </div>
             ) : (
                 <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación Actual</label>
                     <input type="text" disabled className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed"
                         value={formData.ubicacion_nombre || ''} />
-                    <p className="text-[10px] text-slate-400 mt-1">Ubicación fija mientras esté asignado.</p>
                 </div>
             )}
             <div>
@@ -300,7 +309,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                 value={formData.codigo_activo} 
                 onChange={e => setFormData({...formData, codigo_activo: e.target.value})} 
               />
-              {(action === 'CREATE' || canEditLocation) && <p className="text-[10px] text-blue-500 mt-1">Se actualiza según país y ciudad de la bodega.</p>}
             </div>
           </div>
 
@@ -318,8 +326,65 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             </div>
           </div>
 
-          {/* Fila 4: Detalles Específicos */}
-          {isLaptop() && (
+          {/* --- NUEVA SECCIÓN: ESPECIFICACIONES TÉCNICAS (SOLO PARA CÓMPUTO) --- */}
+          {isComputingEquipment() && (
+            <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30 space-y-4">
+                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-sm uppercase tracking-wider mb-2">
+                    <Database className="w-4 h-4" /> Especificaciones Técnicas
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            <Cpu className="w-3 h-3" /> Procesador
+                        </label>
+                        <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                            placeholder="Ej. Intel Core i7-12700"
+                            value={formData.procesador} onChange={e => setFormData({...formData, procesador: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            <Layout className="w-3 h-3" /> Memoria RAM
+                        </label>
+                        <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                            placeholder="Ej. 16 GB DDR4"
+                            value={formData.ram} onChange={e => setFormData({...formData, ram: e.target.value})} />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2">
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                            <HardDrive className="w-3 h-3" /> Capacidad de Disco
+                        </label>
+                        <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                            placeholder="Ej. 512 GB o 1 TB"
+                            value={formData.disco_capacidad} onChange={e => setFormData({...formData, disco_capacidad: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Tipo Disco</label>
+                        <select required className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                            value={formData.disco_tipo} onChange={e => setFormData({...formData, disco_tipo: e.target.value})}>
+                            <option value="SSD">SSD</option>
+                            <option value="NVMe">NVMe</option>
+                            <option value="HDD">HDD</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> Sistema Operativo
+                    </label>
+                    <input required type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-slate-700 dark:text-white"
+                        placeholder="Ej. Windows 11 Pro 64-bit"
+                        value={formData.sistema_operativo} onChange={e => setFormData({...formData, sistema_operativo: e.target.value})} />
+                </div>
+            </div>
+          )}
+
+          {/* Fila: Detalles Específicos Adicionales */}
+          {tipos.find(t => t.id === Number(formData.tipo_equipo_id))?.nombre.toLowerCase().includes('laptop') && (
              <div>
                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Serie Cargador</label>
                <input type="text" className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white"
@@ -367,7 +432,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
            </div>
            
            <div className="relative">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Observaciones (Opcional)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 flex justify-between">Observaciones (Opcional)</label>
               <textarea className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 dark:text-white pr-10" rows={3}
                  value={formData.observaciones} onChange={e => setFormData({...formData, observaciones: e.target.value})} />
               
@@ -389,7 +454,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       {/* --- RETURN / DISPOSAL (PART 1: FIELDS) --- */}
       {['RETURN', 'MARK_DISPOSAL', 'BAJA', 'TO_MAINTENANCE'].includes(action || '') && (
         <>
-           {/* Solo mostrar ubicación de destino si es RETORNO o PARA BAJA */}
            {['RETURN', 'MARK_DISPOSAL'].includes(action || '') && (
                <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Ubicación (Bodega)</label>
@@ -423,7 +487,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
               )}
            </div>
 
-           {/* Checkbox para liberar licencias solo en devolución */}
            {action === 'RETURN' && (
                <div className="pt-2 mb-2">
                    <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-red-50 dark:bg-red-900/20">
@@ -438,19 +501,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                                <Unplug className="w-4 h-4 text-red-600 dark:text-red-400" />
                                Liberar Licencias Asignadas
                            </div>
-                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                               Si se marca, se desvincularán todas las licencias de software del usuario que devuelve el equipo.
-                           </p>
-                           {formData.releaseLicenses && userLicenses.length > 0 && (
-                               <div className="mt-2 pl-2 border-l-2 border-red-300 dark:border-red-700">
-                                   <p className="text-xs text-slate-700 dark:text-slate-300 font-semibold mb-1">Se liberarán {userLicenses.length} licencias:</p>
-                                   <ul className="text-xs text-slate-600 dark:text-slate-400 list-disc list-inside">
-                                       {userLicenses.map((lic, idx) => (
-                                           <li key={idx} className="truncate">{lic}</li>
-                                       ))}
-                                   </ul>
-                               </div>
-                           )}
                        </div>
                    </label>
                </div>
@@ -462,7 +512,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       {isRestrictedAction && (
            <div className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mt-3">
                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Documentación Obligatoria</p>
-               
                <div className="flex gap-3 mb-3">
                    <button 
                        type="button" 
@@ -504,13 +553,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                        <button type="button" onClick={() => setEvidenceFile(null)} className="text-slate-400 hover:text-red-500">
                            <X className="w-4 h-4" />
                        </button>
-                   </div>
-               )}
-               
-               {(!hasGeneratedDoc || !evidenceFile) && (
-                   <div className="flex items-start gap-2 mt-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/10 p-2 rounded">
-                       <AlertCircle className="w-4 h-4 shrink-0" />
-                       <span>Debe descargar el acta y subirla firmada para continuar.</span>
                    </div>
                )}
            </div>

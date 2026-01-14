@@ -25,7 +25,7 @@ export const useEquipmentTypes = () => {
     loadData();
   }, [loadData]);
 
-  const createType = async (data: { nombre: string; descripcion: string }) => {
+  const createType = async (data: { nombre: string; descripcion: string; frecuencia_anual: number }) => {
     try {
       await api.createTipoEquipo(data);
       await loadData();
@@ -37,7 +37,7 @@ export const useEquipmentTypes = () => {
     }
   };
 
-  const updateType = async (id: number, data: { nombre: string; descripcion: string }) => {
+  const updateType = async (id: number, data: { nombre: string; descripcion: string; frecuencia_anual: number }) => {
     try {
       await api.updateTipoEquipo(id, data);
       await loadData();

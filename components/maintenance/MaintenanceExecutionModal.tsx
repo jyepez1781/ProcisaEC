@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { DetallePlan, EvidenciaMantenimiento } from '../../types';
 import { Modal } from '../common/Modal';
@@ -42,13 +41,14 @@ export const MaintenanceExecutionModal: React.FC<ExecutionModalProps> = ({ isOpe
     }
   };
 
+  /* Fix: Use gemini-3-flash-preview for text rewriting tasks */
   const handleAIAssist = async () => {
     if (!formData.observaciones.trim()) return;
     setIsAiLoading(true);
     try {
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: `Actúa como un técnico experto en soporte IT. Reescribe el siguiente reporte de hallazgos de mantenimiento para que sea más formal, técnico y preciso. Corrige ortografía y gramática. Solo devuelve el texto mejorado sin introducciones. Texto original: "${formData.observaciones}"`,
         });
         const text = response.text;

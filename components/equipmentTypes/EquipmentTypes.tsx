@@ -21,7 +21,7 @@ const EquipmentTypes: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleFormSubmit = async (data: { nombre: string; descripcion: string }) => {
+  const handleFormSubmit = async (data: { nombre: string; descripcion: string; frecuencia_anual: number }) => {
     if (editingItem) {
       return await actions.updateType(editingItem.id, data);
     } else {

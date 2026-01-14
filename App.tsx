@@ -9,6 +9,7 @@ import OrganizationManager from './components/organizationManager/OrganizationMa
 import UserManager from './components/userManager/UserManager';
 import MaintenanceManager from './components/maintenanceManager/MaintenanceManager';
 import MaintenancePlanning from './components/maintenance/MaintenancePlanning';
+import ReplacementPlanning from './components/replacementPlan/ReplacementPlanning';
 import LicenseManager from './components/licenseManager/LicenseManager';
 import MigrationPage from './components/migration/MigrationPage';
 import Settings from './components/settings/Settings';
@@ -31,6 +32,7 @@ const App: React.FC = () => {
           <Route path="/equipos" element={<EquipmentList />} />
           <Route path="/mantenimiento" element={<MaintenanceManager />} />
           <Route path="/planificacion" element={<MaintenancePlanning />} />
+          <Route path="/plan-recambio" element={<ReplacementPlanning />} />
           <Route path="/tipos" element={<EquipmentTypes />} />
           <Route path="/usuarios" element={<UserManager currentUser={user} />} />
           <Route path="/organizacion" element={<OrganizationManager />} />
