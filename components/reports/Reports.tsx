@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../../services/reportService';
 import { Usuario, Equipo } from '../../types';
-import { History, CalendarRange, Wrench, ShieldAlert, RefreshCw, Key, Trash2 } from 'lucide-react';
+import { History, CalendarRange, Wrench, ShieldAlert, RefreshCw, Key, Trash2, Box } from 'lucide-react';
 import { AssignmentsTab } from './AssignmentsTab';
 import { HistoryTab } from './HistoryTab';
 import { MaintenanceReportTab } from './MaintenanceReportTab';
@@ -10,9 +10,10 @@ import { WarrantiesTab } from './WarrantiesTab';
 import { ReplacementTab } from './ReplacementTab';
 import { LicenseReportTab } from './LicenseReportTab';
 import { DisposalReportTab } from './DisposalReportTab';
+import { StockReportTab } from './StockReportTab';
 
 const Reports: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('LICENSES');
+  const [activeTab, setActiveTab] = useState('STOCK');
   
   // Data for Assignments Tab (shared logic)
   const [users, setUsers] = useState<Usuario[]>([]);
@@ -38,6 +39,7 @@ const Reports: React.FC = () => {
       <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Centro de Reportes</h2>
       
       <div className="flex border-b border-slate-200 dark:border-slate-700 overflow-x-auto bg-white dark:bg-slate-800 rounded-t-lg shadow-sm">
+        <TabButton id="STOCK" icon={Box} label="Stock de Inventario" />
         <TabButton id="LICENSES" icon={Key} label="Licencias Asignadas" />
         <TabButton id="ASSIGNMENTS" icon={CalendarRange} label="Asignaciones" />
         <TabButton id="HISTORY" icon={History} label="Bitácora de Movimientos" />
@@ -48,6 +50,7 @@ const Reports: React.FC = () => {
       </div>
 
       <div className="bg-white dark:bg-slate-800 p-6 rounded-b-lg shadow-sm border border-t-0 border-slate-200 dark:border-slate-700 min-h-[500px]">
+        {activeTab === 'STOCK' && <StockReportTab />}
         {activeTab === 'LICENSES' && <LicenseReportTab />}
         {activeTab === 'ASSIGNMENTS' && <AssignmentsTab usuarios={users} equipos={equipos} />}
         {activeTab === 'HISTORY' && <HistoryTab />}

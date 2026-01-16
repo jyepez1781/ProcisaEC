@@ -4,6 +4,185 @@ import { formatCurrency } from './formatters';
 import Swal from 'sweetalert2';
 
 /**
+ * Genera el reporte de stock completo en HTML para PDF (Ajustado a A4 Vertical)
+ */
+export const getStockReportHTML = (equipos: Equipo[]): string => {
+  const brandBlue = '#1e3a8a';
+  const brandOrange = '#ea580c';
+  const fechaHoy = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Calcular Resumen de Stock
+  const summary: Record<string, Record<string, number>> = {};
+  equipos.forEach(eq => {
+    const t = eq.tipo_nombre || 'Otros';
+    const s = eq.estado;
+    if (!summary[t]) summary[t] = {};
+    summary[t][s] = (summary[t][s] || 0) + 1;
+  });
+
+  // Agrupar para el reporte PDF (Cuerpo de la tabla)
+  const grouped = equipos.reduce((acc, eq) => {
+    const type = eq.tipo_nombre || 'Otros';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(eq);
+    return acc;
+  }, {} as Record<string, Equipo[]>);
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Reporte de Stock de Inventario IT</title>
+        <style>
+          @page { size: A4 portrait; margin: 1cm; }
+          body { font-family: 'Inter', Arial, sans-serif; color: #1e293b; font-size: 7.5pt; line-height: 1.25; margin: 0; }
+          
+          .header { border-bottom: 2px solid ${brandBlue}; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+          .header-title { font-weight: 800; color: ${brandBlue}; font-size: 13pt; text-transform: uppercase; margin: 0; }
+          .header-meta { text-align: right; font-size: 7.5pt; color: #64748b; }
+          
+          .summary-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; margin-bottom: 15px; }
+          .summary-title { font-weight: 700; font-size: 7pt; text-transform: uppercase; color: ${brandBlue}; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px; }
+          .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .summary-item { display: flex; flex-direction: column; gap: 1px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 3px; }
+          .summary-type { font-weight: 700; font-size: 7pt; color: #334155; }
+          .summary-details { display: flex; flex-wrap: wrap; gap: 4px; font-size: 6.5pt; }
+          .badge-s { background: #fff; padding: 0px 4px; border-radius: 3px; border: 1px solid #e2e8f0; font-weight: 600; color: #475569; }
+
+          .stats-row { display: flex; gap: 8px; margin-bottom: 15px; }
+          .stat-card { border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 4px; background: #f8fafc; border-left: 3px solid ${brandOrange}; flex: 1; }
+          .stat-label { font-size: 6.5pt; font-weight: 700; color: #64748b; text-transform: uppercase; }
+          .stat-value { font-size: 10pt; font-weight: 800; color: #0f172a; }
+
+          .type-section { margin-bottom: 15px; page-break-inside: avoid; }
+          .type-header { background: ${brandBlue}; color: white; padding: 4px 10px; font-weight: 800; text-transform: uppercase; font-size: 8pt; display: flex; justify-content: space-between; }
+          
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+          th { background-color: #f1f5f9; color: #475569; font-weight: 700; text-transform: uppercase; text-align: left; padding: 5px 6px; border-bottom: 1px solid #cbd5e1; font-size: 6.5pt; }
+          td { padding: 5px 6px; border-bottom: 1px solid #f1f5f9; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; }
+          
+          .code { font-weight: 700; color: #0f172a; }
+          .specs { color: #475569; font-size: 6.5pt; }
+          .status-tag { display: inline-block; padding: 1px 3px; border-radius: 3px; font-size: 6pt; font-weight: 700; text-transform: uppercase; background: #f1f5f9; border: 1px solid #e2e8f0; }
+
+          .footer { margin-top: 15px; text-align: center; font-size: 6.5pt; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 8px; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1 class="header-title">Inventario Consolidado IT</h1>
+            <div style="color: ${brandOrange}; font-weight: 700; font-size: 8pt;">Stock Operativo Actualizado</div>
+          </div>
+          <div class="header-meta">
+            <strong>Emitido:</strong> ${fechaHoy}<br>
+            <strong>Total Activos:</strong> ${equipos.length}
+          </div>
+        </div>
+
+        <div class="summary-box">
+           <div class="summary-title">Conteo por Categoría y Estado</div>
+           <div class="summary-grid">
+              ${Object.entries(summary).map(([type, states]) => `
+                <div class="summary-item">
+                   <div class="summary-type">${type}</div>
+                   <div class="summary-details">
+                      ${Object.entries(states).map(([s, count]) => `
+                        <span class="badge-s">${s}: ${count}</span>
+                      `).join('')}
+                   </div>
+                </div>
+              `).join('')}
+           </div>
+        </div>
+
+        <div class="stats-row">
+           <div class="stat-card">
+              <div class="stat-label">Valor en Libros</div>
+              <div class="stat-value">${formatCurrency(equipos.reduce((a,b) => a + (Number(b.valor_compra) || 0), 0))}</div>
+           </div>
+           <div class="stat-card" style="border-left-color: #3b82f6;">
+              <div class="stat-label">En Uso (Activos)</div>
+              <div class="stat-value">${equipos.filter(e => e.estado === 'Activo').length}</div>
+           </div>
+           <div class="stat-card" style="border-left-color: #10b981;">
+              <div class="stat-label">Disponibles</div>
+              <div class="stat-value">${equipos.filter(e => e.estado === 'Disponible').length}</div>
+           </div>
+        </div>
+
+        ${Object.entries(grouped).map(([type, items]) => `
+          <div class="type-section">
+            <div class="type-header">
+               <span>${type}</span>
+               <span>${items.length} Unidades</span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 20%">Código / Serie</th>
+                  <th style="width: 20%">Marca / Modelo</th>
+                  <th style="width: 12%">Estado</th>
+                  <th style="width: 23%">Responsable</th>
+                  <th style="width: 25%">Ficha Técnica</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map(eq => `
+                  <tr>
+                    <td>
+                       <div class="code">${eq.codigo_activo}</div>
+                       <div style="color:#64748b; font-size:6pt;">SN: ${eq.numero_serie}</div>
+                    </td>
+                    <td>
+                       <div style="font-weight:600;">${eq.marca}</div>
+                       <div style="color:#64748b;">${eq.modelo}</div>
+                    </td>
+                    <td><span class="status-tag">${eq.estado}</span></td>
+                    <td>
+                       ${eq.responsable_nombre ? `<div style="font-weight:600;">${eq.responsable_nombre}</div><div style="font-size:6pt; color:#64748b;">${eq.ubicacion_nombre}</div>` : '<span style="color:#94a3b8; font-style:italic;">En Bodega</span>'}
+                    </td>
+                    <td class="specs">
+                       ${eq.procesador ? `
+                         <div><strong>CPU:</strong> ${eq.procesador}</div>
+                         <div><strong>RAM:</strong> ${eq.ram} | <strong>Disk:</strong> ${eq.disco_capacidad}</div>
+                         <div style="color:${brandBlue};"><strong>S.O:</strong> ${eq.sistema_operativo || 'N/A'}</div>
+                       ` : '---'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `).join('')}
+
+        <div class="footer">
+          Documento generado automáticamente por Sistema InvenTory - Gestión de Activos de Red y Cómputo.
+        </div>
+      </body>
+    </html>
+  `;
+};
+
+/**
+ * Dispara la generación del PDF de Stock (Ajustado a Vertical)
+ */
+export const generateStockReportPDF = (equipos: Equipo[]) => {
+  const printWindow = window.open('', '_blank', 'width=900,height=800');
+  if (!printWindow) {
+    Swal.fire('Error', 'Ventana emergente bloqueada. Por favor habilítalas.', 'warning');
+    return;
+  }
+
+  const htmlContent = getStockReportHTML(equipos);
+  const printScript = `<script>window.onload = function() { setTimeout(function(){ window.print(); }, 800); }</script>`;
+  const fullHtml = htmlContent.replace('</body>', `${printScript}</body>`);
+
+  printWindow.document.write(fullHtml);
+  printWindow.document.close();
+};
+
+/**
  * Genera el string HTML del documento de asignación (Carta Responsiva + Anexo 1)
  */
 export const getAssignmentDocumentHTML = (usuario: Usuario, equipo: Equipo): string => {
