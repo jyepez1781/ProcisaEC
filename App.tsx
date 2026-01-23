@@ -13,6 +13,7 @@ import ReplacementPlanning from './components/replacementPlan/ReplacementPlannin
 import LicenseManager from './components/licenseManager/LicenseManager';
 import MigrationPage from './components/migration/MigrationPage';
 import Settings from './components/settings/Settings';
+import VaultManager from './components/vault/VaultManager';
 import Login from './components/login/Login';
 import Layout from './components/Layout';
 import { useAuth } from './hooks/useAuth';
@@ -37,6 +38,7 @@ const App: React.FC = () => {
           <Route path="/usuarios" element={<UserManager currentUser={user} />} />
           <Route path="/organizacion" element={<OrganizationManager />} />
           <Route path="/licencias" element={<LicenseManager />} />
+          <Route path="/baul" element={<VaultManager />} />
           <Route path="/migracion" element={<MigrationPage />} />
           <Route path="/reportes" element={<Reports />} />
           <Route path="/configuracion" element={<Settings />} />

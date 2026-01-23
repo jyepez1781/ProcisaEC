@@ -3,7 +3,7 @@ import {
   Usuario, Equipo, TipoEquipo, Departamento, Puesto, Ciudad, Pais,
   EstadoEquipo, RolUsuario, Licencia, PlanMantenimiento, 
   DetallePlan, EstadoPlan, EmailConfig, Notificacion, PlanRecambio, DetallePlanRecambio,
-  TipoLicencia
+  TipoLicencia, EntradaBoveda
 } from '../types';
 import { liveApi } from './liveApi';
 
@@ -13,10 +13,6 @@ const getDate = (daysOffset: number) => {
     const d = new Date();
     d.setDate(d.getDate() + daysOffset);
     return d.toISOString().split('T')[0];
-};
-
-const calculateAge = (dateStr: string) => {
-  return new Date().getFullYear() - new Date(dateStr).getFullYear();
 };
 
 // --- ESTADO GLOBAL MOCK ---
@@ -64,10 +60,31 @@ let MOCK_EQUIPOS: Equipo[] = [
   }
 ];
 
+let MOCK_BOVEDA: EntradaBoveda[] = [
+    { id: 1, servicio: 'Servidor Web Producción', usuario: 'root', password_hash: 'ProdAdmin2024!', url: '192.168.1.50', categoria: 'Servidor', fecha_actualizacion: '2024-01-01' },
+    { id: 2, servicio: 'Router Principal Fortinet', usuario: 'admin', password_hash: 'FW_Sec_99*', url: '10.0.0.1', categoria: 'Redes', fecha_actualizacion: '2024-02-15' },
+    { id: 3, servicio: 'Consola Antivirus ESET', usuario: 'sysadmin', password_hash: 'EsetVault_55', url: 'https://eset.company.com', categoria: 'Software', fecha_actualizacion: '2024-03-10' }
+];
+
 let MOCK_PLANES_RECAMBIO: PlanRecambio[] = [];
 let MOCK_DETALLES_RECAMBIO: DetallePlanRecambio[] = [];
 
 const internalMockApi = {
+  // --- Vault ---
+  getBoveda: async () => { await simulateDelay(); return [...MOCK_BOVEDA]; },
+  createEntradaBoveda: async (data: any) => { 
+    await simulateDelay(); 
+    const newItem = { ...data, id: Date.now(), fecha_actualizacion: new Date().toISOString().split('T')[0] };
+    MOCK_BOVEDA.push(newItem);
+    return newItem;
+  },
+  updateEntradaBoveda: async (id: number, data: any) => {
+    await simulateDelay();
+    MOCK_BOVEDA = MOCK_BOVEDA.map(e => e.id === id ? { ...e, ...data, fecha_actualizacion: new Date().toISOString().split('T')[0] } : e);
+    return MOCK_BOVEDA.find(e => e.id === id);
+  },
+  deleteEntradaBoveda: async (id: number) => { await simulateDelay(); MOCK_BOVEDA = MOCK_BOVEDA.filter(e => e.id !== id); },
+
   // --- Auth ---
   login: async (email: string, password?: string) => { await simulateDelay(); return MOCK_USUARIOS[0]; },
   changePassword: async (userId: number, newPass: string) => { await simulateDelay(); },
@@ -77,17 +94,14 @@ const internalMockApi = {
   createDepartamento: async (data: any) => { await simulateDelay(); return { ...data, id: Date.now() }; },
   updateDepartamento: async (id: number, data: any) => { await simulateDelay(); return { ...data, id }; },
   deleteDepartamento: async (id: number) => { await simulateDelay(); },
-
   getPuestos: async () => { await simulateDelay(); return [{ id: 1, nombre: 'Analista' }]; },
   createPuesto: async (nombre: string) => { await simulateDelay(); return { id: Date.now(), nombre }; },
   updatePuesto: async (id: number, nombre: string) => { await simulateDelay(); return { id, nombre }; },
   deletePuesto: async (id: number) => { await simulateDelay(); },
-
   getPaises: async () => { await simulateDelay(); return [...MOCK_PAISES]; },
   createPais: async (data: any) => { await simulateDelay(); return { ...data, id: Date.now() }; },
   updatePais: async (id: number, data: any) => { await simulateDelay(); return { ...data, id }; },
   deletePais: async (id: number) => { await simulateDelay(); },
-
   getCiudades: async () => { await simulateDelay(); return [...MOCK_CIUDADES]; },
   createCiudad: async (data: any) => { await simulateDelay(); return { ...data, id: Date.now() }; },
   updateCiudad: async (id: number, data: any) => { await simulateDelay(); return { ...data, id }; },
@@ -156,16 +170,13 @@ const internalMockApi = {
                 ...e,
                 estado: nuevoEstado as EstadoEquipo,
                 serie_cargador: data.serie_cargador || e.serie_cargador,
-                // Aplicar actualización de especificaciones técnicas
                 procesador: data.procesador !== undefined ? data.procesador : e.procesador,
                 ram: data.ram !== undefined ? data.ram : e.ram,
                 disco_capacidad: data.disco_capacidad !== undefined ? data.disco_capacidad : e.disco_capacidad,
                 disco_tipo: data.disco_tipo !== undefined ? data.disco_tipo : e.disco_tipo,
                 sistema_operativo: data.sistema_operativo !== undefined ? data.sistema_operativo : e.sistema_operativo,
-                // Si va a bodega, actualizar ubicación
                 ubicacion_id: data.ubicacionId || e.ubicacion_id,
                 ubicacion_nombre: data.ubicacionNombre || e.ubicacion_nombre,
-                // Si va a usuario activo, el estado ya lo define el parametro nuevoEstado
                 responsable_id: (nuevoEstado === EstadoEquipo.DISPONIBLE || nuevoEstado === EstadoEquipo.BAJA) ? undefined : e.responsable_id,
                 responsable_nombre: (nuevoEstado === EstadoEquipo.DISPONIBLE || nuevoEstado === EstadoEquipo.BAJA) ? undefined : e.responsable_nombre,
                 ultimo_mantenimiento: new Date().toISOString().split('T')[0]
@@ -222,12 +233,8 @@ const internalMockApi = {
   bulkCreatePuestos: async (rows: any[]) => { await simulateDelay(); return rows.length; },
   bulkCreateAsignaciones: async (rows: any[]) => { await simulateDelay(); return rows.length; },
 
-  // --- REPLACEMENT PLANNING ENDPOINTS ---
-  getReplacementPlans: async (): Promise<PlanRecambio[]> => {
-    await simulateDelay();
-    return [...MOCK_PLANES_RECAMBIO];
-  },
-
+  // --- REPLACEMENT PLANNING ---
+  getReplacementPlans: async (): Promise<PlanRecambio[]> => { await simulateDelay(); return [...MOCK_PLANES_RECAMBIO]; },
   getReplacementPlanDetails: async (planId: number): Promise<{ plan: PlanRecambio, details: DetallePlanRecambio[] }> => {
     await simulateDelay();
     const plan = MOCK_PLANES_RECAMBIO.find(p => p.id === planId);
@@ -235,36 +242,29 @@ const internalMockApi = {
     if (!plan) throw new Error("Plan no encontrado");
     return { plan, details };
   },
-
   getReplacementCandidates: async (): Promise<Equipo[]> => {
     await simulateDelay();
     const RENOVATION_TYPES = ['desktop', 'laptop', 'workstation', 'portatil', 'notebook', 'servidor'];
-    
     return MOCK_EQUIPOS.filter(e => {
         const typeName = e.tipo_nombre?.toLowerCase() || '';
         const isComputing = RENOVATION_TYPES.some(t => typeName.includes(t));
         const age = calculateAge(e.fecha_compra);
         const isActive = e.estado !== EstadoEquipo.BAJA;
         const notPlanned = !e.plan_recambio_id;
-
         return isComputing && age >= 4 && isActive && notPlanned;
     });
   },
-
   saveReplacementPlan: async (plan: PlanRecambio, details: DetallePlanRecambio[]): Promise<boolean> => {
     await simulateDelay();
     MOCK_PLANES_RECAMBIO.push(plan);
     MOCK_DETALLES_RECAMBIO.push(...details);
-
     const equipoIds = details.map(d => d.equipo_id);
-    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => 
-        equipoIds.includes(e.id) ? { ...e, plan_recambio_id: plan.id } : e
-    );
-
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => equipoIds.includes(e.id) ? { ...e, plan_recambio_id: plan.id } : e);
     return true;
   }
 };
 
+const calculateAge = (dateStr: string) => { return new Date().getFullYear() - new Date(dateStr).getFullYear(); };
 const simulateDelay = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms));
 export const api = USE_LIVE_API ? liveApi : internalMockApi;
 export { MOCK_EQUIPOS, MOCK_USUARIOS, MOCK_DEPARTAMENTOS, MOCK_CIUDADES, MOCK_PAISES };

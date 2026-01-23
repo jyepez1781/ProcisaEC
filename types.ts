@@ -1,5 +1,4 @@
 
-
 export enum RolUsuario {
   ADMIN = 'Administrador',
   TECNICO = 'Técnico',
@@ -113,8 +112,21 @@ export interface Equipo {
   disco_capacidad?: string;
   disco_tipo?: 'SSD' | 'HDD' | 'NVMe';
   sistema_operativo?: string;
-  // --- Control de Recambio ---
-  plan_recambio_id?: number; // Referencia al plan donde fue incluido
+  plan_recambio_id?: number;
+}
+
+// --- Vault / Baúl de Claves ---
+export type CategoriaBoveda = 'Servidor' | 'Redes' | 'Software' | 'Base de Datos' | 'Panel Admin' | 'Otros';
+
+export interface EntradaBoveda {
+  id: number;
+  servicio: string;
+  usuario: string;
+  password_hash: string; // En frontend se maneja el texto plano que viene de la API segura
+  url?: string;
+  categoria: CategoriaBoveda;
+  notas?: string;
+  fecha_actualizacion: string;
 }
 
 // --- Planning & Replacement ---
@@ -144,7 +156,6 @@ export interface DetallePlan {
   tecnico_responsable?: string;
 }
 
-// --- NUEVO: Plan de Recambio ---
 export interface PlanRecambio {
   id: number;
   anio: number;
@@ -220,8 +231,6 @@ export interface RegistroMantenimiento {
   archivo_orden?: string;
 }
 
-// --- ADDED MISSING INTERFACES ---
-/* Added TipoLicencia to resolve export errors in services and components */
 export interface TipoLicencia {
   id: number;
   nombre: string;
@@ -229,7 +238,6 @@ export interface TipoLicencia {
   descripcion: string;
 }
 
-/* Added EvidenciaMantenimiento to resolve export errors in maintenance planning */
 export interface EvidenciaMantenimiento {
   id: number;
   detalle_id: number;

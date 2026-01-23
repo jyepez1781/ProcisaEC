@@ -1,17 +1,14 @@
 
-
 import { 
   Equipo, Usuario, Departamento, Puesto, TipoEquipo, HistorialMovimiento, 
   HistorialAsignacion, RegistroMantenimiento, Licencia, 
   ReporteGarantia, Notificacion, Ciudad, PlanMantenimiento, DetallePlan, 
-  EmailConfig, TipoLicencia, EvidenciaMantenimiento, PlanRecambio, DetallePlanRecambio
+  EmailConfig, TipoLicencia, EvidenciaMantenimiento, PlanRecambio, DetallePlanRecambio,
+  EntradaBoveda
 } from '../types';
 
-// URL base de tu API Laravel (ajusta el puerto si es necesario)
 const API_URL = 'http://localhost:8000/api';
-// const API_URL = 'http://10.68.104.57:8000/api';
 
-// Helper para headers con Token (Asumiendo Laravel Sanctum)
 const getHeaders = () => {
   const token = localStorage.getItem('auth_token');
   return {
@@ -27,12 +24,32 @@ const handleResponse = async (response: Response) => {
     throw new Error(errorData.message || 'Error en la petición al servidor');
   }
   const body = await response.json().catch(() => ({}));
-  // Si la API usa paginación de Laravel, devolver solo el array de datos
   if (body && Array.isArray(body.data)) return body.data;
   return body;
 };
 
 export const liveApi = {
+  // --- Vault ---
+  getBoveda: async (): Promise<EntradaBoveda[]> => {
+    const response = await fetch(`${API_URL}/boveda`, { headers: getHeaders() });
+    return handleResponse(response);
+  },
+  createEntradaBoveda: async (data: any): Promise<EntradaBoveda> => {
+    const response = await fetch(`${API_URL}/boveda`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(data)
+    });
+    return handleResponse(response);
+  },
+  updateEntradaBoveda: async (id: number, data: any): Promise<EntradaBoveda> => {
+    const response = await fetch(`${API_URL}/boveda/${id}`, {
+      method: 'PUT', headers: getHeaders(), body: JSON.stringify(data)
+    });
+    return handleResponse(response);
+  },
+  deleteEntradaBoveda: async (id: number): Promise<void> => {
+    await fetch(`${API_URL}/boveda/${id}`, { method: 'DELETE', headers: getHeaders() });
+  },
+
   // --- Auth ---
   login: async (email: string, password?: string): Promise<Usuario> => {
     const response = await fetch(`${API_URL}/login`, {
@@ -41,18 +58,13 @@ export const liveApi = {
       body: JSON.stringify({ email, password })
     });
     const data = await handleResponse(response);
-    // Guardar token
-    if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-    }
+    if (data.token) localStorage.setItem('auth_token', data.token);
     return data.user;
   },
 
   changePassword: async (userId: number, newPass: string): Promise<void> => {
     await fetch(`${API_URL}/change-password`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ user_id: userId, password: newPass })
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ user_id: userId, password: newPass })
     });
   },
 
@@ -76,7 +88,6 @@ export const liveApi = {
   deleteDepartamento: async (id: number): Promise<void> => {
     await fetch(`${API_URL}/departamentos/${id}`, { method: 'DELETE', headers: getHeaders() });
   },
-
   getPuestos: async (): Promise<Puesto[]> => {
     const response = await fetch(`${API_URL}/puestos`, { headers: getHeaders() });
     return handleResponse(response);
@@ -96,8 +107,6 @@ export const liveApi = {
   deletePuesto: async (id: number): Promise<void> => {
     await fetch(`${API_URL}/puestos/${id}`, { method: 'DELETE', headers: getHeaders() });
   },
-
-  // --- PAISES (live) ---
   getPaises: async (): Promise<any[]> => {
     const response = await fetch(`${API_URL}/paises`, { headers: getHeaders() });
     return handleResponse(response);
@@ -117,7 +126,6 @@ export const liveApi = {
   deletePais: async (id: number): Promise<void> => {
     await fetch(`${API_URL}/paises/${id}`, { method: 'DELETE', headers: getHeaders() });
   },
-
   getCiudades: async (): Promise<Ciudad[]> => {
     const response = await fetch(`${API_URL}/ciudades`, { headers: getHeaders() });
     return handleResponse(response);
@@ -206,15 +214,11 @@ export const liveApi = {
     fd.append('ubicacion', ubicacion || '');
     fd.append('observaciones', observaciones || '');
     if (archivo) fd.append('archivo', archivo);
-
     const response = await fetch(`${API_URL}/equipos/${id}/asignar`, {
-      method: 'POST',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, // no Content-Type
-      body: fd
+      method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: fd
     });
     return handleResponse(response);
   },
-
   recepcionarEquipo: async (id: number, observaciones: string, ubicacionId?: number, ubicacionNombre?: string, liberarLicencias: boolean = false, archivo?: File): Promise<Equipo> => {
     const token = localStorage.getItem('auth_token');
     const fd = new FormData();
@@ -223,11 +227,8 @@ export const liveApi = {
     if (ubicacionNombre) fd.append('ubicacion_nombre', ubicacionNombre);
     fd.append('liberar_licencias', liberarLicencias ? '1' : '0');
     if (archivo) fd.append('archivo', archivo);
-
     const response = await fetch(`${API_URL}/equipos/${id}/recepcionar`, {
-      method: 'POST',
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, // no Content-Type
-      body: fd
+      method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: fd
     });
     return handleResponse(response);
   },
@@ -238,13 +239,10 @@ export const liveApi = {
       fd.append('observaciones', motivo || '');
       fd.append('archivo', archivo);
       const response = await fetch(`${API_URL}/equipos/${id}/baja`, {
-        method: 'POST',
-        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: fd
+        method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: fd
       });
       return handleResponse(response);
     }
-
     const response = await fetch(`${API_URL}/equipos/${id}/baja`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ observaciones: motivo })
     });
@@ -257,40 +255,25 @@ export const liveApi = {
     return handleResponse(response);
   },
   finalizarMantenimiento: async (equipoId: number, data: any, nuevoEstado: string, archivo?: File): Promise<any> => {
-  const url = `${API_URL}/equipos/${equipoId}/finalizar-mantenimiento`;
-  const token = localStorage.getItem('auth_token');
-
-  // Si hay archivo, enviar multipart/form-data (dejar que el navegador ponga Content-Type con boundary)
-  if (archivo) {
-    const fd = new FormData();
-    if (data.tipo !== undefined) fd.append('tipo', data.tipo);
-    if (data.proveedor !== undefined) fd.append('proveedor', data.proveedor);
-    if (data.costo !== undefined) fd.append('costo', String(data.costo));
-    if (data.descripcion !== undefined) fd.append('descripcion', data.descripcion);
-    if (data.ubicacionId !== undefined) fd.append('ubicacion_id', String(data.ubicacionId));
-    if (data.ubicacionNombre !== undefined) fd.append('ubicacion_nombre', String(data.ubicacionNombre));
-    if (data.serie_cargador !== undefined) fd.append('serie_cargador', String(data.serie_cargador));
-    fd.append('nuevo_estado', nuevoEstado);
-    fd.append('archivo_orden', archivo, (archivo as File).name);
-
-    const headers: Record<string,string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: fd
-    });
+    const url = `${API_URL}/equipos/${equipoId}/finalizar-mantenimiento`;
+    const token = localStorage.getItem('auth_token');
+    if (archivo) {
+      const fd = new FormData();
+      if (data.tipo !== undefined) fd.append('tipo', data.tipo);
+      if (data.proveedor !== undefined) fd.append('proveedor', data.proveedor);
+      if (data.costo !== undefined) fd.append('costo', String(data.costo));
+      if (data.descripcion !== undefined) fd.append('descripcion', data.descripcion);
+      if (data.ubicacionId !== undefined) fd.append('ubicacion_id', String(data.ubicacionId));
+      if (data.ubicacionNombre !== undefined) fd.append('ubicacion_nombre', String(data.ubicacionNombre));
+      if (data.serie_cargador !== undefined) fd.append('serie_cargador', String(data.serie_cargador));
+      fd.append('nuevo_estado', nuevoEstado);
+      fd.append('archivo_orden', archivo, (archivo as File).name);
+      const response = await fetch(url, { method: 'POST', headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: fd });
+      return handleResponse(response);
+    }
+    const response = await fetch(url, { method: 'POST', headers: getHeaders(), body: JSON.stringify({ ...data, nuevo_estado: nuevoEstado }) });
     return handleResponse(response);
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ ...data, nuevo_estado: nuevoEstado })
-  });
-  return handleResponse(response);
-},
+  },
   marcarParaBaja: async (id: number, observaciones: string, ubicacionId: number, ubicacionNombre: string): Promise<Equipo> => {
     const response = await fetch(`${API_URL}/equipos/${id}/pre-baja`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ observaciones, ubicacion_id: ubicacionId, ubicacion_nombre: ubicacionNombre })
@@ -301,10 +284,7 @@ export const liveApi = {
     const formData = new FormData();
     formData.append('archivo', file);
     const response = await fetch(`${API_URL}/asignaciones/${id}/archivo`, {
-        method: 'POST',
-        // Do NOT set Content-Type header for FormData, let browser set it with boundary
-        headers: { ...(localStorage.getItem('auth_token') ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } : {}) },
-        body: formData
+        method: 'POST', headers: { ...(localStorage.getItem('auth_token') ? { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } : {}) }, body: formData
     });
     return handleResponse(response);
   },
@@ -333,17 +313,12 @@ export const liveApi = {
     const response = await fetch(`${API_URL}/licencias`, { headers: getHeaders() });
     return handleResponse(response);
   },
-
-agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento: string): Promise<any> => {
-  const response = await fetch(`${API_URL}/tipos-licencia/${tipoId}/add-stock`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({ cantidad, fecha_vencimiento: fechaVencimiento })
- 
-  });
-  return handleResponse(response);
-},
-
+  agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento: string): Promise<any> => {
+    const response = await fetch(`${API_URL}/tipos-licencia/${tipoId}/add-stock`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ cantidad, fecha_vencimiento: fechaVencimiento })
+    });
+    return handleResponse(response);
+  },
   asignarLicencia: async (licenciaId: number, usuarioId: number): Promise<Licencia> => {
     const response = await fetch(`${API_URL}/licencias/${licenciaId}/asignar`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ usuario_id: usuarioId })
@@ -400,44 +375,32 @@ agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento
     const response = await fetch(`${API_URL}/planes-mantenimiento/${planId}`, { headers: getHeaders() });
     return handleResponse(response);
   },
-  
   generateProposal: async (payload: { ciudad_id: number, mes?: number }) => {
     const response = await fetch(`${API_URL}/planes-mantenimiento/propuesta`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(payload)
+      method: 'POST', headers: getHeaders(), body: JSON.stringify(payload)
     });
     return handleResponse(response);
   },
-  
-  // Create a new maintenance plan
   createMaintenancePlan: async (plan: any, details: any[]) : Promise<any> => {
     const response = await fetch(`${API_URL}/planes-mantenimiento`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ ...plan, details })
     });
     return handleResponse(response);
   },
-
-  // Update detail month
   updatePlanDetailMonth: async (detailId: number, month: number): Promise<any> => {
     const response = await fetch(`${API_URL}/detalles-planes-mantenimiento/${detailId}/mes`, {
       method: 'PUT', headers: getHeaders(), body: JSON.stringify({ month })
     });
     return handleResponse(response);
   },
-
-  // Start maintenance from plan detail
   iniciarMantenimientoDesdePlan: async (detailId: number, motivo: string): Promise<any> => {
     const response = await fetch(`${API_URL}/detalles-planes-mantenimiento/${detailId}/iniciar`, {
       method: 'POST', headers: getHeaders(), body: JSON.stringify({ motivo })
     });
     return handleResponse(response);
   },
-
-  // Register execution for a detail
   registerMaintenanceExecution: async (detailId: number, data: any): Promise<any> => {
     const url = `${API_URL}/ejecuciones-mantenimiento/${detailId}`;
-    // handle multipart if archivo is present
     if (data && data.archivo) {
       const fd = new FormData();
       if (data.fecha) fd.append('fecha', data.fecha);
@@ -452,35 +415,27 @@ agregarStockLicencias: async (tipoId: number, cantidad: number, fechaVencimiento
     const response = await fetch(url, { method: 'POST', headers: getHeaders(), body: JSON.stringify(data) });
     return handleResponse(response);
   },
-
-  // Get executions for a detail
   getExecutions: async (detailId: number): Promise<any[]> => {
     const response = await fetch(`${API_URL}/ejecuciones-mantenimiento/${detailId}`, { headers: getHeaders() });
     return handleResponse(response);
   },
-
   getEvidence: async (detailId: number): Promise<any[]> => {
     const response = await fetch(`${API_URL}/evidencias-mantenimiento/${detailId}`, { headers: getHeaders() });
     return handleResponse(response);
   },
 
   // --- Replacement Planning ---
-  /* Added replacement planning methods to liveApi for type parity with internalMockApi */
   getReplacementPlans: async (): Promise<PlanRecambio[]> => {
     const response = await fetch(`${API_URL}/planes-recambio`, { headers: getHeaders() });
     return handleResponse(response);
   },
-
   getReplacementPlanDetails: async (planId: number): Promise<{ plan: PlanRecambio, details: DetallePlanRecambio[] }> => {
     const response = await fetch(`${API_URL}/planes-recambio/${planId}`, { headers: getHeaders() });
     return handleResponse(response);
   },
-
   saveReplacementPlan: async (plan: PlanRecambio, details: DetallePlanRecambio[]): Promise<boolean> => {
     const response = await fetch(`${API_URL}/planes-recambio`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ ...plan, details })
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ ...plan, details })
     });
     return handleResponse(response);
   },

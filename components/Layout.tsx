@@ -1,7 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, Menu, X, Settings as SettingsIcon, Building2, Users, Wrench, Lock, ChevronDown, Key, CalendarClock, Mail, Database, Sun, Moon, ChevronLeft, RefreshCw, Menu as MenuIcon } from 'lucide-react';
+import { 
+  LayoutDashboard, Laptop, FileText, LogOut, Bell, User as UserIcon, 
+  Menu, X, Settings as SettingsIcon, Building2, Users, Wrench, Lock, 
+  ChevronDown, Key, CalendarClock, Mail, Database, Sun, Moon, 
+  ChevronLeft, RefreshCw, Menu as MenuIcon, ShieldCheck
+} from 'lucide-react';
 import { api } from '../services/mockApi';
 import { Usuario, Notificacion } from '../types';
 import Swal from 'sweetalert2';
@@ -21,8 +26,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
   const [notifications, setNotifications] = useState<Notificacion[]>([]);
   
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({ newPass: '', confirmPass: '' });
 
   useEffect(() => {
     const initData = async () => {
@@ -34,19 +37,6 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     };
     initData();
   }, []);
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordForm.newPass !== passwordForm.confirmPass) return;
-    if (!user) return;
-    try {
-      await api.changePassword(user.id, passwordForm.newPass);
-      Swal.fire({ title: '¡Éxito!', text: 'Contraseña actualizada', icon: 'success' });
-      setIsPasswordModalOpen(false);
-    } catch (err: any) {
-      Swal.fire({ title: 'Error', text: err.message, icon: 'error' });
-    }
-  };
 
   const NavItem = ({ to, icon: Icon, label }: { to: string, icon: any, label: string }) => {
     const isActive = location.pathname === to;
@@ -99,6 +89,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
           <NavItem to="/planificacion" icon={CalendarClock} label="Planificación" />
           <NavItem to="/plan-recambio" icon={RefreshCw} label="Plan de Recambio" />
           <NavItem to="/licencias" icon={Key} label="Licencias" />
+          <NavItem to="/baul" icon={ShieldCheck} label="Baúl de Claves" />
           <NavItem to="/reportes" icon={FileText} label="Reportes" />
           <div className={`pt-4 mt-4 border-t border-blue-800 dark:border-slate-800 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
             {!isSidebarCollapsed && <p className="px-4 text-xs font-semibold text-blue-400 dark:text-slate-500 uppercase tracking-wider mb-2">Sistema</p>}
@@ -106,9 +97,14 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             <NavItem to="/configuracion" icon={Mail} label="Config. Correo" />
           </div>
         </nav>
+        <div className="p-4 border-t border-blue-800 dark:border-slate-800">
+           <button onClick={onLogout} className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3 px-4'} py-3 w-full rounded-lg text-red-300 hover:bg-red-900/40 hover:text-white transition-colors`}>
+              <LogOut className="w-5 h-5 shrink-0" />
+              {!isSidebarCollapsed && <span>Cerrar Sesión</span>}
+           </button>
+        </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className={`flex-1 ${mainMarginClass} flex flex-col min-h-screen transition-all duration-300 ease-in-out`}>
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 md:px-8 sticky top-0 z-10 shadow-sm h-16">
           <button className="md:hidden p-2" onClick={() => setIsMobileMenuOpen(true)}>
@@ -132,7 +128,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                   <p className="text-xs text-slate-500 dark:text-slate-400">{user?.rol || 'Invitado'}</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-800 dark:text-blue-200 font-bold">
-                  <UserIcon className="w-5 h-5" />
+                  {user?.nombres.charAt(0)}
                 </div>
               </button>
             </div>
