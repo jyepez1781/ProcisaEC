@@ -357,22 +357,26 @@ export const getAssignmentDocumentHTML = (usuario: Usuario, equipo: Equipo): str
 };
 
 /**
- * Genera el string HTML del Acta de Recepción / Devolución
+ * Genera el string HTML del Acta de Recepción / Devolución estilizada
  */
 export const getReceptionDocumentHTML = (usuario: Usuario, equipo: Equipo, fechaRecepcion: string, observaciones: string, licenciasLiberadas: string[] = []): string => {
-  const fechaCorta = new Date().toLocaleDateString('es-ES');
+  const brandBlue = '#1e3a8a';
+  const brandOrange = '#ea580c';
+  const fechaHoy = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   let licenciasHtml = '';
   if (licenciasLiberadas.length > 0) {
       licenciasHtml = `
-      <div class="section">
-         <div class="label" style="width: 100%; margin-bottom: 5px; font-weight: bold;">Licencias de Software Liberadas:</div>
-         <ul style="margin-top: 5px; font-size: 10pt; padding-left: 20px;">
-            ${licenciasLiberadas.map(l => `<li>${l}</li>`).join('')}
-         </ul>
-         <p style="font-size: 8pt; color: #666; margin-top:5px; font-style: italic;">
-            * El usuario ha entregado las credenciales y/o declara que ya no tiene acceso a estos recursos de software.
-         </p>
+      <div class="section-box" style="margin-top: 20px;">
+         <div class="box-title">
+            <span>Control de Software y Licencias</span>
+         </div>
+         <div style="padding: 15px;">
+            <p style="font-size: 9pt; margin-bottom: 10px; color: #475569;">Las siguientes licencias vinculadas al usuario han sido liberadas o deshabilitadas:</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 9pt; color: ${brandBlue}; font-weight: 600;">
+               ${licenciasLiberadas.map(l => `<li style="margin-bottom: 3px;">${l}</li>`).join('')}
+            </ul>
+         </div>
       </div>
       `;
   }
@@ -381,109 +385,205 @@ export const getReceptionDocumentHTML = (usuario: Usuario, equipo: Equipo, fecha
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Acta de Recepción</title>
+        <title>Acta de Recepción Técnica</title>
         <style>
-          @page { size: A4 portrait; margin: 2cm; }
-          body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; margin: 0; }
-          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
-          .logo-box { text-align: left; margin-bottom: 10px; }
-          .title { font-weight: bold; font-size: 14pt; text-transform: uppercase; margin-bottom: 5px; }
-          .subtitle { font-size: 10pt; font-weight: bold; }
-          .section { margin-bottom: 20px; }
-          .label { font-weight: bold; display: inline-block; width: 150px; }
-          .table-container { margin: 20px 0; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-          th, td { border: 1px solid #000; padding: 8px; text-align: left; font-size: 10pt; }
-          th { background-color: #f2f2f2; font-weight: bold; }
+          @page { size: A4 portrait; margin: 1.5cm; }
+          body { font-family: 'Inter', Arial, sans-serif; font-size: 10pt; line-height: 1.5; color: #334155; margin: 0; }
           
-          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-          .info-item { margin-bottom: 5px; }
+          .header { 
+              text-align: center; 
+              margin-bottom: 25px; 
+              border-bottom: 3px solid ${brandBlue}; 
+              padding-bottom: 15px;
+              position: relative;
+          }
+          .logo-top { max-height: 45px; position: absolute; left: 0; top: 0; }
+          .title { 
+              font-weight: 800; 
+              font-size: 16pt; 
+              text-transform: uppercase; 
+              margin: 0;
+              color: ${brandBlue};
+          }
+          .subtitle { 
+              font-size: 9pt; 
+              font-weight: 600; 
+              color: ${brandOrange}; 
+              text-transform: uppercase;
+              margin-top: 4px;
+          }
           
-          .signatures { margin-top: 100px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          .meta-info { text-align: right; font-size: 8.5pt; color: #64748b; margin-bottom: 15px; }
+          
+          .section-box { 
+              border: 1.5px solid ${brandBlue}; 
+              border-radius: 8px;
+              overflow: hidden;
+              margin-bottom: 20px; 
+          }
+          .box-title { 
+              background: ${brandBlue}; 
+              padding: 6px 15px; 
+              font-weight: 700; 
+              color: white; 
+              font-size: 9pt;
+              text-transform: uppercase;
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 2.5px solid ${brandOrange};
+          }
+          
+          table.data-table { width: 100%; border-collapse: collapse; background-color: #fff; }
+          table.data-table td { padding: 10px 15px; vertical-align: top; border-bottom: 1px solid #f1f5f9; font-size: 9pt; }
+          table.data-table tr:last-child td { border-bottom: none; }
+          
+          .label { font-weight: 700; color: ${brandBlue}; width: 120px; display: inline-block; font-size: 8.5pt; text-transform: uppercase; }
+          .value { color: #1e293b; font-weight: 500; }
+          
+          .obs-title { 
+              font-weight: 800; 
+              margin-bottom: 8px; 
+              color: ${brandBlue}; 
+              font-size: 9.5pt;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+          }
+          .obs-box { 
+              border: 1px solid #e2e8f0; 
+              border-left: 4px solid ${brandOrange};
+              padding: 15px; 
+              min-height: 80px; 
+              margin: 8px 0 20px 0; 
+              background-color: #f8fafc; 
+              border-radius: 0 6px 6px 0;
+              font-style: italic;
+              color: #475569;
+              font-size: 9pt;
+          }
+
+          .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 5px; }
+          .spec-item { font-size: 8pt; color: #64748b; border-bottom: 1px dashed #e2e8f0; padding-bottom: 2px; }
+          
+          .signatures { 
+              margin-top: 60px; 
+              display: flex; 
+              justify-content: space-between; 
+              page-break-inside: avoid; 
+          }
           .sig-box { width: 45%; text-align: center; }
-          .sig-line { border-top: 1px solid #000; margin-bottom: 5px; margin-top: 50px; }
-          .sig-role { font-size: 9pt; font-weight: bold; margin-bottom: 2px; }
-          .sig-name { font-size: 10pt; }
+          .sig-line { border-top: 2px solid ${brandBlue}; margin-bottom: 8px; margin-top: 50px; width: 85%; margin-left: auto; margin-right: auto; }
+          .sig-role { font-size: 8pt; font-weight: 800; color: ${brandBlue}; text-transform: uppercase; }
+          .sig-name { font-size: 9pt; font-weight: 600; color: #1e293b; margin-top: 4px; }
           
-          .footer-note { font-size: 8pt; text-align: center; margin-top: 50px; color: #666; }
+          .footer-note { 
+              font-size: 7.5pt; 
+              text-align: center; 
+              margin-top: 50px; 
+              color: #94a3b8; 
+              border-top: 1px solid #f1f5f9; 
+              padding-top: 12px;
+          }
         </style>
       </head>
       <body>
         <div class="header">
-           <div class="logo-box">
-              <img src="/logoAnexoCarso.png" style="max-height: 50px;" alt="Logo" onerror="this.style.display='none';"/>
+           <img src="/logoAnexoCarso.png" class="logo-top" alt="Logo" onerror="this.style.display='none';"/>
+           <div class="title">Acta de Recepción de Equipo</div>
+           <div class="subtitle">Departamento de Tecnología e Infraestructura</div>
+        </div>
+
+        <div class="meta-info">
+           <strong>Fecha Emisión:</strong> ${fechaHoy}
+        </div>
+
+        <div class="section-box">
+           <div class="box-title">
+              <span>Información del Colaborador</span>
            </div>
-           <div class="title">ACTA DE RECEPCIÓN / DEVOLUCIÓN DE EQUIPO</div>
-           <div class="subtitle">DEPARTAMENTO DE TECNOLOGÍA</div>
-           <div style="text-align: right; margin-top: 10px; font-size: 9pt;">Fecha Impresión: ${fechaCorta}</div>
-        </div>
-
-        <div class="section">
-           <p style="text-align: justify;">
-             Por medio de la presente se hace constar la devolución del equipo de cómputo y/o periféricos asignados al colaborador, detallando a continuación las características y el estado de los mismos.
-           </p>
-        </div>
-
-        <div class="section" style="background-color: #f9f9f9; padding: 15px; border: 1px solid #ddd;">
-           <div class="info-grid">
-              <div class="info-item"><span class="label">Fecha Recepción:</span> ${fechaRecepcion}</div>
-              <div class="info-item"><span class="label">Ubicación:</span> ${equipo.ubicacion_nombre || 'Bodega IT'}</div>
-              <div class="info-item"><span class="label">Usuario Devuelve:</span> ${usuario.nombre_completo}</div>
-              <div class="info-item"><span class="label">Departamento:</span> ${usuario.departamento_nombre || 'N/A'}</div>
-           </div>
-        </div>
-
-        <div class="table-container">
-           <h3>Detalle del Equipo</h3>
-           <table>
-              <thead>
-                 <tr>
-                    <th style="width: 20%;">Tipo</th>
-                    <th style="width: 20%;">Marca</th>
-                    <th style="width: 30%;">Modelo</th>
-                    <th style="width: 30%;">Serie / Código</th>
-                 </tr>
-              </thead>
-              <tbody>
-                 <tr>
-                    <td>${equipo.tipo_nombre}</td>
-                    <td>${equipo.marca}</td>
-                    <td>${equipo.modelo}</td>
-                    <td>
-                      <strong>Serie:</strong> ${equipo.numero_serie}<br>
-                      <strong>Activo:</strong> ${equipo.codigo_activo}
-                    </td>
-                 </tr>
-              </tbody>
+           <table class="data-table">
+              <tr>
+                 <td style="width: 50%; border-right: 1px solid #f1f5f9;">
+                    <span class="label">Usuario:</span> <span class="value">${usuario.nombre_completo}</span>
+                 </td>
+                 <td>
+                    <span class="label">Departamento:</span> <span class="value">${usuario.departamento_nombre || 'N/A'}</span>
+                 </td>
+              </tr>
+              <tr>
+                 <td style="border-right: 1px solid #f1f5f9;">
+                    <span class="label">ID Empleado:</span> <span class="value">${usuario.numero_empleado || 'S/N'}</span>
+                 </td>
+                 <td>
+                    <span class="label">Sede:</span> <span class="value">${equipo.ubicacion_nombre || 'BODEGA IT'}</span>
+                 </td>
+              </tr>
            </table>
         </div>
 
-        <div class="section">
-           <div class="label" style="width: 100%; margin-bottom: 5px; font-weight: bold;">Observaciones / Estado del Equipo:</div>
-           <div style="border: 1px solid #000; padding: 10px; min-height: 80px; font-style: italic;">
-              ${observaciones || 'El equipo se recibe funcionando correctamente, con sus accesorios completos.'}
+        <div class="section-box">
+           <div class="box-title">
+              <span>Detalles Técnicos del Activo</span>
+              <span style="font-size: 8pt; opacity: 0.9;">Cod: ${equipo.codigo_activo}</span>
            </div>
+           <table class="data-table">
+              <tr>
+                 <td style="width: 50%; border-right: 1px solid #f1f5f9;">
+                    <span class="label">Equipo:</span> <span class="value">${equipo.tipo_nombre} ${equipo.marca}</span>
+                 </td>
+                 <td>
+                    <span class="label">Modelo:</span> <span class="value">${equipo.modelo}</span>
+                 </td>
+              </tr>
+              <tr>
+                 <td style="border-right: 1px solid #f1f5f9;">
+                    <span class="label">No. Serie:</span> <span class="value">${equipo.numero_serie}</span>
+                 </td>
+                 <td>
+                    <span class="label">Cargador:</span> <span class="value">${equipo.serie_cargador || 'S/N'}</span>
+                 </td>
+              </tr>
+              ${equipo.procesador ? `
+              <tr>
+                 <td colspan="2">
+                    <div class="specs-grid">
+                        <div class="spec-item"><strong>CPU:</strong> ${equipo.procesador}</div>
+                        <div class="spec-item"><strong>RAM:</strong> ${equipo.ram}</div>
+                        <div class="spec-item"><strong>Disco:</strong> ${equipo.disco_capacidad} ${equipo.disco_tipo}</div>
+                        <div class="spec-item"><strong>S.O:</strong> ${equipo.sistema_operativo}</div>
+                    </div>
+                 </td>
+              </tr>` : ''}
+           </table>
+        </div>
+
+        <div class="obs-title">OBSERVACIONES Y ESTADO DE RECEPCIÓN</div>
+        <div class="obs-box">
+           ${observaciones || 'El equipo se recibe para reingreso a bodega en condiciones operativas estándar, sin daños físicos aparentes reportados fuera del desgaste normal por uso.'}
         </div>
 
         ${licenciasHtml}
 
+        <div style="margin-top: 25px; font-size: 8.5pt; text-align: justify; color: #64748b; background: #f1f5f9; padding: 10px; border-radius: 6px;">
+           <strong>DECLARACIÓN:</strong> El colaborador hace entrega formal del activo descrito, reconociendo que la información institucional contenida en el mismo queda bajo resguardo del departamento de tecnología. El departamento de TI validará posteriormente el estado funcional interno para su posible reasignación o mantenimiento preventivo.
+        </div>
+
         <div class="signatures">
            <div class="sig-box">
               <div class="sig-line"></div>
-              <div class="sig-role">ENTREGADO POR (USUARIO)</div>
+              <div class="sig-role">Entrega (Colaborador)</div>
               <div class="sig-name">${usuario.nombre_completo}</div>
-              <div class="sig-name" style="font-size: 8pt;">C.I. / Empleado: ${usuario.numero_empleado || '__________'}</div>
            </div>
            <div class="sig-box">
               <div class="sig-line"></div>
-              <div class="sig-role">RECIBIDO POR (IT)</div>
-              <div class="sig-name">Administrador de Inventario</div>
-              <div class="sig-name" style="font-size: 8pt;">Departamento de Tecnología</div>
+              <div class="sig-role">Recibe (Responsable IT)</div>
+              <div class="sig-name">Soporte Técnico e Inventario</div>
            </div>
         </div>
         
         <div class="footer-note">
-           Este documento certifica la devolución del activo fijo propiedad de la empresa.
+           Documento electrónico generado por el Sistema InvenTory - Gestión de Activos Fijos IT<br>
+           &copy; ${new Date().getFullYear()} - Procisa Ecuador S.A.
         </div>
       </body>
     </html>

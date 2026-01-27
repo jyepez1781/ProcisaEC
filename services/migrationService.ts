@@ -13,8 +13,21 @@ export const migrationService = {
 
     switch (type) {
       case 'EQUIPOS':
-        headers = ['Codigo Activo', 'Serie', 'Marca', 'Modelo', 'Tipo Equipo', 'Fecha Compra', 'Valor'];
-        filename = 'plantilla_equipos';
+        headers = [
+          'Codigo Activo', 
+          'Serie', 
+          'Marca', 
+          'Modelo', 
+          'Tipo Equipo', 
+          'Fecha Compra', 
+          'Valor',
+          'Procesador',
+          'RAM',
+          'Capacidad Disco',
+          'Tipo Disco',
+          'Sistema Operativo'
+        ];
+        filename = 'plantilla_equipos_tecnica';
         break;
       case 'USUARIOS':
         headers = ['Nombres', 'Apellidos', 'Usuario', 'Email', 'Numero Empleado', 'Rol'];
@@ -33,25 +46,19 @@ export const migrationService = {
         filename = 'plantilla_puestos';
         break;
       case 'ASIGNACIONES':
-        // Lógica especial: Pre-llenar con códigos de equipos existentes
         try {
             const equipos = await api.getEquipos();
-            
-            // Filtramos equipos aptos para asignar (Disponibles) o re-asignar (Activos)
-            // Excluimos Bajas, Para Baja y En Mantenimiento
             const aptosParaAsignar = equipos.filter(e => 
                 e.estado === EstadoEquipo.DISPONIBLE || 
                 e.estado === EstadoEquipo.ACTIVO
             );
             
             if (aptosParaAsignar.length === 0) {
-                // Si no hay equipos, plantilla vacía
                 headers = ['Codigo Activo', 'Modelo (Referencia)', 'Correo Usuario', 'Fecha Asignacion', 'Ubicacion Fisica', 'Observaciones'];
                 filename = 'plantilla_asignaciones';
                 break; 
             }
 
-            // Ordenar: Primero Disponibles, luego Activos
             aptosParaAsignar.sort((a, b) => {
                 if (a.estado === EstadoEquipo.DISPONIBLE && b.estado !== EstadoEquipo.DISPONIBLE) return -1;
                 if (a.estado !== EstadoEquipo.DISPONIBLE && b.estado === EstadoEquipo.DISPONIBLE) return 1;
@@ -60,18 +67,17 @@ export const migrationService = {
 
             const data = aptosParaAsignar.map(e => ({
                 'Codigo Activo': e.codigo_activo,
-                'Estado Actual': e.estado, // Columna informativa
+                'Estado Actual': e.estado,
                 'Modelo (Referencia)': `${e.tipo_nombre} - ${e.marca} ${e.modelo}`,
                 'Usuario Actual (Ref)': e.responsable_nombre || 'Ninguno',
-                'Correo Usuario': '', // Campo a llenar para asignar/reasignar
+                'Correo Usuario': '',
                 'Fecha Asignacion': new Date().toISOString().split('T')[0],
                 'Ubicacion Fisica': '',
                 'Observaciones': ''
             }));
 
-            // Usar generador de Excel con datos
             generateExcelFromData(data, 'plantilla_asignaciones_inventario');
-            return; // Salir, ya se descargó
+            return;
         } catch (e) {
             console.error(e);
             headers = ['Codigo Activo', 'Correo Usuario', 'Fecha Asignacion', 'Ubicacion Fisica', 'Observaciones'];
@@ -86,14 +92,31 @@ export const migrationService = {
   },
 
   uploadData: async (type: MigrationType, file: File) => {
-    // Usar parser de Excel
-    const data = await parseExcel(file);
+    const rawData = await parseExcel(file);
     
-    if (data.length === 0) {
+    if (rawData.length === 0) {
       throw new Error("El archivo está vacío o tiene un formato incorrecto.");
     }
 
-    // Helper to process response regardless of API version (mock returns number, live returns object)
+    // Mapeo de datos para EQUIPOS (Excel Headers -> Model Properties)
+    let processedData = rawData;
+    if (type === 'EQUIPOS') {
+        processedData = rawData.map(row => ({
+            codigo_activo: row['Codigo Activo'],
+            numero_serie: row['Serie'],
+            marca: row['Marca'],
+            modelo: row['Modelo'],
+            tipo_equipo: row['Tipo Equipo'],
+            fecha_compra: row['Fecha Compra'],
+            valor_compra: row['Valor'],
+            procesador: row['Procesador'],
+            ram: row['RAM'],
+            disco_capacidad: row['Capacidad Disco'],
+            disco_tipo: row['Tipo Disco'] || 'SSD',
+            sistema_operativo: row['Sistema Operativo']
+        }));
+    }
+
     const processResponse = (res: any) => {
         if (res && typeof res === 'object' && 'count' in res) {
             return res.count;
@@ -103,17 +126,17 @@ export const migrationService = {
 
     switch (type) {
       case 'EQUIPOS':
-        return processResponse(await api.bulkCreateEquipos(data));
+        return processResponse(await api.bulkCreateEquipos(processedData));
       case 'USUARIOS':
-        return processResponse(await api.bulkCreateUsuarios(data));
+        return processResponse(await api.bulkCreateUsuarios(rawData));
       case 'LICENCIAS':
-        return processResponse(await api.bulkCreateLicencias(data));
+        return processResponse(await api.bulkCreateLicencias(rawData));
       case 'DEPARTAMENTOS':
-        return processResponse(await api.bulkCreateDepartamentos(data));
+        return processResponse(await api.bulkCreateDepartamentos(rawData));
       case 'PUESTOS':
-        return processResponse(await api.bulkCreatePuestos(data));
+        return processResponse(await api.bulkCreatePuestos(rawData));
       case 'ASIGNACIONES':
-        return processResponse(await api.bulkCreateAsignaciones(data));
+        return processResponse(await api.bulkCreateAsignaciones(rawData));
       default:
         throw new Error("Tipo de migración no soportado");
     }

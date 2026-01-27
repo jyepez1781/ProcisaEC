@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '../services/mockApi';
 import { equipmentService } from '../services/equipmentService';
@@ -57,12 +58,10 @@ export const useEquipment = () => {
 
   useEffect(() => {
     loadData();
-    // Hot Reload every 10 seconds
     const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Filter Logic
   const filteredEquipos = useMemo(() => {
     return equipos.filter(e => {
       const matchText = !filters.text || 
@@ -77,20 +76,18 @@ export const useEquipment = () => {
     });
   }, [equipos, filters]);
 
-  // Reset page when filters change
+  // Fix: Declare totalPages for shorthand property usage in return
+  const totalPages = Math.ceil(filteredEquipos.length / ITEMS_PER_PAGE);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // Pagination Logic
-  const totalItems = filteredEquipos.length;
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const paginatedEquipos = filteredEquipos.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
-  // Grouping Logic applied to paginated items
   const groupedEquipos = useMemo(() => {
     if (grouping === 'NONE') return { 'Todos': paginatedEquipos };
 
@@ -107,53 +104,27 @@ export const useEquipment = () => {
 
   const handleAction = async (action: ModalAction, equipo: Equipo | null, formData: any) => {
     try {
-      // Helper: map a selected departamento/bodega id to the actual ubicacion id
       const mapUbicacionIdFromBodega = (ubicacionId: any) => {
         const idNum = (ubicacionId === null || ubicacionId === undefined) ? ubicacionId : Number(ubicacionId);
         const bodegaObj = bodegas.find(b => b.id === idNum);
         if (!bodegaObj) return idNum;
-        // Try multiple common property names that may contain the real ubicacion id
-        const candidates = [
-          'bodega_ubicacion_id', 'bodegaUbicacionId', 'bodegaUbicacion',
-          'ubicacion_id', 'ubicacionId', 'ubicacion',
-        ];
-        for (const key of candidates) {
-          if (Object.prototype.hasOwnProperty.call(bodegaObj, key) && bodegaObj[key]) {
-            return Number(bodegaObj[key]);
-          }
-        }
-        // Fallback to department id (may be invalid for update endpoints)
-        return Number(bodegaObj.id);
+        return Number((bodegaObj as any).bodega_ubicacion_id || bodegaObj.id);
       };
+
       if (action === 'CREATE') {
         const payload = { ...formData };
         if (payload.ubicacion_id) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion_id);
-        else if (payload.ubicacion) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion);
         await equipmentService.create(payload);
       } else if (action === 'EDIT' && equipo) {
         const payload = { ...formData };
         if (payload.ubicacion_id) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion_id);
-        else if (payload.ubicacion) payload.ubicacion_id = mapUbicacionIdFromBodega(payload.ubicacion);
         await equipmentService.update(equipo.id, payload);
       } else if (action === 'ASSIGN' && equipo) {
-        await equipmentService.assign(
-            equipo.id, 
-            Number(formData.usuario_id), 
-            formData.ubicacion, 
-            formData.observaciones, 
-            formData.evidenceFile
-        );
+        await equipmentService.assign(equipo.id, Number(formData.usuario_id), formData.ubicacion, formData.observaciones, formData.evidenceFile);
       } else if (action === 'RETURN' && equipo) {
         const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
         const ubicacionToSend = mapUbicacionIdFromBodega(formData.ubicacion_id);
-        await equipmentService.return(
-            equipo.id, 
-            formData.observaciones, 
-            Number(ubicacionToSend), 
-            bodega?.nombre || 'Bodega',
-            formData.releaseLicenses,
-            formData.evidenceFile
-        );
+        await equipmentService.return(equipo.id, formData.observaciones, Number(ubicacionToSend), bodega?.nombre || 'Bodega', formData.releaseLicenses, formData.evidenceFile);
       } else if (action === 'BAJA' && equipo) {
         await equipmentService.dispose(equipo.id, formData.observaciones, formData.evidenceFile);
       } else if (action === 'TO_MAINTENANCE' && equipo) {
@@ -161,16 +132,24 @@ export const useEquipment = () => {
       } else if (action === 'MARK_DISPOSAL' && equipo) {
         const bodega = bodegas.find(b => b.id === Number(formData.ubicacion_id));
         const ubicacionToSend = mapUbicacionIdFromBodega(formData.ubicacion_id);
-        await equipmentService.markForDisposal(
-            equipo.id, 
-            formData.observaciones,
-            Number(ubicacionToSend),
-            bodega?.nombre || 'Bodega'
-        );
+        await equipmentService.markForDisposal(equipo.id, formData.observaciones, Number(ubicacionToSend), bodega?.nombre || 'Bodega');
       }
       
+      const emailConfig = await api.getEmailConfig();
+      let successMsg = 'Operación realizada correctamente.';
+      
+      if (action === 'ASSIGN' && emailConfig.notificar_asignacion) {
+          const user = usuarios.find(u => u.id === Number(formData.usuario_id));
+          successMsg = `Equipo asignado exitosamente. Se ha enviado un correo de notificación a ${user?.correo}.`;
+      }
+
       await loadData();
-      Swal.fire('Éxito', 'Operación realizada correctamente', 'success');
+      Swal.fire({
+          title: 'Éxito',
+          text: successMsg,
+          icon: 'success',
+          confirmButtonColor: '#2563eb'
+      });
       return true;
     } catch (error: any) {
       console.error(error);
@@ -185,7 +164,6 @@ export const useEquipment = () => {
     filters, setFilters,
     grouping, setGrouping,
     handleAction,
-    // Pagination props
-    currentPage, totalPages, setCurrentPage, totalItems, ITEMS_PER_PAGE
+    currentPage, totalPages, setCurrentPage, totalItems: filteredEquipos.length, ITEMS_PER_PAGE
   };
 };

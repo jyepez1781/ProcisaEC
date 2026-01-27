@@ -93,6 +93,17 @@ const Settings: React.FC = () => {
   };
 
   const handleTestMail = async () => {
+    // Validación básica antes de preguntar el destinatario
+    if (!config.smtp_host || !config.smtp_port || !config.smtp_user) {
+        Swal.fire({
+            title: 'Configuración Incompleta',
+            text: 'Para realizar la prueba, debe ingresar al menos el Host, Puerto y Usuario del servidor SMTP.',
+            icon: 'warning',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
+    }
+
     const { value: emailTo } = await Swal.fire({
       title: 'Probar Configuración',
       text: 'Ingrese un correo electrónico para recibir el mensaje de prueba:',
@@ -111,8 +122,8 @@ const Settings: React.FC = () => {
     if (emailTo) {
       setTesting(true);
       Swal.fire({
-        title: 'Enviando...',
-        text: 'Por favor espere mientras verificamos la conexión con el servidor SMTP.',
+        title: 'Probando conexión...',
+        text: 'Verificando credenciales con el servidor SMTP. Por favor espere.',
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
@@ -122,15 +133,15 @@ const Settings: React.FC = () => {
       try {
         await api.testEmailConfig(config, emailTo);
         Swal.fire({
-          title: 'Prueba Exitosa',
-          text: `El correo de prueba ha sido enviado a ${emailTo}. Verifique su bandeja de entrada (y la carpeta de spam).`,
+          title: '¡Conexión Exitosa!',
+          text: `El servidor respondió correctamente. Se ha enviado un mensaje de prueba a ${emailTo}. Verifique su bandeja de entrada.`,
           icon: 'success',
           confirmButtonColor: '#2563eb'
         });
       } catch (error: any) {
         Swal.fire({
           title: 'Error de Conexión',
-          text: error.message || 'No se pudo conectar con el servidor SMTP. Verifique el host, puerto y credenciales.',
+          text: error.message || 'No se pudo establecer comunicación con el servidor SMTP. Verifique el Host, Puerto y Cifrado.',
           icon: 'error',
           confirmButtonColor: '#2563eb'
         });
@@ -333,7 +344,7 @@ const Settings: React.FC = () => {
                   </div>
                 </label>
 
-                {/* Nuevo: Alerta de Mantenimiento Programado */}
+                {/* Alerta de Mantenimiento Programado */}
                 <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors bg-indigo-50/30 dark:bg-indigo-900/10">
                   <input 
                     type="checkbox" 
