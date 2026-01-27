@@ -62,10 +62,11 @@ export const liveApi = {
     return data.user;
   },
 
-  changePassword: async (userId: number, newPass: string): Promise<void> => {
-    await fetch(`${API_URL}/change-password`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify({ user_id: userId, password: newPass })
+  changePassword: async (userId: number, oldPass: string, newPass: string, confirm: string): Promise<void> => {
+    const response = await fetch(`${API_URL}/change-password`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ current_password: oldPass, new_password: newPass, new_password_confirmation: confirm })
     });
+    await handleResponse(response);
   },
 
   // --- Organization ---

@@ -87,8 +87,18 @@ const internalMockApi = {
 
   // --- Auth ---
   login: async (email: string, password?: string) => { await simulateDelay(); return MOCK_USUARIOS[0]; },
-  changePassword: async (userId: number, newPass: string) => { await simulateDelay(); },
-
+ changePassword: async (userId: number, oldPass: string, newPass: string, confirm: string) => {
+    await simulateDelay();
+    const idx = MOCK_USUARIOS.findIndex(u => u.id === userId);
+    if (idx < 0) throw new Error('Usuario no encontrado');
+    const user = MOCK_USUARIOS[idx];
+    if (!oldPass) throw new Error('Se requiere la contraseña actual');
+    if (newPass !== confirm) throw new Error('La confirmación no coincide');
+    if (newPass.length < 6) throw new Error('La nueva contraseña debe tener al menos 6 caracteres');
+    // En el mock almacenamos la contraseña en claro (como está en MOCK_USUARIOS), comprobarla
+    if (user.password !== oldPass) throw new Error('Contraseña actual incorrecta');
+    MOCK_USUARIOS[idx] = { ...user, password: newPass };
+  },
   // --- Organization ---
   getDepartamentos: async () => { await simulateDelay(); return [...MOCK_DEPARTAMENTOS]; },
   createDepartamento: async (data: any) => { await simulateDelay(); return { ...data, id: Date.now() }; },

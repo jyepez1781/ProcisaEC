@@ -34,12 +34,16 @@ export const MaintenanceReportTab: React.FC = () => {
   const filteredRegistros = registros.filter(reg => {
       if (!filterText) return true;
       const searchLower = filterText.toLowerCase();
+      const codigo = (reg?.equipo_codigo ?? '').toString().toLowerCase();
+      const modelo = (reg?.equipo_modelo ?? '').toString().toLowerCase();
+      const proveedor = (reg?.proveedor ?? '').toString().toLowerCase();
       return (
-          reg.equipo_codigo.toLowerCase().includes(searchLower) ||
-          reg.equipo_modelo.toLowerCase().includes(searchLower) ||
-          reg.proveedor.toLowerCase().includes(searchLower)
+          codigo.includes(searchLower) ||
+          modelo.includes(searchLower) ||
+          proveedor.includes(searchLower)
       );
   });
+ 
 
   const totalCost = filteredRegistros.reduce((acc, curr) => {
       const raw = (curr as any)?.costo;

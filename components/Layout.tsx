@@ -95,7 +95,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
     setIsChangingPass(true);
     try {
       if (user) {
-        await api.changePassword(user.id, passFormData.new);
+        await api.changePassword(user.id, passFormData.old, passFormData.new, passFormData.confirm);
         Swal.fire('Éxito', 'Contraseña actualizada correctamente', 'success');
         setIsPasswordModalOpen(false);
         setPassFormData({ old: '', new: '', confirm: '' });
