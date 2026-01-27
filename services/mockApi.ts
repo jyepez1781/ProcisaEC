@@ -207,6 +207,7 @@ const internalMockApi = {
   getStats: async () => { await simulateDelay(); return {}; },
   getEmailConfig: async () => { await simulateDelay(); return { remitente: 'Soporte', correos_copia: [], notificar_asignacion: true, notificar_mantenimiento: true, notificar_alerta_mantenimiento: true }; },
   saveEmailConfig: async (c: any) => { await simulateDelay(); },
+  testEmailConfig: async (config: EmailConfig, to: string) => { await simulateDelay(1500); return { success: true }; },
   getNotifications: async () => [],
   verificarAlertasMantenimiento: async () => {},
   getWarrantyReport: async () => [],

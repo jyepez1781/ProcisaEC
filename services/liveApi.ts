@@ -450,6 +450,12 @@ export const liveApi = {
       method: 'POST', headers: getHeaders(), body: JSON.stringify(config)
     });
   },
+  testEmailConfig: async (config: EmailConfig, to: string): Promise<any> => {
+    const response = await fetch(`${API_URL}/settings/email/test`, {
+      method: 'POST', headers: getHeaders(), body: JSON.stringify({ ...config, to })
+    });
+    return handleResponse(response);
+  },
 
   // --- Alerts ---
   verificarAlertasMantenimiento: async (): Promise<void> => {

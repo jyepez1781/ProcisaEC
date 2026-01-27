@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Save, Mail, Info, Plus, X, Server, Lock, User, Eye, EyeOff, ShieldCheck, CalendarRange } from 'lucide-react';
+import { Save, Mail, Info, Plus, X, Server, Lock, User, Eye, EyeOff, ShieldCheck, CalendarRange, Send, RefreshCw } from 'lucide-react';
 import { api } from '../../services/mockApi';
 import { EmailConfig } from '../../types';
 import Swal from 'sweetalert2';
@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [config, setConfig] = useState<EmailConfig>({
     remitente: '',
@@ -88,6 +89,54 @@ const Settings: React.FC = () => {
       Swal.fire('Error', 'Error al guardar la configuración', 'error');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestMail = async () => {
+    const { value: emailTo } = await Swal.fire({
+      title: 'Probar Configuración',
+      text: 'Ingrese un correo electrónico para recibir el mensaje de prueba:',
+      input: 'email',
+      inputPlaceholder: 'ejemplo@empresa.com',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar Prueba',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#2563eb',
+      inputValidator: (value) => {
+        if (!value) return '¡El correo es obligatorio!';
+        if (!validateEmail(value)) return 'El formato del correo no es válido';
+      }
+    });
+
+    if (emailTo) {
+      setTesting(true);
+      Swal.fire({
+        title: 'Enviando...',
+        text: 'Por favor espere mientras verificamos la conexión con el servidor SMTP.',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      try {
+        await api.testEmailConfig(config, emailTo);
+        Swal.fire({
+          title: 'Prueba Exitosa',
+          text: `El correo de prueba ha sido enviado a ${emailTo}. Verifique su bandeja de entrada (y la carpeta de spam).`,
+          icon: 'success',
+          confirmButtonColor: '#2563eb'
+        });
+      } catch (error: any) {
+        Swal.fire({
+          title: 'Error de Conexión',
+          text: error.message || 'No se pudo conectar con el servidor SMTP. Verifique el host, puerto y credenciales.',
+          icon: 'error',
+          confirmButtonColor: '#2563eb'
+        });
+      } finally {
+        setTesting(false);
+      }
     }
   };
 
@@ -322,11 +371,19 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+        <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row justify-end gap-3">
+           <button 
+             onClick={handleTestMail}
+             disabled={testing || saving}
+             className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-6 py-2.5 rounded-lg font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm disabled:opacity-70"
+           >
+             {testing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+             Probar Configuración
+           </button>
            <button 
              onClick={handleSave}
-             disabled={saving}
-             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm disabled:opacity-70"
+             disabled={saving || testing}
+             className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold transition-colors shadow-sm disabled:opacity-70"
            >
              <Save className="w-4 h-4" /> {saving ? 'Guardando...' : 'Guardar Configuración'}
            </button>
