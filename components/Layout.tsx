@@ -29,11 +29,15 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
 
   useEffect(() => {
     const initData = async () => {
-        const notifs = await api.getNotifications();
-        setNotifications(notifs);
-        await api.verificarAlertasMantenimiento();
-        const updatedNotifs = await api.getNotifications();
-        setNotifications(updatedNotifs);
+        try {
+          const notifs = await api.getNotifications();
+          setNotifications(notifs);
+          await api.verificarAlertasMantenimiento();
+          const updatedNotifs = await api.getNotifications();
+          setNotifications(updatedNotifs);
+        } catch (error) {
+          console.error('Error cargando notificaciones', error);
+        }
     };
     initData();
   }, []);
@@ -128,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                   <p className="text-xs text-slate-500 dark:text-slate-400">{user?.rol || 'Invitado'}</p>
                 </div>
                 <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-800 dark:text-blue-200 font-bold">
-                  {user?.nombres.charAt(0)}
+                  {user?.nombres?.charAt(0) ?? 'U'}
                 </div>
               </button>
             </div>
