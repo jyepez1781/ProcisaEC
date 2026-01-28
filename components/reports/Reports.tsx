@@ -2,12 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { reportService } from '../../services/reportService';
 import { Usuario, Equipo } from '../../types';
-import { History, CalendarRange, Wrench, ShieldAlert, RefreshCw, Key, Trash2, Box } from 'lucide-react';
+import { History, CalendarRange, Wrench, ShieldAlert, Key, Trash2, Box } from 'lucide-react';
 import { AssignmentsTab } from './AssignmentsTab';
 import { HistoryTab } from './HistoryTab';
 import { MaintenanceReportTab } from './MaintenanceReportTab';
 import { WarrantiesTab } from './WarrantiesTab';
-import { ReplacementTab } from './ReplacementTab';
 import { LicenseReportTab } from './LicenseReportTab';
 import { DisposalReportTab } from './DisposalReportTab';
 import { StockReportTab } from './StockReportTab';
@@ -45,7 +44,6 @@ const Reports: React.FC = () => {
         <TabButton id="HISTORY" icon={History} label="Bitácora de Movimientos" />
         <TabButton id="MAINTENANCE" icon={Wrench} label="Historial Mantenimiento" />
         <TabButton id="WARRANTY" icon={ShieldAlert} label="Garantías" />
-        <TabButton id="REPLACEMENT" icon={RefreshCw} label="Plan de Renovación" />
         <TabButton id="DISPOSAL" icon={Trash2} label="Bajas de Equipos" />
       </div>
 
@@ -56,7 +54,6 @@ const Reports: React.FC = () => {
         {activeTab === 'HISTORY' && <HistoryTab />}
         {activeTab === 'MAINTENANCE' && <MaintenanceReportTab />}
         {activeTab === 'WARRANTY' && <WarrantiesTab />}
-        {activeTab === 'REPLACEMENT' && <ReplacementTab />}
         {activeTab === 'DISPOSAL' && <DisposalReportTab />}
       </div>
     </div>
