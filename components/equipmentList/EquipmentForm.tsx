@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Equipo, TipoEquipo, Usuario, Departamento, EstadoEquipo, Ciudad, Pais } from '../../types';
-import { Save, Upload, X, FileText, RefreshCw, Sparkles, Loader2, Unplug, Printer, AlertCircle, Lock, Cpu, Database, HardDrive, Layout } from 'lucide-react';
+import { Save, Upload, X, FileText, RefreshCw, Sparkles, Loader2, Unplug, Printer, AlertCircle, Lock, Cpu, Database, HardDrive, Layout, Mail } from 'lucide-react';
 import { ModalAction } from '../../hooks/useEquipment';
 import { GoogleGenAI } from "@google/genai";
 import { generateReceptionDocument, generateDisposalDocument, generateAssignmentDocument } from '../../utils/documentGenerator';
@@ -52,9 +53,10 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [userLicenses, setUserLicenses] = useState<string[]>([]);
-  const [hasGeneratedDoc, setHasGeneratedDoc] = useState(false); // State to track document generation
+  const [hasGeneratedDoc, setHasGeneratedDoc] = useState(false); 
 
   const canEditLocation = action === 'EDIT' && equipo?.estado === EstadoEquipo.DISPONIBLE;
+  const isMandatoryFileAction = action === 'RETURN' || action === 'BAJA';
 
   // Detectar si el equipo es de computo (Laptop, Desktop, Servidor)
   const isComputingEquipment = () => {
@@ -131,17 +133,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         }
     }
 
-    // Validaciones específicas para ASIGNACIÓN
-    if (action === 'ASSIGN') {
-        if (!hasGeneratedDoc) {
-            Swal.fire('Acción Requerida', 'Debe generar el Acta de Entrega antes de completar la asignación.', 'warning');
-            return;
-        }
-        if (!evidenceFile) {
-            Swal.fire('Documento Faltante', 'Es obligatorio subir el Acta de Entrega firmada para completar la asignación.', 'warning');
-            return;
-        }
-    }
+    // Nota: Se ha quitado la validación obligatoria para ASIGNACIÓN según requerimiento del usuario
 
     setLoading(true);
     // Merge file into data if exists
@@ -166,6 +158,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       if(isBaja) docName = 'Acta de Baja';
       if(isAssign) docName = 'Acta de Entrega';
       
+      // La restricción de "Generar primero" se mantiene para asegurar que el archivo subido sea el correcto
       if ((isReturn || isBaja || isAssign) && !hasGeneratedDoc) {
           e.preventDefault(); 
           Swal.fire({
@@ -178,7 +171,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   };
 
   const handlePrintAssignment = () => {
-      // Validación: Campos obligatorios
       if (!formData.usuario_id || !formData.ubicacion) {
           Swal.fire('Campos incompletos', 'Debe seleccionar un usuario y una ubicación física antes de generar el acta.', 'warning');
           return;
@@ -187,7 +179,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       if (!equipo) return;
       const user = usuarios.find(u => u.id === Number(formData.usuario_id));
       if (user) {
-          // Inyectamos observaciones temporales si existen para que salgan en el acta
           const equipoParaActa = { ...equipo, observaciones: formData.observaciones || equipo.observaciones };
           generateAssignmentDocument(user, equipoParaActa);
           setHasGeneratedDoc(true);
@@ -220,7 +211,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       setHasGeneratedDoc(true);
   };
 
-  /* Fix: Use gemini-3-flash-preview for text improvement tasks */
   const handleAIAssist = async () => {
     if (!formData.observaciones.trim()) return;
     setIsAiLoading(true);
@@ -263,7 +253,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       {/* --- CREATE / EDIT --- */}
       {(action === 'CREATE' || action === 'EDIT') && (
         <>
-          {/* Fila 1: Ubicación y Tipo (Definen el contexto) */}
           <div className="grid grid-cols-2 gap-4">
             {(action === 'CREATE' || canEditLocation) ? (
                 <div>
@@ -291,7 +280,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             </div>
           </div>
 
-          {/* Fila 2: Serie y Código (Serie detona código) */}
           <div className="grid grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Número de Serie</label>
@@ -312,7 +300,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             </div>
           </div>
 
-          {/* Fila 3: Marca y Modelo */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Marca</label>
@@ -326,7 +313,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             </div>
           </div>
 
-          {/* --- NUEVA SECCIÓN: ESPECIFICACIONES TÉCNICAS (SOLO PARA CÓMPUTO) --- */}
           {isComputingEquipment() && (
             <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30 space-y-4">
                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold text-sm uppercase tracking-wider mb-2">
@@ -383,7 +369,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             </div>
           )}
 
-          {/* Fila: Detalles Específicos Adicionales */}
           {tipos.find(t => t.id === Number(formData.tipo_equipo_id))?.nombre.toLowerCase().includes('laptop') && (
              <div>
                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Serie Cargador</label>
@@ -392,7 +377,6 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
              </div>
           )}
 
-          {/* Fila 5: Compra y Garantía */}
           <div className="grid grid-cols-3 gap-4">
              <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fecha Compra</label>
@@ -451,7 +435,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         </>
       )}
 
-      {/* --- RETURN / DISPOSAL (PART 1: FIELDS) --- */}
+      {/* --- RETURN / DISPOSAL / MAINTENANCE --- */}
       {['RETURN', 'MARK_DISPOSAL', 'BAJA', 'TO_MAINTENANCE'].includes(action || '') && (
         <>
            {['RETURN', 'MARK_DISPOSAL'].includes(action || '') && (
@@ -508,10 +492,10 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
         </>
       )}
 
-      {/* --- SECCIÓN DE DOCUMENTOS (RETURN, BAJA y ASSIGN) --- */}
+      {/* --- SECCIÓN DE DOCUMENTOS --- */}
       {isRestrictedAction && (
            <div className="bg-slate-50 dark:bg-slate-700/30 p-3 rounded-lg border border-slate-200 dark:border-slate-700 mt-3">
-               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Documentación Obligatoria</p>
+               <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Documentación del Proceso</p>
                <div className="flex gap-3 mb-3">
                    <button 
                        type="button" 
@@ -522,7 +506,18 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
                    </button>
                </div>
 
-               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Subir Acta Firmada (Requerido)</label>
+               {action === 'ASSIGN' && hasGeneratedDoc && !evidenceFile && (
+                   <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex items-start gap-2">
+                       <Mail className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
+                       <p className="text-[10px] text-blue-700 dark:text-blue-300 leading-tight">
+                           <strong>Tip:</strong> Si subes el acta firmada, esta se enviará automáticamente por correo electrónico al colaborador junto con la notificación.
+                       </p>
+                   </div>
+               )}
+
+               <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+                   Subir Acta Firmada {isMandatoryFileAction ? '(Requerido)' : '(Opcional)'}
+               </label>
                {!evidenceFile ? (
                    <label 
                        onClick={handleUploadClick}
@@ -562,7 +557,7 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
          <button type="button" onClick={onCancel} className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg font-medium transition-colors">Cancelar</button>
          <button 
             type="submit" 
-            disabled={loading || (isRestrictedAction && (!hasGeneratedDoc || !evidenceFile))} 
+            disabled={loading || (isMandatoryFileAction && (!hasGeneratedDoc || !evidenceFile))} 
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
          >
             <Save className="w-4 h-4" /> {loading ? 'Guardando...' : 'Guardar'}

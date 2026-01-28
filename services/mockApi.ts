@@ -38,11 +38,17 @@ let MOCK_DEPARTAMENTOS: Departamento[] = [
   { id: 2, nombre: 'Recursos Humanos', es_bodega: false, ciudad_id: 1, ciudad_nombre: 'Guayaquil' },
 ];
 
+let MOCK_PUESTOS: Puesto[] = [
+  { id: 1, nombre: 'Analista de Soporte' },
+  { id: 2, nombre: 'Coordinador de Infraestructura' },
+  { id: 3, nombre: 'Asistente Administrativo' },
+];
+
 let MOCK_USUARIOS: Usuario[] = [
   { 
     id: 1, nombre_usuario: 'admin', nombre_completo: 'Administrador Sistema', nombres: 'Admin', apellidos: 'Sys', 
     correo: 'admin@sys.com', password: '123', rol: RolUsuario.ADMIN, activo: true, 
-    departamento_id: 1, departamento_nombre: 'Tecnología (Bodega GYE)', numero_empleado: 'ADM001' 
+    departamento_id: 1, departamento_nombre: 'Tecnología (Bodega GYE)', puesto_id: 1, puesto_nombre: 'Analista de Soporte', numero_empleado: 'ADM001' 
   },
 ];
 
@@ -56,12 +62,30 @@ let MOCK_EQUIPOS: Equipo[] = [
   { 
     id: 1, codigo_activo: 'ECGYELAP2019', numero_serie: 'SN-OLD-01', marca: 'Dell', modelo: 'Latitude 5400', 
     tipo_equipo_id: 1, tipo_nombre: 'Laptop', fecha_compra: '2019-01-10', valor_compra: 1100, 
-    anos_garantia: 3, estado: EstadoEquipo.ACTIVO, ubicacion_id: 1, responsable_id: 1, responsable_nombre: 'Admin', observaciones: 'Vieja pero funcional',
+    anos_garantia: 3, estado: EstadoEquipo.ACTIVO, ubicacion_id: 1, responsable_id: 1, responsable_nombre: 'Administrador Sistema', observaciones: 'Vieja pero funcional',
     procesador: 'Intel i5-8365U', ram: '8GB', disco_capacidad: '256GB', disco_tipo: 'SSD', sistema_operativo: 'Windows 10 Pro'
   },
 ];
 
 let MOCK_NOTIFICACIONES: Notificacion[] = [];
+let MOCK_BOVEDA: EntradaBoveda[] = [];
+
+// Helper para hidratar un usuario con datos calculados y nombres de catálogo
+const hydrateUser = (data: Partial<Usuario>): Usuario => {
+    const nombres = data.nombres || '';
+    const apellidos = data.apellidos || '';
+    
+    // Buscar nombres de departamento y puesto
+    const depto = MOCK_DEPARTAMENTOS.find(d => d.id === data.departamento_id);
+    const puesto = MOCK_PUESTOS.find(p => p.id === data.puesto_id);
+
+    return {
+        ...data,
+        nombre_completo: `${nombres} ${apellidos}`.trim(),
+        departamento_nombre: depto?.nombre || data.departamento_nombre,
+        puesto_nombre: puesto?.nombre || data.puesto_nombre,
+    } as Usuario;
+};
 
 const internalMockApi = {
   // --- Auth ---
@@ -72,37 +96,68 @@ const internalMockApi = {
   asignarEquipo: async (id: number, usuarioId: number, ubicacion: string, observaciones: string, archivo?: File) => { 
     await simulateDelay(); 
     const u = MOCK_USUARIOS.find(x => x.id === usuarioId);
-    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? { ...e, estado: EstadoEquipo.ACTIVO, responsable_id: usuarioId, responsable_nombre: u?.nombre_completo, observaciones } : e);
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? { 
+      ...e, 
+      estado: EstadoEquipo.ACTIVO, 
+      responsable_id: usuarioId, 
+      responsable_nombre: u?.nombre_completo, 
+      observaciones,
+      ubicacion_nombre: ubicacion 
+    } : e);
     
-    // Simular envío de correo según configuración
     if (MOCK_EMAIL_CONFIG.notificar_asignacion) {
-        console.log(`[EMAIL SIM] Enviando notificación de asignación de equipo ${id} a ${u?.correo}`);
-        if (MOCK_EMAIL_CONFIG.correos_copia.length > 0) {
-            console.log(`[EMAIL SIM] Enviando CC a: ${MOCK_EMAIL_CONFIG.correos_copia.join(', ')}`);
-        }
+        const attachmentText = archivo ? `con archivo adjunto: ${archivo.name}` : '(sin adjunto de acta)';
+        console.log(`[EMAIL SIM] Enviando notificación de asignación a ${u?.correo} ${attachmentText}`);
     }
     return MOCK_EQUIPOS.find(x => x.id === id)!; 
   },
 
-  // Fix: Added missing receivers for common actions to satisfy union type of 'api'
   recepcionarEquipo: async (id: number, observaciones: string, ubicacionId?: number, ubicacionNombre?: string, liberarLicencias: boolean = false, archivo?: File): Promise<Equipo> => {
     await simulateDelay();
-    return MOCK_EQUIPOS.find(e => e.id === id) || MOCK_EQUIPOS[0];
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? {
+        ...e,
+        estado: EstadoEquipo.DISPONIBLE,
+        responsable_id: undefined,
+        responsable_nombre: undefined,
+        ubicacion_id: ubicacionId || e.ubicacion_id,
+        ubicacion_nombre: ubicacionNombre || 'BODEGA IT',
+        observaciones: observaciones
+    } : e);
+    return MOCK_EQUIPOS.find(e => e.id === id)!;
   },
 
   bajaEquipo: async (id: number, motivo: string, archivo?: File): Promise<Equipo> => {
     await simulateDelay();
-    return MOCK_EQUIPOS.find(e => e.id === id) || MOCK_EQUIPOS[0];
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? {
+        ...e,
+        estado: EstadoEquipo.BAJA,
+        responsable_id: undefined,
+        responsable_nombre: undefined,
+        observaciones: motivo
+    } : e);
+    return MOCK_EQUIPOS.find(e => e.id === id)!;
   },
 
   enviarAMantenimiento: async (id: number, motivo: string): Promise<Equipo> => {
     await simulateDelay();
-    return MOCK_EQUIPOS.find(e => e.id === id) || MOCK_EQUIPOS[0];
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? {
+        ...e,
+        estado: EstadoEquipo.EN_MANTENIMIENTO,
+        observaciones: motivo
+    } : e);
+    return MOCK_EQUIPOS.find(e => e.id === id)!;
   },
 
   marcarParaBaja: async (id: number, observaciones: string, ubicacionId: number, ubicacionNombre: string): Promise<Equipo> => {
     await simulateDelay();
-    return MOCK_EQUIPOS.find(e => e.id === id) || MOCK_EQUIPOS[0];
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? {
+        ...e,
+        estado: EstadoEquipo.PARA_BAJA,
+        ubicacion_id: ubicacionId,
+        ubicacion_nombre: ubicacionNombre,
+        observaciones: observaciones
+    } : e);
+    return MOCK_EQUIPOS.find(e => e.id === id)!;
   },
 
   finalizarMantenimiento: async (equipoId: number, data: any, nuevoEstado: string, archivo?: File) => { 
@@ -113,15 +168,20 @@ const internalMockApi = {
             return {
                 ...e,
                 estado: nuevoEstado as EstadoEquipo,
-                ultimo_mantenimiento: new Date().toISOString().split('T')[0]
+                ultimo_mantenimiento: new Date().toISOString().split('T')[0],
+                serie_cargador: data.serie_cargador || e.serie_cargador,
+                procesador: data.procesador || e.procesador,
+                ram: data.ram || e.ram,
+                disco_capacidad: data.disco_capacidad || e.disco_capacidad,
+                disco_tipo: data.disco_tipo || e.disco_tipo,
+                sistema_operativo: data.sistema_operativo || e.sistema_operativo
             };
         }
         return e;
     });
 
     if (MOCK_EMAIL_CONFIG.notificar_mantenimiento) {
-        const dest = eq?.responsable_id ? MOCK_USUARIOS.find(u => u.id === eq.responsable_id)?.correo : MOCK_EMAIL_CONFIG.correos_copia[0];
-        console.log(`[EMAIL SIM] Enviando notificación de fin de mantenimiento de equipo ${equipoId} a ${dest}`);
+        console.log(`[EMAIL SIM] Notificación fin mantenimiento para equipo ${equipoId}`);
     }
 
     return { success: true }; 
@@ -130,23 +190,18 @@ const internalMockApi = {
   // --- Maintenance Planning ---
   verificarAlertasMantenimiento: async () => {
     if (!MOCK_EMAIL_CONFIG.notificar_alerta_mantenimiento) return;
-
-    // Simulación: Si hay equipos con mantenimiento próximo mes y la fecha actual es >= (mes - anticipación)
-    const nextMonth = new Date().getMonth() + 2; 
     const equiposProximos = MOCK_EQUIPOS.filter(e => e.estado === EstadoEquipo.ACTIVO);
-    
     if (equiposProximos.length > 0) {
         const yaNotificado = MOCK_NOTIFICACIONES.some(n => n.titulo.includes('Recordatorio Mantenimiento Anual'));
         if (!yaNotificado) {
             MOCK_NOTIFICACIONES.push({
                 id: Date.now(),
                 titulo: 'Recordatorio Mantenimiento Anual',
-                mensaje: `Existen ${equiposProximos.length} equipos programados para mantenimiento el próximo mes. Se han enviado los correos de recordatorio automáticamente.`,
+                mensaje: `Existen equipos programados para mantenimiento.`,
                 leido: false,
                 fecha: new Date().toISOString().split('T')[0],
                 tipo: 'info'
             });
-            console.log(`[EMAIL SIM] Enviando recordatorios anuales automáticos (${MOCK_EMAIL_CONFIG.dias_anticipacion_alerta} días de antelación)`);
         }
     }
   },
@@ -156,67 +211,139 @@ const internalMockApi = {
   saveEmailConfig: async (config: EmailConfig) => { 
     await simulateDelay(); 
     MOCK_EMAIL_CONFIG = { ...config };
-    console.log('[CONFIG] Nueva configuración de correo guardada:', MOCK_EMAIL_CONFIG);
   },
   testEmailConfig: async (config: EmailConfig, to: string) => { 
       await simulateDelay(1000); 
-      console.log(`[EMAIL TEST] Probando conexión SMTP ${config.smtp_host}:${config.smtp_port} enviando a ${to}`);
       return { success: true }; 
   },
 
   // --- Vault ---
-  // Fix: Added missing Vault methods to match liveApi
-  getBoveda: async (): Promise<EntradaBoveda[]> => [],
-  createEntradaBoveda: async (data: any): Promise<EntradaBoveda> => ({ 
-    id: Date.now(), ...data, fecha_actualizacion: new Date().toISOString().split('T')[0] 
-  }),
-  updateEntradaBoveda: async (id: number, data: any): Promise<EntradaBoveda> => ({ 
-    id, ...data, fecha_actualizacion: new Date().toISOString().split('T')[0] 
-  }),
-  deleteEntradaBoveda: async (id: number): Promise<void> => { await simulateDelay(); },
+  getBoveda: async (): Promise<EntradaBoveda[]> => MOCK_BOVEDA,
+  createEntradaBoveda: async (data: any): Promise<EntradaBoveda> => {
+    const n = { id: Date.now(), ...data, fecha_actualizacion: new Date().toISOString().split('T')[0] };
+    MOCK_BOVEDA.push(n);
+    return n;
+  },
+  updateEntradaBoveda: async (id: number, data: any): Promise<EntradaBoveda> => {
+    MOCK_BOVEDA = MOCK_BOVEDA.map(e => e.id === id ? { ...e, ...data, fecha_actualizacion: new Date().toISOString().split('T')[0] } : e);
+    return MOCK_BOVEDA.find(e => e.id === id)!;
+  },
+  deleteEntradaBoveda: async (id: number): Promise<void> => {
+    MOCK_BOVEDA = MOCK_BOVEDA.filter(e => e.id !== id);
+    await simulateDelay();
+  },
 
   // --- Organization ---
-  // Fix: Added missing Org methods to match liveApi and satisfy OrganizatonManager
   getDepartamentos: async () => MOCK_DEPARTAMENTOS,
-  createDepartamento: async (data: any) => ({ id: Date.now(), ...data }),
-  updateDepartamento: async (id: number, data: any) => ({ id, ...data }),
-  deleteDepartamento: async (id: number) => { await simulateDelay(); },
-
+  createDepartamento: async (data: any) => {
+    const n = { id: Date.now(), ...data };
+    MOCK_DEPARTAMENTOS.push(n);
+    return n;
+  },
+  updateDepartamento: async (id: number, data: any) => {
+    MOCK_DEPARTAMENTOS = MOCK_DEPARTAMENTOS.map(d => d.id === id ? { ...d, ...data } : d);
+    return MOCK_DEPARTAMENTOS.find(d => d.id === id);
+  },
+  deleteDepartamento: async (id: number) => { 
+    MOCK_DEPARTAMENTOS = MOCK_DEPARTAMENTOS.filter(d => d.id !== id);
+    await simulateDelay(); 
+  },
   getCiudades: async () => MOCK_CIUDADES,
-  createCiudad: async (data: any) => ({ id: Date.now(), ...data }),
-  updateCiudad: async (id: number, data: any) => ({ id, ...data }),
-  deleteCiudad: async (id: number) => { await simulateDelay(); },
-
+  createCiudad: async (data: any) => {
+    const n = { id: Date.now(), ...data };
+    MOCK_CIUDADES.push(n);
+    return n;
+  },
+  updateCiudad: async (id: number, data: any) => {
+    MOCK_CIUDADES = MOCK_CIUDADES.map(c => c.id === id ? { ...c, ...data } : c);
+    return MOCK_CIUDADES.find(c => c.id === id);
+  },
+  deleteCiudad: async (id: number) => { 
+    MOCK_CIUDADES = MOCK_CIUDADES.filter(c => c.id !== id);
+    await simulateDelay(); 
+  },
   getPaises: async () => MOCK_PAISES,
-  createPais: async (data: any) => ({ id: Date.now(), ...data }),
-  updatePais: async (id: number, data: any) => ({ id, ...data }),
-  deletePais: async (id: number) => { await simulateDelay(); },
-
-  getPuestos: async () => [],
-  createPuesto: async (nombre: string) => ({ id: Date.now(), nombre }),
-  updatePuesto: async (id: number, nombre: string) => ({ id, nombre }),
-  deletePuesto: async (id: number) => { await simulateDelay(); },
+  createPais: async (data: any) => {
+    const n = { id: Date.now(), ...data };
+    MOCK_PAISES.push(n);
+    return n;
+  },
+  updatePais: async (id: number, data: any) => {
+    MOCK_PAISES = MOCK_PAISES.map(p => p.id === id ? { ...p, ...data } : p);
+    return MOCK_PAISES.find(p => p.id === id);
+  },
+  deletePais: async (id: number) => { 
+    MOCK_PAISES = MOCK_PAISES.filter(p => p.id !== id);
+    await simulateDelay(); 
+  },
+  
+  getPuestos: async () => [...MOCK_PUESTOS],
+  createPuesto: async (data: { nombre: string }) => {
+    const n = { id: Date.now(), nombre: data.nombre };
+    MOCK_PUESTOS.push(n);
+    return n;
+  },
+  updatePuesto: async (id: number, data: { nombre: string }) => {
+    MOCK_PUESTOS = MOCK_PUESTOS.map(p => p.id === id ? { ...p, nombre: data.nombre } : p);
+    return MOCK_PUESTOS.find(p => p.id === id);
+  },
+  deletePuesto: async (id: number) => { 
+    MOCK_PUESTOS = MOCK_PUESTOS.filter(p => p.id !== id);
+    await simulateDelay(); 
+  },
 
   // --- Users ---
-  getUsuarios: async () => MOCK_USUARIOS,
-  createUsuario: async (data: any) => ({ ...data, id: Date.now() }),
-  updateUsuario: async (id: number, data: any) => ({ ...data, id }),
-  deleteUsuario: async (id: number) => { await simulateDelay(); },
+  getUsuarios: async () => [...MOCK_USUARIOS],
+  createUsuario: async (data: any) => {
+    const hydratedUser = hydrateUser({ ...data, id: Date.now() });
+    MOCK_USUARIOS.push(hydratedUser);
+    return hydratedUser;
+  },
+  updateUsuario: async (id: number, data: any) => {
+    let updated: Usuario | null = null;
+    MOCK_USUARIOS = MOCK_USUARIOS.map(u => {
+        if (u.id === id) {
+            updated = hydrateUser({ ...u, ...data });
+            return updated;
+        }
+        return u;
+    });
+    return updated!;
+  },
+  deleteUsuario: async (id: number) => { 
+    MOCK_USUARIOS = MOCK_USUARIOS.filter(u => u.id !== id);
+    await simulateDelay(); 
+  },
 
   // --- Equipment ---
-  getEquipos: async () => MOCK_EQUIPOS,
-  createEquipo: async (data: any) => ({ ...data, id: Date.now() }),
-  updateEquipo: async (id: number, data: any) => ({ ...data, id }),
+  getEquipos: async () => [...MOCK_EQUIPOS],
+  createEquipo: async (data: any) => {
+    const n = { ...data, id: Date.now() };
+    MOCK_EQUIPOS.push(n);
+    return n;
+  },
+  updateEquipo: async (id: number, data: any) => {
+    MOCK_EQUIPOS = MOCK_EQUIPOS.map(e => e.id === id ? { ...e, ...data } : e);
+    return MOCK_EQUIPOS.find(e => e.id === id)!;
+  },
   getTiposEquipo: async () => MOCK_TIPOS_EQUIPO,
-  // Fix: Added missing Equipment Type methods
-  createTipoEquipo: async (data: any) => ({ id: Date.now(), ...data }),
-  updateTipoEquipo: async (id: number, data: any) => ({ id, ...data }),
-  deleteTipoEquipo: async (id: number) => { await simulateDelay(); },
+  createTipoEquipo: async (data: any) => {
+    const n = { id: Date.now(), ...data };
+    MOCK_TIPOS_EQUIPO.push(n);
+    return n;
+  },
+  updateTipoEquipo: async (id: number, data: any) => {
+    MOCK_TIPOS_EQUIPO = MOCK_TIPOS_EQUIPO.map(t => t.id === id ? { ...t, ...data } : t);
+    return MOCK_TIPOS_EQUIPO.find(t => t.id === id);
+  },
+  deleteTipoEquipo: async (id: number) => { 
+    MOCK_TIPOS_EQUIPO = MOCK_TIPOS_EQUIPO.filter(t => t.id !== id);
+    await simulateDelay(); 
+  },
 
   // --- Licenses ---
   getLicencias: async () => [],
   getTipoLicencias: async () => [],
-  // Fix: Added missing License methods to match liveApi
   createTipoLicencia: async (data: any) => ({ id: Date.now(), ...data }),
   updateTipoLicencia: async (id: number, data: any) => ({ id, ...data }),
   deleteTipoLicencia: async (id: number) => { await simulateDelay(); },
@@ -229,14 +356,12 @@ const internalMockApi = {
   getNotifications: async () => [...MOCK_NOTIFICACIONES],
   getWarrantyReport: async () => [],
   getReplacementCandidates: async () => [],
-  // Fix: Added missing History methods for reportService
   getHistorialAsignaciones: async () => [],
   getHistorial: async (tipoId?: number) => [],
   getHistorialMantenimiento: async (tipoId?: number) => [],
 
   // --- Maintenance Plans ---
   getMaintenancePlans: async () => [],
-  // Fix: Satisfy PlanMantenimiento structure and return type for view component
   getPlanDetails: async (planId: number): Promise<{ plan: PlanMantenimiento, details: DetallePlan[] }> => ({ 
     plan: { id: planId, anio: 2025, nombre: 'Plan Mock', creado_por: 'Admin', fecha_creacion: '', estado: 'ACTIVO' }, 
     details: [] 
@@ -251,7 +376,6 @@ const internalMockApi = {
   // --- Replacement Plans ---
   getReplacementPlans: async () => [],
   saveReplacementPlan: async (plan: PlanRecambio, details: DetallePlanRecambio[]) => true,
-  // Fix: Satisfy PlanRecambio structure and return type for ReplacementPlanning
   getReplacementPlanDetails: async (planId: number): Promise<{ plan: PlanRecambio, details: DetallePlanRecambio[] }> => ({ 
     plan: { 
       id: planId, anio: 2025, nombre: 'Plan Recambio Mock', creado_por: 'Admin', 
@@ -272,4 +396,4 @@ const internalMockApi = {
 
 const simulateDelay = (ms = 400) => new Promise(resolve => setTimeout(resolve, ms));
 export const api = USE_LIVE_API ? liveApi : internalMockApi;
-export { MOCK_EQUIPOS, MOCK_USUARIOS, MOCK_DEPARTAMENTOS, MOCK_CIUDADES, MOCK_PAISES };
+export { MOCK_EQUIPOS, MOCK_USUARIOS, MOCK_DEPARTAMENTOS, MOCK_CIUDADES, MOCK_PAISES, MOCK_PUESTOS };

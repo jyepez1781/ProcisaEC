@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Equipo, EstadoEquipo } from '../../types';
 import { MoreVertical, Edit, UserCheck, RotateCcw, Wrench, Archive, Trash2, Box, User } from 'lucide-react';
@@ -26,6 +25,11 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
   const toggleMenu = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
     setOpenMenuId(openMenuId === id ? null : id);
+  };
+
+  const handleActionClick = (action: ModalAction, equipo: Equipo) => {
+    setOpenMenuId(null);
+    onAction(action, equipo);
   };
 
   return (
@@ -84,28 +88,27 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
                        </button>
                        {openMenuId === equipo.id && (
                          <div className="absolute right-8 top-0 w-52 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-100 dark:border-slate-600 z-50 py-1 text-left">
-                           <button onClick={() => onAction('EDIT', equipo)} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex gap-2 text-slate-700 dark:text-slate-200"><Edit className="w-4 h-4"/> Editar</button>
+                           <button onClick={() => handleActionClick('EDIT', equipo)} className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex gap-2 text-slate-700 dark:text-slate-200"><Edit className="w-4 h-4"/> Editar</button>
                            
                            {(equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.PARA_BAJA) && (
-                              <button onClick={() => onAction('ASSIGN', equipo)} className="w-full text-left px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex gap-2"><UserCheck className="w-4 h-4"/> Asignar</button>
+                              <button onClick={() => handleActionClick('ASSIGN', equipo)} className="w-full text-left px-4 py-2 text-sm text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 flex gap-2"><UserCheck className="w-4 h-4"/> Asignar</button>
                            )}
                            
                            {equipo.estado === EstadoEquipo.ACTIVO && (
-                              <button onClick={() => onAction('RETURN', equipo)} className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex gap-2"><RotateCcw className="w-4 h-4"/> Recepcionar</button>
+                              <button onClick={() => handleActionClick('RETURN', equipo)} className="w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex gap-2"><RotateCcw className="w-4 h-4"/> Recepcionar</button>
                            )}
                            
                            {(equipo.estado === EstadoEquipo.ACTIVO || equipo.estado === EstadoEquipo.DISPONIBLE || equipo.estado === EstadoEquipo.PARA_BAJA) && (
-                              <button onClick={() => onAction('TO_MAINTENANCE', equipo)} className="w-full text-left px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex gap-2"><Wrench className="w-4 h-4"/> Enviar a Mantenimiento</button>
+                              <button onClick={() => handleActionClick('TO_MAINTENANCE', equipo)} className="w-full text-left px-4 py-2 text-sm text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex gap-2"><Wrench className="w-4 h-4"/> Enviar a Mantenimiento</button>
                            )}
 
-                           {/* Pre-Baja: No disponible si está asignado (Activo) */}
                            {!['Baja', 'Para Baja', 'Activo'].includes(equipo.estado) && (
-                              <button onClick={() => onAction('MARK_DISPOSAL', equipo)} className="w-full text-left px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex gap-2"><Archive className="w-4 h-4"/> Pre-Baja</button>
+                              <button onClick={() => handleActionClick('MARK_DISPOSAL', equipo)} className="w-full text-left px-4 py-2 text-sm text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 flex gap-2"><Archive className="w-4 h-4"/> Pre-Baja</button>
                            )}
                            
-                           {/* Baja: No disponible si está asignado (Activo) */}
-                           {equipo.estado !== EstadoEquipo.BAJA && equipo.estado !== EstadoEquipo.ACTIVO && (
-                              <button onClick={() => onAction('BAJA', equipo)} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex gap-2"><Trash2 className="w-4 h-4"/> Dar Baja</button>
+                           {/* Modificado: Permitir dar de baja incluso si el estado es ACTIVO */}
+                           {equipo.estado !== EstadoEquipo.BAJA && (
+                              <button onClick={() => handleActionClick('BAJA', equipo)} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex gap-2"><Trash2 className="w-4 h-4"/> Dar Baja</button>
                            )}
                          </div>
                        )}
@@ -121,6 +124,7 @@ export const EquipmentTable: React.FC<EquipmentTableProps> = ({ groupedEquipos, 
       {Object.keys(groupedEquipos).length > 0 && (
         <Pagination 
             currentPage={pagination.currentPage}
+            // Fix: Added pagination prefix to totalPages property
             totalPages={pagination.totalPages}
             onPageChange={pagination.onPageChange}
             totalItems={pagination.totalItems}
